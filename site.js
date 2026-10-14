@@ -195,6 +195,7 @@ function applyPharmacyConfig() {
       gb.style.display = 'none';
     }
   }
+  majHauteurBandeau();
   renderFooterHoraires();
   renderFideliteTextes();
 }
@@ -257,6 +258,17 @@ function renderFooterHoraires() {
   });
   box.innerHTML = html;
 }
+
+// Le bandeau du haut passe sur 2 lignes sur un petit écran : l'en-tête se place juste
+// en dessous, quelle que soit sa hauteur (et remonte en haut si le bandeau est désactivé).
+function majHauteurBandeau() {
+  var gb = document.getElementById('garde-bar');
+  var h = (gb && gb.style.display !== 'none') ? gb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--bandeau-h', h + 'px');
+}
+window.addEventListener('resize', majHauteurBandeau);
+window.addEventListener('orientationchange', majHauteurBandeau);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(majHauteurBandeau);
 
 // ── PAGES LÉGALES ───────────────────────────────────────────
 // Le contenu est généré depuis DATA.parametres : une autre pharmacie
@@ -1256,35 +1268,48 @@ function fermerConfirmation() {
 }
 
 // ── APPARITION AU DÉFILEMENT ──
-// Un seul mécanisme pour tous les blocs « .reveal » (titres, cartes promo, catalogue,
-// services, étapes) : le bloc apparaît dès qu'il entre à l'écran, une seule fois.
-// Les cartes qui arrivent ensemble apparaissent l'une après l'autre, de gauche à droite.
-var revealObserver;
-function montrerSansAnimation() {
-  document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
-}
+// Titres et textes (« .reveal ») : apparition en fondu, une seule fois.
+// Cartes (promotions, catalogue, « Pourquoi nous choisir », étapes, services) : effet « volet ».
+// La carte se déplie quand elle arrive à l'écran et se replie quand elle en sort complètement,
+// pour rejouer l'effet au passage suivant. Les cartes qui arrivent ensemble se déplient l'une
+// après l'autre, de gauche à droite. Aucun calcul pendant le défilement : c'est le navigateur
+// qui signale l'entrée et la sortie (IntersectionObserver).
+var CARTES_VOLET = '.promo-card, .feature, .step, .service-card, .banner-card';
+var revealObserver, voletEntree, voletSortie;
 function observeReveals() {
-  if (prefersReducedMotion() || !window.IntersectionObserver) { montrerSansAnimation(); return; }
+  var cartes = document.querySelectorAll(CARTES_VOLET);
+  cartes.forEach(function(c) { if (c.classList.contains('reveal')) c.classList.add('volet'); });
+  if (prefersReducedMotion() || !window.IntersectionObserver) {
+    document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible', 'volet-ouvert'); });
+    return;
+  }
   if (!revealObserver) {
     revealObserver = new IntersectionObserver(function(entries) {
-      var entrees = entries.filter(function(e) { return e.isIntersecting; });
+      entries.forEach(function(e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); }
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
+    voletEntree = new IntersectionObserver(function(entries) {
+      var entrees = entries.filter(function(e) { return e.isIntersecting && !e.target.classList.contains('volet-ouvert'); });
       entrees.sort(function(x, y) {
         return (x.boundingClientRect.top - y.boundingClientRect.top) || (x.boundingClientRect.left - y.boundingClientRect.left);
       });
       entrees.forEach(function(e, i) {
         var el = e.target;
-        // Décalage court entre cartes d'une même rangée (les autres blocs gardent leur délai prévu)
-        if (el.classList.contains('promo-card')) {
-          el.style.transitionDelay = (Math.min(i, 4) * 0.06) + 's';
-          // Une fois apparue, la carte réagit de nouveau sans délai (survol, inclinaison à la souris)
-          el.addEventListener('transitionend', function fin() { el.style.transitionDelay = ''; el.removeEventListener('transitionend', fin); });
-        }
-        el.classList.add('visible');
-        revealObserver.unobserve(el);
+        el.style.transitionDelay = (Math.min(i, 3) * 0.08) + 's';
+        el.classList.add('volet-ouvert');
+        // Une fois dépliée, la carte réagit sans délai (survol à la souris)
+        el.addEventListener('transitionend', function fin() { el.style.transitionDelay = ''; el.removeEventListener('transitionend', fin); });
       });
     }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
+    voletSortie = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (!e.isIntersecting) { e.target.style.transitionDelay = '0s'; e.target.classList.remove('volet-ouvert'); }
+      });
+    }, { threshold: 0 });
   }
-  document.querySelectorAll('.reveal:not(.visible)').forEach(function(el){ revealObserver.observe(el); });
+  document.querySelectorAll('.reveal:not(.visible):not(.volet)').forEach(function(el) { revealObserver.observe(el); });
+  document.querySelectorAll('.reveal.volet').forEach(function(el) { voletEntree.observe(el); voletSortie.observe(el); });
 }
 
 // ── GYROSCOPE (accéléromètre iPhone/Android) ──

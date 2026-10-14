@@ -4,11 +4,12 @@
   var CLE = 'pharma-demo-menu';
   var pages = [['site.html', 'Site'], ['admin.html', 'Admin'], ['compte.html', 'Compte']];
   var ici = (location.pathname.split('/').pop() || '').toLowerCase();
+  var petit = window.innerWidth < 480; // téléphone : barre plus compacte
 
   function lireMasque() { try { return localStorage.getItem(CLE) === 'masque'; } catch (e) { return false; } }
   function ecrireMasque(v) { try { if (v) localStorage.setItem(CLE, 'masque'); else localStorage.removeItem(CLE); } catch (e) {} }
 
-  var base = 'position:fixed;left:calc(10px + env(safe-area-inset-left, 0px));bottom:calc(10px + env(safe-area-inset-bottom, 0px));z-index:5000;font:600 12px/1 Manrope,system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,0.25);';
+  var base = 'position:fixed;left:calc(10px + env(safe-area-inset-left, 0px));bottom:calc(10px + env(safe-area-inset-bottom, 0px));z-index:5000;font:600 12px/1 Manrope,system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,0.25);white-space:nowrap;max-width:calc(100vw - 20px);';
 
   // Barre complète
   var nav = document.createElement('div');
@@ -19,19 +20,19 @@
   function lien(href, texte, actif) {
     var a = document.createElement('a');
     a.href = href; a.textContent = texte;
-    a.style.cssText = 'padding:8px 11px;border-radius:999px;text-decoration:none;color:' + (actif ? '#12321F' : '#E6F4EC') + ';background:' + (actif ? '#9FE0BC' : 'transparent');
+    a.style.cssText = 'padding:' + (petit ? '7px 8px' : '8px 11px') + ';font-size:' + (petit ? '11px' : '12px') + ';border-radius:999px;text-decoration:none;color:' + (actif ? '#12321F' : '#E6F4EC') + ';background:' + (actif ? '#9FE0BC' : 'transparent');
     return a;
   }
   var tag = document.createElement('span');
   tag.textContent = 'TEST';
-  tag.style.cssText = 'padding:0 6px 0 8px;color:#9FE0BC;letter-spacing:0.08em;font-size:10px';
+  tag.style.cssText = 'padding:0 6px 0 8px;color:#9FE0BC;letter-spacing:0.08em;font-size:10px' + (petit ? ';display:none' : '');
   nav.appendChild(tag);
   pages.forEach(function (p) { nav.appendChild(lien(p[0], p[1], ici === p[0])); });
 
   var reset = document.createElement('button');
   reset.type = 'button';
   reset.textContent = 'Remettre à zéro';
-  reset.style.cssText = 'padding:8px 11px;border:0;border-radius:999px;background:transparent;color:#F3C6C0;font:inherit;cursor:pointer';
+  reset.style.cssText = 'font:inherit;padding:' + (petit ? '7px 8px' : '8px 11px') + ';font-size:' + (petit ? '11px' : '12px') + ';border:0;border-radius:999px;background:transparent;color:#F3C6C0;cursor:pointer';
   var attente = null;
   reset.addEventListener('click', function () {
     if (!attente) {

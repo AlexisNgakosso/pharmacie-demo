@@ -149,8 +149,10 @@ section{position:relative;z-index:1}
 /* ── REVEAL ANIM ── */
 .reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s cubic-bezier(0.22,1,0.36,1),transform 0.8s cubic-bezier(0.22,1,0.36,1)}
 .reveal.visible{opacity:1;transform:translateY(0)}
-@media (prefers-reduced-motion: reduce){.reveal{opacity:1;transform:none;transition:none}}
-.promo-card.reveal{transition:opacity 0.55s cubic-bezier(0.22,1,0.36,1),transform 0.55s cubic-bezier(0.22,1,0.36,1),box-shadow 0.4s}
+/* Effet « volet » des cartes (comme les 3 cartes de « Pourquoi nous choisir ») : la carte se déplie depuis son bord haut */
+.reveal.volet{opacity:0;transform:rotateX(-35deg) scaleY(0.85);transform-origin:top center;transition:opacity 0.55s cubic-bezier(0.4,0,0.2,1),transform 0.55s cubic-bezier(0.4,0,0.2,1),box-shadow 0.4s}
+.reveal.volet.volet-ouvert{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.reveal,.reveal.volet{opacity:1;transform:none;transition:none}}
 .reveal-d1{transition-delay:0.1s}
 .reveal-d2{transition-delay:0.2s}
 .reveal-d3{transition-delay:0.3s}
@@ -315,7 +317,9 @@ footer{background:var(--bg-card);border-top:1px solid var(--bord);padding:60px 0
 
 /* ── GARDE BANNER ── */
 .garde-bar{background:linear-gradient(90deg,var(--or),var(--or-clair));color:#3A2A05;text-align:center;padding:12px 20px;font-size:0.85rem;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:102;letter-spacing:0.2px;line-height:1.5}
-header{position:fixed;top:46px;left:0;right:0;z-index:100;padding:14px 0;transition:all 0.4s}
+header{position:fixed;top:var(--bandeau-h,46px);left:0;right:0;z-index:100;padding:14px 0;transition:all 0.4s}
+/* Hauteur réelle du bandeau (sur 2 lignes sur téléphone) : le contenu descend d'autant */
+.hero{margin-top:calc(var(--bandeau-h,46px) - 46px)}
 header.scrolled{top:0;background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0;backdrop-filter:blur(10px)}
 html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 .hero{padding-top:170px}

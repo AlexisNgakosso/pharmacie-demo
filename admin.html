@@ -281,6 +281,15 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
   canvas#particles{display:none}
   table{min-width:580px}
   .card{overflow-x:auto}
+  .main{min-width:0}
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar{padding:0 10px;gap:6px}
+  .topbar-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar > :not(.topbar-title){flex-shrink:0}
+}
+@media(max-width:420px){
+  #topbar-cta{padding:0 10px}
+  .topbar .btn{padding-left:9px;padding-right:9px}
 }
 
 /* Impression du rapport (bouton PDF) : seule la carte du rapport est imprimée */
