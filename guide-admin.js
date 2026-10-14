@@ -9,6 +9,8 @@
   'use strict';
 
   var CLE_PREF = 'pharma-guide';
+  // Administration reliée à la base de données (connexion, enregistrement sur le serveur)
+  var MODE_BASE = (typeof PharmaAdminCloud !== 'undefined') && PharmaAdminCloud.actif;
 
   // ── Préférences (propres à ce navigateur) ──
   function lirePref() {
@@ -112,7 +114,9 @@
         + '<h4>Retrouver une commande</h4>'
         + '<p>La zone de recherche accepte le numéro, le nom du client ou un produit ; la liste déroulante filtre par statut.</p>'
         + note('Un client a perdu son code de retrait ? Cherchez sa commande par son nom ici, vérifiez son identité au comptoir, puis validez le retrait avec le numéro de commande dans Validation Scan.')
-        + note('Le bouton « Tout vider » efface toutes les commandes : il sert uniquement aux essais. Ne l\'utilisez pas une fois le site ouvert aux clients.', 'alerte'),
+        + (MODE_BASE
+          ? note('Le bouton « Tout vider » est désactivé avec la base de données : les commandes s\'annulent ou se suppriment une par une, pour ne jamais effacer de vraies commandes par erreur.')
+          : note('Le bouton « Tout vider » efface toutes les commandes : il sert uniquement aux essais. Ne l\'utilisez pas une fois le site ouvert aux clients.', 'alerte')),
       visite: [
         { page: 'commandes', cible: '#page-commandes .toolbar', titre: 'Rechercher et filtrer', texte: 'Par numéro, client ou produit, et par statut.' },
         { page: 'commandes', cible: '#page-commandes .card', titre: 'La liste des commandes', texte: 'L\'œil ouvre le détail. « Prête » prévient le client. L\'icône orange annule (stock et fidélité corrigés), l\'icône rouge supprime.' }
@@ -351,7 +355,7 @@
         + '<p>Vous pouvez préparer un message (promotion, garde…). Il est enregistré « En attente d\'envoi » : l\'envoi réel aux clients nécessitera le serveur.</p>'
         + '<h4>Emails restants</h4>'
         + '<p>Le décompte affiché en tête du journal part du nombre relevé dans votre tableau de bord EmailJS (à saisir dans Paramètres) et retire chaque email envoyé. Une alerte apparaît sur le tableau de bord quand il en reste 20 ou moins.</p>'
-        + note('Les emails partent avec le compte EmailJS réglé dans Paramètres. L\'offre gratuite est limitée à 200 emails par mois. Tant que le site n\'est pas relié au serveur, le décompte ne voit que les emails partis de ce navigateur : recalez-le de temps en temps avec le chiffre d\'EmailJS.'),
+        + note('Les emails partent avec le compte EmailJS réglé dans Paramètres. L\'offre gratuite est limitée à 200 emails par mois. ' + (MODE_BASE ? 'Le décompte compte tous les emails envoyés, y compris les confirmations parties du téléphone des clients' : 'Tant que le site n\'est pas relié au serveur, le décompte ne voit que les emails partis de ce navigateur') + ' : recalez-le de temps en temps avec le chiffre d\'EmailJS.'),
       visite: [
         { page: 'notifications', cible: '#notif-auto-list', titre: 'Emails automatiques', texte: 'Activez ou coupez chaque envoi automatique.' },
         { page: 'notifications', cible: '#email-journal', parent: '.card', titre: 'Journal des envois', texte: 'Chaque email envoyé ou en échec, avec la raison.' }
@@ -379,7 +383,13 @@
           '<strong>Employé</strong> : commandes et tickets ; peut être limité aux heures d\'ouverture (Paramètres).',
           'Le compte administrateur principal ne peut pas être supprimé.'
         ])
-        + note('Chaque membre de l\'équipe aura son propre identifiant et mot de passe avec la connexion sécurisée : en attendant, cette liste sert à organiser l\'équipe. Ne partagez pas l\'accès à l\'administration en dehors de l\'équipe.', 'alerte'),
+        + (MODE_BASE
+          ? '<h4>Ajouter un membre de l\'équipe</h4>' + liste([
+              'Créez d\'abord son compte dans Supabase : menu Authentication, Users, Add user, Create new user (son adresse email et un mot de passe d\'au moins 10 caractères, case « Auto Confirm User » cochée).',
+              'Revenez ici, « Nouvel employé », saisissez la <strong>même adresse email</strong> et choisissez le rôle.',
+              'Retirer un membre lui ôte l\'accès à l\'administration ; son compte reste un simple compte client.'
+            ]) + note('Chaque membre a son propre compte et son propre mot de passe : ne partagez jamais un compte. L\'administration se déconnecte toute seule après 60 minutes sans activité.', 'alerte')
+          : note('Chaque membre de l\'équipe aura son propre identifiant et mot de passe avec la connexion sécurisée : en attendant, cette liste sert à organiser l\'équipe. Ne partagez pas l\'accès à l\'administration en dehors de l\'équipe.', 'alerte')),
       visite: [
         { page: 'employes', cible: '#page-employes .card', titre: 'L\'équipe', texte: 'Ajoutez, modifiez ou retirez un membre de l\'équipe.' }
       ]
@@ -795,6 +805,8 @@
     var plusTard = false;
     try { plusTard = sessionStorage.getItem('pharma-guide-plus-tard') === '1'; } catch (e) {}
     if (plusTard || document.body.innerText.indexOf('Accès non autorisé') !== -1) return;
+    // Écran de connexion affiché (base de données) : proposé après la connexion
+    if (document.body.classList.contains('pharma-verrou') || accueil) return;
     accueil = document.createElement('div');
     accueil.className = 'gd-accueil';
     accueil.setAttribute('role', 'dialog');
@@ -886,7 +898,7 @@
       return;
     }
     if (centreOuvert() && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); fermerCentre(); return; }
-    if (e.key === '?' && !saisieEnCours(e) && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); ouvrirCentre(); }
+    if (e.key === '?' && !saisieEnCours(e) && !e.ctrlKey && !e.metaKey && !e.altKey && !document.body.classList.contains('pharma-verrou')) { e.preventDefault(); ouvrirCentre(); }
   }, true);
   window.addEventListener('resize', repositionner);
   window.addEventListener('scroll', repositionner, true);
@@ -903,6 +915,7 @@
 
   // Accès depuis le reste de l'administration (et pour les tests)
   window.PharmaGuide = {
+    proposer: function () { setTimeout(proposerAccueil, 800); },
     ouvrir: ouvrirCentre, fermer: fermerCentre, visite: function (nom) {
       if (!nom || nom === 'complete') return lancerVisite(VISITE_COMPLETE, 'complete');
       var c = CHAPITRES.find(function (x) { return x.id === nom; });

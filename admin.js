@@ -14,6 +14,8 @@ function persist() {
 }
 
 var currentUser = { nom: 'Admin Principal', role: 'Admin' };
+// Mode base de données (cloud-admin.js) : connexion obligatoire, données lues et enregistrées dans Supabase
+var ADMIN_CLOUD = (typeof PharmaAdminCloud !== 'undefined') && PharmaAdminCloud.actif;
 var currentPage = 'dashboard';
 
 // Échappe une chaîne destinée à être injectée dans un attribut onclick="...('...')".
@@ -843,6 +845,7 @@ function annulerCommande(id) {
   if (c.statut === 'Annulée') { toast('Cette commande est déjà annulée'); return; }
   if (c.statut === 'Retirée') { toast('Impossible d\'annuler une commande déjà retirée','error'); return; }
   confirmer('Annuler la commande ' + escHtml(id) + ' de ' + escHtml(c.client) + ' ?<br><span style="font-size:0.78rem;color:var(--texte-2)">Le stock sera réapprovisionné et le compteur de fidélité du client corrigé.</span>', function() {
+    if (ADMIN_CLOUD) { PharmaAdminCloud.annuler(id); return; }
     defaireCommande(c);
     c.statut = 'Annulée';
     persist();
@@ -856,6 +859,7 @@ function deleteCommande(id) {
   var c = DATA.commandes.find(function(x){ return x.id === id; });
   if (!c) return;
   confirmer('Supprimer définitivement la commande ' + escHtml(id) + ' ?<br><span style="font-size:0.78rem;color:var(--texte-2)">Cette action est irréversible. Préférez « Annuler » pour garder une trace.</span>', function() {
+    if (ADMIN_CLOUD) { PharmaAdminCloud.supprimer(id); return; }
     // Si elle n'était ni annulée ni retirée, le stock lui est encore réservé
     if (c.statut !== 'Annulée' && c.statut !== 'Retirée') defaireCommande(c);
     DATA.commandes = DATA.commandes.filter(function(x){ return x.id !== id; });
@@ -922,6 +926,10 @@ function defaireCommande(c) {
 
 // Vide toutes les commandes de démonstration (données de test)
 function viderCommandesDemo() {
+  if (ADMIN_CLOUD) {
+    toast('Avec la base de données, les commandes s\'annulent ou se suppriment une par une (pour ne jamais effacer de vraies commandes par erreur)', 'error');
+    return;
+  }
   confirmer('Supprimer TOUTES les commandes ?<br><span style="font-size:0.78rem;color:var(--texte-2)">Utile pour repartir sur des données propres pendant les tests.</span>', function() {
     DATA.commandes = [];
     persist();
@@ -1215,12 +1223,24 @@ function voirCommande(id) {
 }
 
 function marquerPrete(id) {
+  // Base de données : le serveur change le statut et signe la validation
+  if (ADMIN_CLOUD) {
+    PharmaAdminCloud.marquerPrete(id).then(function(ok) { if (ok) notifierCommandePrete(id); });
+    return;
+  }
   var c = DATA.commandes.find(function(x){ return x.id===id; });
   if (!c) return;
   c.statut = 'Prête';
   c.valide = nomValideur();
   persist();
   renderCommandes();
+  notifierCommandePrete(id);
+}
+
+// Email « commande prête » au client (et proposition de l'email prérempli si l'envoi échoue)
+function notifierCommandePrete(id) {
+  var c = DATA.commandes.find(function(x){ return x.id===id; });
+  if (!c) return;
   if (typeof PharmaEmail === 'undefined') { toast('Commande '+id+' prête'); return; }
   // Email « commande prête » : asynchrone et tolérant. Le statut est déjà enregistré,
   // un échec d'envoi ne bloque rien et est signalé à l'employé.
@@ -1624,7 +1644,11 @@ function resumeQuotaHTML(q, avecNote) {
   var couleur = q.epuise ? 'var(--rouge)' : (q.alerte ? '#B07C00' : 'var(--vert)');
   var html = '<div style="font-size:0.82rem;line-height:1.5"><strong style="color:'+couleur+'">'+q.restants+' email'+(q.restants > 1 ? 's' : '')+' restant'+(q.restants > 1 ? 's' : '')+'</strong>'
     + ' <span class="txt-muted">· relevé : '+q.releve+(q.releveLe ? ' le '+texteDateCourte(q.releveLe) : '')+' · '+q.envoyes+' envoyé'+(q.envoyes > 1 ? 's' : '')+' depuis</span></div>';
-  if (avecNote) html += '<div style="font-size:0.72rem;color:var(--texte-3);line-height:1.5;margin-top:4px">Tant que le site n\'est pas relié au serveur, seuls les emails partis de ce navigateur sont décomptés. Les confirmations partent du téléphone des clients : le chiffre réel peut être plus bas. Recalez-le de temps en temps avec celui d\'EmailJS.</div>';
+  if (avecNote) html += '<div style="font-size:0.72rem;color:var(--texte-3);line-height:1.5;margin-top:4px">'
+    + (ADMIN_CLOUD
+      ? 'Tous les emails envoyés sont décomptés, y compris les confirmations parties du téléphone des clients. Recalez de temps en temps avec le chiffre d\'EmailJS.'
+      : 'Tant que le site n\'est pas relié au serveur, seuls les emails partis de ce navigateur sont décomptés. Les confirmations partent du téléphone des clients : le chiffre réel peut être plus bas. Recalez-le de temps en temps avec celui d\'EmailJS.')
+    + '</div>';
   if (q.epuise) html += '<div style="font-size:0.76rem;color:var(--rouge);margin-top:4px">Quota sans doute épuisé : utilisez l\'email prérempli depuis le détail de chaque commande.</div>';
   return html;
 }
@@ -1847,11 +1871,18 @@ function checkAcces() {
 }
 
 function showBlocage() {
-  var now = new Date();
-  var jours = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  var jour = jours[now.getDay()];
-  var h = DATA.horaires[jour];
-  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;background:var(--fond);font-family:Manrope,sans-serif;text-align:center;padding:30px"><div style="width:60px;height:60px;background:linear-gradient(135deg,#1B6B45,#2ECC7A);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto">✚</div><h1 style="font-size:1.2rem;font-weight:800;color:#1A1F2B">Pharmacie Démo</h1><div style="background:white;border-radius:12px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.08);max-width:380px;width:100%"><div style="font-size:2rem;margin-bottom:12px"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h2 style="font-size:1rem;font-weight:700;color:#1A1F2B;margin-bottom:8px">Accès non autorisé</h2><p style="font-size:0.82rem;color:#5A6478;line-height:1.6">L\'accès au back-office est restreint en dehors des heures d\'ouverture.<br><br>Contactez l\'administrateur si vous avez besoin d\'un accès exceptionnel.</p></div></div>';
+  if (ADMIN_CLOUD) {
+    PharmaAdminCloud.deconnecter('Accès en dehors des heures d\'ouverture : l\'administration est réservée aux heures d\'ouverture pour les comptes « employé ».');
+    return;
+  }
+  var nom = escHtml((DATA.parametres && DATA.parametres.nom) || 'Pharmacie');
+  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;background:var(--fond);font-family:Manrope,sans-serif;text-align:center;padding:30px">'
+    + '<div style="width:60px;height:60px;background:linear-gradient(135deg,#1B6B45,#2ECC7A);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto"><svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>'
+    + '<h1 style="font-size:1.2rem;font-weight:800;color:#1A1F2B">' + nom + '</h1>'
+    + '<div style="background:white;border-radius:12px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,0.08);max-width:380px;width:100%">'
+    + '<div style="width:46px;height:46px;border-radius:12px;background:#E55353;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
+    + '<h2 style="font-size:1rem;font-weight:700;color:#1A1F2B;margin-bottom:8px">Accès non autorisé</h2>'
+    + '<p style="font-size:0.82rem;color:#5A6478;line-height:1.6">L\'accès au back-office est restreint en dehors des heures d\'ouverture.<br><br>Contactez l\'administrateur si vous avez besoin d\'un accès exceptionnel.</p></div></div>';
 }
 
 // ── SCAN ────────────────────────────────────────────────────
@@ -1886,6 +1917,10 @@ function simulateScan() {
   var inp = document.getElementById('scan-input');
   var val = inp ? inp.value.trim() : '';
   if (!val) { toast('Saisissez le numéro de commande ou le code de retrait','error'); return; }
+  if (ADMIN_CLOUD) {
+    PharmaAdminCloud.validerRetrait(val).then(function(ok) { if (ok && inp) inp.value = ''; renderScan(); });
+    return;
+  }
   var c = trouverCommandeRetrait(val);
   if (!c) { toast('Commande introuvable','error'); return; }
   if (c.statut === 'Retirée') { toast('Cette commande a déjà été retirée','error'); return; }
@@ -2119,23 +2154,8 @@ function getVal(id) { var el=document.getElementById(id); return el?el.value:'';
 function setVal(id, val) { var el=document.getElementById(id); if(el) el.value=val||''; }
 function resetForm(id) { var el=document.getElementById(id); if(el) el.reset(); }
 
-// Étape de transition : le site client est relié à la base de données, pas encore l'administration
-function afficherAvisAdminNonRelie() {
-  var main = document.querySelector('.main');
-  if (!main || document.getElementById('avis-base')) return;
-  var topbar = main.querySelector('.topbar');
-  var avis = document.createElement('div');
-  avis.id = 'avis-base';
-  avis.setAttribute('role', 'note');
-  avis.style.cssText = 'margin:12px 20px 0;padding:12px 16px;border-radius:12px;background:#FBF1DF;color:#5C3D0B;font-size:0.82rem;line-height:1.5;border:1px solid #EBCB8B';
-  avis.innerHTML = '<strong>Administration pas encore reliée à la base de données.</strong> Elle affiche les données de démonstration de ce navigateur. '
-    + 'Les commandes passées sur le site sont visibles dans Supabase, menu Table Editor, table « commandes ».';
-  main.insertBefore(avis, topbar ? topbar.nextSibling : main.firstChild);
-}
-
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function() {
-  if (typeof PHARMA_SUPABASE !== 'undefined' && PHARMA_SUPABASE) afficherAvisAdminNonRelie();
   appliquerCouleur();
   initNotifSync();
   renderNotifCloche(false);
@@ -2184,4 +2204,6 @@ window.addEventListener('DOMContentLoaded', function() {
     var oc = n.getAttribute('onclick') || '';
     n.classList.toggle('active', oc.indexOf("'dashboard'") !== -1);
   });
+  // Base de données : écran de connexion, puis lecture des données
+  if (ADMIN_CLOUD) PharmaAdminCloud.demarrer();
 });

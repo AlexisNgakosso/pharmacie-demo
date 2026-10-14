@@ -276,6 +276,7 @@ var PharmaCloud = (function () {
     passerCommande: passerCommande,
     journaliserEmail: journaliserEmail,
     erreurLisible: erreurLisible,
+    executer: executer,
     // conversions réutilisées par l'administration et l'espace client
     conv: { produit: produitVersLocal, promo: promoVersLocal, conseil: conseilVersLocal, reglagesPublics: appliquerReglagesPublics },
     squelette: squelette

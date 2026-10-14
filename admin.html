@@ -546,7 +546,7 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
   <!-- SCAN -->
   <div class="page" id="page-scan">
     <div class="g2">
-      <div class="card"><div class="card-header"><div class="card-title">Validation commande</div><span class="badge b-green">Connecté : Admin Principal</span></div><div class="card-body">
+      <div class="card"><div class="card-header"><div class="card-title">Validation commande</div><span class="badge b-green" id="scan-connecte">Connecté : Admin Principal</span></div><div class="card-body">
         <div class="scan-zone"><div class="scan-line"></div><svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke="var(--vert-vif)" stroke-width="1.5" style="margin-bottom:8px"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/></svg><div style="font-size:0.82rem;font-weight:600;color:var(--vert)">Prêt à scanner</div><div class="txt-muted mt2">Saisissez le numéro de commande ou le code de retrait du client</div></div>
         <div class="mt3"><label style="display:block;margin-bottom:5px">Numéro de commande ou code de retrait</label><div class="flex-gap"><input class="inp" placeholder="#1042 ou code à 6 caractères" id="scan-input" style="flex:1"><button class="btn btn-primary" onclick="simulateScan()">Valider</button></div></div>
       </div></div>
@@ -834,9 +834,12 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
   </div>
 </div>
 
+<script src="supabase.js"></script>
 <script src="supabase-config.js"></script>
 <script src="data.js"></script>
+<script src="cloud.js"></script>
 <script src="emails.js"></script>
+<script src="cloud-admin.js"></script>
 <script src="admin.js"></script>
 <script src="guide-admin.js"></script>
 <script src="demo-nav.js"></script>
