@@ -376,8 +376,22 @@ window.pharmaToast = function(msg) {
   setTimeout(function(){ el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='all 0.3s'; setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},300); }, 2800);
 };
 
+// Étape de transition : le site client est relié à la base de données, pas encore l'espace client
+function afficherAvisCompteNonRelie() {
+  var layout = document.querySelector('.layout');
+  if (!layout || document.getElementById('avis-base')) return;
+  var avis = document.createElement('div');
+  avis.id = 'avis-base';
+  avis.setAttribute('role', 'note');
+  avis.style.cssText = 'max-width:1100px;margin:20px auto 0;padding:0 16px';
+  avis.innerHTML = '<div style="padding:12px 16px;border-radius:12px;background:#FBF1DF;color:#5C3D0B;font-size:0.82rem;line-height:1.5;border:1px solid #EBCB8B">'
+    + '<strong>Aperçu de l\'espace client.</strong> Il n\'est pas encore relié à la base de données : les commandes passées sur le site n\'y apparaissent pas encore.</div>';
+  layout.parentNode.insertBefore(avis, layout);
+}
+
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', function() {
+  if (typeof PHARMA_SUPABASE !== 'undefined' && PHARMA_SUPABASE) afficherAvisCompteNonRelie();
   applyPharmacyConfig();
   initProfil();
   syncProfilDisplay();

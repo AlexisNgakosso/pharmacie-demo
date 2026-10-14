@@ -2117,8 +2117,23 @@ function getVal(id) { var el=document.getElementById(id); return el?el.value:'';
 function setVal(id, val) { var el=document.getElementById(id); if(el) el.value=val||''; }
 function resetForm(id) { var el=document.getElementById(id); if(el) el.reset(); }
 
+// Étape de transition : le site client est relié à la base de données, pas encore l'administration
+function afficherAvisAdminNonRelie() {
+  var main = document.querySelector('.main');
+  if (!main || document.getElementById('avis-base')) return;
+  var topbar = main.querySelector('.topbar');
+  var avis = document.createElement('div');
+  avis.id = 'avis-base';
+  avis.setAttribute('role', 'note');
+  avis.style.cssText = 'margin:12px 20px 0;padding:12px 16px;border-radius:12px;background:#FBF1DF;color:#5C3D0B;font-size:0.82rem;line-height:1.5;border:1px solid #EBCB8B';
+  avis.innerHTML = '<strong>Administration pas encore reliée à la base de données.</strong> Elle affiche les données de démonstration de ce navigateur. '
+    + 'Les commandes passées sur le site sont visibles dans Supabase, menu Table Editor, table « commandes ».';
+  main.insertBefore(avis, topbar ? topbar.nextSibling : main.firstChild);
+}
+
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function() {
+  if (typeof PHARMA_SUPABASE !== 'undefined' && PHARMA_SUPABASE) afficherAvisAdminNonRelie();
   appliquerCouleur();
   initNotifSync();
   renderNotifCloche(false);

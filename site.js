@@ -3,10 +3,15 @@
 // ════════════════════════════════════════════
 
 // ── DONNÉES PARTAGÉES (admin.html / site.html / compte.html) ──
-// DATA vient de data.js, chargé avant ce fichier. C'est la même source
-// que le back-office : toute modification faite côté admin (produits,
-// promos, stock, config pharmacie) est immédiatement visible ici.
-var DATA = PharmaStore.load();
+// Deux modes (voir cloud.js) :
+//  * base de données (supabase-config.js renseigné) : le catalogue et les réglages sont lus
+//    dans la base ; la commande est enregistrée par le serveur, qui relit prix, stock et codes.
+//  * local (démonstration) : DATA vient de data.js et reste dans le navigateur.
+var MODE_CLOUD = (typeof PharmaCloud !== 'undefined') && PharmaCloud.prevu;
+var DATA = MODE_CLOUD ? PharmaCloud.donneesInitiales() : PharmaStore.load();
+// 'local' | 'chargement' (attente de la base) | 'pret' | 'erreur' (base injoignable)
+var ETAT_CLOUD = MODE_CLOUD ? (PharmaCloud.actif ? 'chargement' : 'erreur') : 'local';
+var dernierChargementCloud = 0;
 
 // Chaque catégorie produit est associée à une icône SVG existante.
 // Nouvelle catégorie non prévue → icône générique 'sparkle' par défaut.
@@ -133,9 +138,18 @@ function loadCart() {
     return item && item.id && typeof item.prix === 'number' && item.qty > 0;
   });
   if (saved.promo && saved.promo.code) {
-    // Le code promo est revalidé : il a pu expirer ou être désactivé entre-temps
-    var revalide = findCodePromo(saved.promo.code);
-    appliedPromo = (revalide && !revalide.erreur) ? revalide : null;
+    if (MODE_CLOUD) {
+      // Mode base de données : le code est revérifié par le serveur au moment de la commande
+      // (les valeurs gardées ici ne servent qu'à afficher la réduction dans le panier).
+      var sp = saved.promo, pct = parseInt(sp.pct, 10);
+      appliedPromo = (typeof sp.code === 'string' && pct >= 1 && pct <= 100)
+        ? { code: sp.code.slice(0, 40), pct: pct, scope: String(sp.scope || 'Tous'), label: String(sp.label || ('-' + pct + '%')) }
+        : null;
+    } else {
+      // Le code promo est revalidé : il a pu expirer ou être désactivé entre-temps
+      var revalide = findCodePromo(saved.promo.code);
+      appliedPromo = (revalide && !revalide.erreur) ? revalide : null;
+    }
     if (appliedPromo) {
       var label = document.getElementById('promo-label');
       if (label) label.textContent = '('+appliedPromo.code+')';
@@ -728,6 +742,10 @@ function renderCatalogue() {
   }
   var list = currentCat === 'Tous' ? CATALOGUE : CATALOGUE.filter(function(p){return p.cat===currentCat;});
   var html = '';
+  if (MODE_CLOUD && CATALOGUE.length === 0 && ETAT_CLOUD !== 'pret') {
+    grid.innerHTML = messageCatalogueCloud();
+    return;
+  }
   list.forEach(function(p) {
     var rupture = p.stock !== undefined && p.stock <= 0;
     html += '<div class="promo-card reveal" data-tilt>';
@@ -856,6 +874,8 @@ function applyPromo() {
   if (!input) return;
   var code = input.value.trim().toUpperCase();
   if (!code) {
+    var zoneEmail = document.getElementById('promo-email-zone');
+    if (zoneEmail) zoneEmail.style.display = 'none';
     // Champ vide : si un code était appliqué, c'est une demande de retrait
     if (appliedPromo) {
       appliedPromo = null;
@@ -868,6 +888,7 @@ function applyPromo() {
     feedback.textContent='Entrez un code promo'; feedback.style.color='var(--texte-3)'; return;
   }
   if (cart.length === 0) { feedback.textContent='Votre panier est vide'; feedback.style.color='var(--texte-3)'; return; }
+  if (MODE_CLOUD) { appliquerCodeCloud(code, emailConnu()); return; }
   var promo = findCodePromo(code);
   if (!promo || promo.erreur) {
     feedback.textContent = '✕ ' + (promo && promo.erreur ? promo.erreur : 'Code invalide');
@@ -1230,6 +1251,245 @@ function placeOrder() {
            numero: numeroCommande, codeRetrait: codeRetrait, email: clientEmail, emails: emails };
 }
 
+// ════════════════════════════════════════════
+// MODE BASE DE DONNÉES (Supabase)
+// ════════════════════════════════════════════
+
+// Message affiché à la place du catalogue tant que la base n'a pas répondu
+function messageCatalogueCloud() {
+  var style = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--texte-2);font-size:0.95rem';
+  if (ETAT_CLOUD === 'chargement') return '<div style="' + style + '" role="status">Chargement du catalogue…</div>';
+  var tel = (DATA.parametres && DATA.parametres.tel) || '';
+  var appel = tel ? ', ou appelez la pharmacie au <a href="tel:' + escHtml(tel.replace(/\s+/g, '')) + '" style="color:var(--vert);font-weight:700">' + escHtml(tel) + '</a>' : '';
+  return '<div style="' + style + '" role="alert"><p style="margin:0 0 16px">Le catalogue n\'a pas pu être chargé. Vérifiez votre connexion internet' + appel + '.</p>'
+    + '<button type="button" class="btn-lg btn-primary" onclick="reessayerChargementCloud()">Réessayer</button></div>';
+}
+function reessayerChargementCloud() {
+  ETAT_CLOUD = 'chargement';
+  renderCatalogue();
+  chargerDonneesCloud();
+}
+
+// Lit le catalogue, les promos, les conseils et les réglages dans la base, puis met la page à jour
+function chargerDonneesCloud() {
+  if (!MODE_CLOUD) return Promise.resolve(false);
+  if (!PharmaCloud.actif) { ETAT_CLOUD = 'erreur'; renderCatalogue(); return Promise.resolve(false); }
+  return PharmaCloud.chargerPublic().then(function(d) {
+    DATA = d;
+    ETAT_CLOUD = 'pret';
+    dernierChargementCloud = Date.now();
+    rafraichirAffichageCloud();
+    return true;
+  }, function(e) {
+    console.warn('Catalogue non chargé depuis la base :', e && e.message);
+    ETAT_CLOUD = 'erreur';
+    renderCatalogue();
+    return false;
+  });
+}
+
+var flipCardsLancees = false;
+function rafraichirAffichageCloud() {
+  applyPharmacyConfig();
+  buildCatalogueData();
+  renderPromos();
+  renderCatalogue();
+  renderConseilsSite();
+  if (!flipCardsLancees) { flipCardsLancees = true; initFlipCards(); }
+  nettoyerPanierCloud();
+}
+
+// Le panier gardé d'une visite précédente est remis à jour avec le catalogue de la base :
+// prix et noms actuels, articles retirés de la vente enlevés.
+function nettoyerPanierCloud() {
+  if (!cart.length) return;
+  var retires = [];
+  var references = CATALOGUE.concat(PROMOS);
+  cart = cart.filter(function(item) {
+    var ref = references.find(function(x) { return x.id === item.id; });
+    if (!ref) { retires.push(item.nom); return false; }
+    item.nom = ref.nom;
+    item.prix = nombre(ref.prixPromo !== undefined ? ref.prixPromo : ref.prix);
+    item.cat = ref.cat;
+    return true;
+  });
+  updateCart();
+  if (retires.length === 1) pharmaToast('« ' + retires[0] + ' » n\'est plus disponible : retiré du panier');
+  else if (retires.length > 1) pharmaToast(retires.length + ' articles ne sont plus disponibles : retirés du panier');
+}
+
+// Adresse email déjà connue sur cet appareil (formulaire de commande, profil enregistré)
+function emailConnu() {
+  var candidats = [getVal('co-email'), getVal('promo-email')];
+  try {
+    var profil = JSON.parse(localStorage.getItem('pharma-profil') || 'null');
+    if (profil && profil.email) candidats.push(profil.email);
+  } catch (e) {}
+  for (var i = 0; i < candidats.length; i++) {
+    var e = String(candidats[i] || '').trim();
+    if (pharmaEmailValide(e)) return e;
+  }
+  return '';
+}
+
+// Code promo vérifié par le serveur. Un code personnel (fidélité) n'est reconnu qu'avec
+// l'adresse email de son titulaire : si aucune adresse n'est connue, on la demande.
+var verificationCodeEnCours = false;
+function appliquerCodeCloud(code, email) {
+  var feedback = document.getElementById('promo-feedback');
+  var label = document.getElementById('promo-label');
+  var zone = document.getElementById('promo-email-zone');
+  if (verificationCodeEnCours || !feedback) return;
+  verificationCodeEnCours = true;
+  feedback.textContent = 'Vérification du code…';
+  feedback.style.color = 'var(--texte-3)';
+  PharmaCloud.verifierCode(code, email).then(function(r) {
+    verificationCodeEnCours = false;
+    if (!r.ok) {
+      appliedPromo = null;
+      if (label) label.textContent = '';
+      updateCart();
+      if (!email && r.erreur === 'Code promo invalide' && zone) {
+        zone.style.display = 'block';
+        feedback.textContent = 'Code non reconnu. S\'il s\'agit d\'un code personnel (fidélité), indiquez l\'adresse email de son titulaire :';
+        feedback.style.color = 'var(--texte-2)';
+        var champ = document.getElementById('promo-email');
+        if (champ) champ.focus();
+        return;
+      }
+      feedback.textContent = '✕ ' + r.erreur;
+      feedback.style.color = '#E55353';
+      return;
+    }
+    if (zone) zone.style.display = 'none';
+    if (r.scope !== 'Tous' && !cart.some(function(i) { return i.cat === r.scope; })) {
+      appliedPromo = null;
+      if (label) label.textContent = '';
+      updateCart();
+      feedback.textContent = '✕ Ce code s\'applique aux produits ' + r.scope + ', absents de votre panier';
+      feedback.style.color = '#E55353';
+      return;
+    }
+    appliedPromo = { code: r.code, pct: r.pct, scope: r.scope, label: '-' + r.pct + '%' + (r.scope !== 'Tous' ? ' ' + r.scope : '') };
+    // L'adresse qui a validé un code personnel est reprise dans le formulaire de commande
+    if (email) {
+      var co = document.getElementById('co-email');
+      if (co && !co.value) co.value = email;
+    }
+    if (label) label.textContent = '(' + r.code + ')';
+    feedback.textContent = '✓ Code appliqué : ' + appliedPromo.label;
+    feedback.style.color = 'var(--vert)';
+    updateCart();
+    pharmaToast('Code promo appliqué !');
+  }, function(e) {
+    verificationCodeEnCours = false;
+    feedback.textContent = '✕ ' + ((e && e.message) || 'Vérification impossible. Réessayez.');
+    feedback.style.color = '#E55353';
+  });
+}
+function verifierCodePersonnel() {
+  var feedback = document.getElementById('promo-feedback');
+  var code = (getVal('promo-input') || '').trim().toUpperCase();
+  var email = (getVal('promo-email') || '').trim();
+  if (!code) { applyPromo(); return; }
+  if (!pharmaEmailValide(email)) {
+    if (feedback) { feedback.textContent = '✕ Indiquez une adresse email valide'; feedback.style.color = '#E55353'; }
+    return;
+  }
+  appliquerCodeCloud(code, email);
+}
+
+// Commande enregistrée par le serveur (fonction passer_commande). Le navigateur n'envoie que
+// les articles et les quantités : le serveur relit prix, stock et code promo, calcule le total,
+// crée la fiche client, décompte le stock et la fidélité. Renvoie une promesse.
+function placeOrderCloud() {
+  if (cart.length === 0) return Promise.resolve(false);
+  var err = document.getElementById('co-erreur');
+  function showErr(msg) {
+    if (err) { err.textContent = msg; err.style.display = 'block'; }
+    else pharmaToast(msg);
+    return false;
+  }
+  if (err) err.style.display = 'none';
+
+  var nomSaisi = (getVal('co-nom') || '').trim().replace(/\s+/g, ' ');
+  var emailSaisi = (getVal('co-email') || '').trim();
+  var telSaisi = (getVal('co-tel') || '').trim();
+  if (nomSaisi.length < 2) return Promise.resolve(showErr('Merci d\'indiquer votre nom complet.'));
+  if (!pharmaEmailValide(emailSaisi)) return Promise.resolve(showErr('Merci d\'indiquer une seule adresse email valide.'));
+  if (!telSaisi || telSaisi.replace(/\D/g, '').length < 9) return Promise.resolve(showErr('Merci d\'indiquer un numéro de téléphone valide.'));
+  var cgu = document.getElementById('cgu-checkout');
+  if (cgu && !cgu.checked) return Promise.resolve(showErr('Vous devez accepter les conditions pour commander.'));
+
+  var tel = (DATA.parametres && DATA.parametres.tel) || '';
+  if (!PharmaCloud.actif) {
+    return Promise.resolve(showErr('Le service de commande est momentanément indisponible.' + (tel ? ' Appelez la pharmacie au ' + tel + '.' : '')));
+  }
+  var lignes = cart.map(function(item) {
+    var m = /^(prod|promo)-(\d+)$/.exec(String(item.id));
+    return m ? { type: m[1], id: parseInt(m[2], 10), qty: item.qty } : null;
+  });
+  if (lignes.some(function(l) { return !l; })) {
+    return Promise.resolve(showErr('Un article de votre panier n\'est plus valable. Retirez-le puis ajoutez-le de nouveau depuis le catalogue.'));
+  }
+  var langue = (typeof PharmaEmail !== 'undefined') ? PharmaEmail.langueClient() : 'fr';
+  var codeUtilise = (appliedPromo && appliedPromo.code) ? appliedPromo.code : '';
+
+  return PharmaCloud.passerCommande({ nom: nomSaisi, email: emailSaisi, tel: telSaisi, lignes: lignes, code: codeUtilise, langue: langue })
+    .then(function(r) {
+      if (!r || r.ok !== true) {
+        // Refus lié au code promo (le reste n'a pas été enregistré) : le code est retiré
+        appliedPromo = null;
+        var label = document.getElementById('promo-label');
+        if (label) label.textContent = '';
+        var fb = document.getElementById('promo-feedback');
+        if (fb) fb.textContent = '';
+        updateCart();
+        var raison = String((r && r.erreur) || 'code promo refusé');
+        return showErr('Le code promo n\'a pas pu être appliqué (' + raison.charAt(0).toLowerCase() + raison.slice(1)
+          + '). Il a été retiré : vérifiez le total du panier, puis confirmez de nouveau.');
+      }
+
+      var total = nombre(r.total), remise = nombre(r.remise);
+      var codeFid = r.code_fidelite && r.code_fidelite.code ? r.code_fidelite : null;
+
+      // ── EMAILS (leur échec n'annule jamais la commande, déjà enregistrée) ──
+      var emails = Promise.resolve([]);
+      if (typeof PharmaEmail !== 'undefined') {
+        try {
+          var ctxCommande = {
+            id: r.id, client: nomSaisi, email: emailSaisi, produits: r.produits,
+            total: total, timestamp: r.created_at, lang: r.lang || langue, codeRetrait: r.code_retrait,
+            codePromo: codeUtilise, remise: remise
+          };
+          var ctxFid = { seuil: r.seuil, reduction: r.reduction, achats: r.achats };
+          var envois = [{ type: 'commandeRecue', data: DATA, ctx: { commande: ctxCommande, fidelite: ctxFid } }];
+          if (codeFid) {
+            envois.push({ type: 'codeFidelite', data: DATA, ctx: { commande: ctxCommande, fidelite: ctxFid,
+              code: { code: codeFid.code, pct: codeFid.pct, expire: codeFid.expire } } });
+          }
+          emails = PharmaEmail.envoyerEnSerie(envois);
+        } catch (e) {
+          console.warn('Emails non envoyés', e);
+        }
+      }
+
+      cart = [];
+      appliedPromo = null;
+      var fb2 = document.getElementById('promo-feedback');
+      if (fb2) fb2.textContent = '';
+      var champCode = document.getElementById('promo-input');
+      if (champCode) champCode.value = '';
+      updateCart();
+      chargerDonneesCloud();   // stock à jour pour la suite de la visite
+
+      return { ok: true, codeFidelite: codeFid ? codeFid.code : null, codeFidelitePct: codeFid ? codeFid.pct : r.reduction,
+               numero: r.id, codeRetrait: r.code_retrait, email: emailSaisi, emails: emails };
+    }, function(e) {
+      return showErr((e && e.message) || 'La commande n\'a pas pu être enregistrée. Réessayez.');
+    });
+}
+
 // ── CONFIRMATION DE COMMANDE ──
 // Affiche le numéro et le code de retrait dans la page même : le client les a
 // sous les yeux quoi qu'il arrive à l'email (échec d'envoi, spams, adresse erronée).
@@ -1527,7 +1787,16 @@ window.addEventListener('DOMContentLoaded', function() {
   initScrollParallax();
   initGyroscope();
   renderConseilsSite();
-  initFlipCards();
+  // En mode base de données, les cartes ne démarrent qu'avec de vrais conseils
+  // (copie locale de la dernière visite, sinon à la réponse de la base)
+  if (!MODE_CLOUD || PharmaCloud.depuisCache) { flipCardsLancees = true; initFlipCards(); }
+  if (MODE_CLOUD) {
+    chargerDonneesCloud();
+    // Retour sur la page après une longue absence : catalogue et stock relus
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible' && Date.now() - dernierChargementCloud > 5 * 60 * 1000) chargerDonneesCloud();
+    });
+  }
 
   // Theme button
   var tb = document.getElementById('theme-btn');
@@ -1577,17 +1846,19 @@ window.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     var libelle = btn.textContent;
     btn.textContent = 'Envoi en cours...';
-    var res = placeOrder();
-    if (res && res.ok) {
-      document.getElementById('checkout-modal').classList.remove('open');
-      afficherConfirmation(res);
-    }
-    // Réactivation : immédiate si erreur (le client doit corriger),
-    // différée en cas de succès pour laisser le modal se fermer.
-    setTimeout(function() {
-      btn.disabled = false;
-      btn.textContent = libelle;
-    }, res && res.ok ? 800 : 300);
+    // Mode base de données : la réponse du serveur arrive plus tard (promesse)
+    Promise.resolve(MODE_CLOUD ? placeOrderCloud() : placeOrder()).then(function(res) {
+      if (res && res.ok) {
+        document.getElementById('checkout-modal').classList.remove('open');
+        afficherConfirmation(res);
+      }
+      // Réactivation : immédiate si erreur (le client doit corriger),
+      // différée en cas de succès pour laisser le modal se fermer.
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = libelle;
+      }, res && res.ok ? 800 : 300);
+    });
   });
 
   // Mobile menu

@@ -387,6 +387,11 @@ var PharmaEmail = (function () {
 
   // ── JOURNAL ──
   function journaliser(type, params, resultat, test) {
+    // Site relié à la base : le journal est tenu par le serveur (cloud.js)
+    if (typeof PharmaCloud !== 'undefined' && PharmaCloud.prevu) {
+      PharmaCloud.journaliserEmail(type, params, resultat, test);
+      return;
+    }
     try {
       PharmaStore.mettreAJour(function (d) {
         if (!Array.isArray(d.emailLog)) d.emailLog = [];

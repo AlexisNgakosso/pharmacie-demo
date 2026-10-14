@@ -805,6 +805,12 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
         <button onclick="applyPromo()" style="padding:11px 18px;border-radius:11px;background:var(--texte);color:var(--bg-card);font-weight:700;font-size:0.85rem;border:none;cursor:pointer;font-family:inherit">Appliquer</button>
       </div>
       <div id="promo-feedback" style="font-size:0.78rem;margin-top:8px"></div>
+      <div id="promo-email-zone" style="display:none;margin-top:8px">
+        <div style="display:flex;gap:8px">
+          <input type="email" id="promo-email" maxlength="200" autocomplete="email" placeholder="Adresse email du titulaire" aria-label="Adresse email du titulaire du code" style="flex:1;min-width:0;padding:11px 14px;border:1px solid var(--bord);border-radius:11px;font-family:inherit;font-size:0.88rem;background:var(--bg);color:var(--texte);outline:none">
+          <button type="button" onclick="verifierCodePersonnel()" style="padding:11px 18px;border-radius:11px;background:var(--texte);color:var(--bg-card);font-weight:700;font-size:0.85rem;border:none;cursor:pointer;font-family:inherit">Vérifier</button>
+        </div>
+      </div>
     </div>
     <div id="cart-discount-row" style="display:none;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;color:var(--vert)"><span>Réduction <span id="promo-label"></span></span><span id="cart-discount">-0,00€</span></div>
     <div class="cart-total"><span>Total</span><span class="amount" id="cart-total">0,00€</span></div>
@@ -899,7 +905,10 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   </div>
 </div>
 
+<script src="supabase.js"></script>
+<script src="supabase-config.js"></script>
 <script src="data.js"></script>
+<script src="cloud.js"></script>
 <script src="emails.js"></script>
 <script src="site.js"></script>
 
