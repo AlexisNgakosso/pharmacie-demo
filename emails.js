@@ -396,10 +396,13 @@ var PharmaEmail = (function () {
           type: test ? 'test' : type,
           destinataire: params.to_email || '',
           commande: params.order_id || '',
-          statut: resultat.ok ? 'Envoyé' : 'Échec',
-          detail: resultat.ok ? '' : String(resultat.detail || resultat.raison || '').slice(0, 200)
+          statut: resultat.manuel ? 'Préparé (envoi manuel)' : (resultat.ok ? 'Envoyé' : 'Échec'),
+          detail: (resultat.ok || resultat.manuel) ? '' : String(resultat.detail || resultat.raison || '').slice(0, 200)
         });
         if (d.emailLog.length > MAX_JOURNAL) d.emailLog = d.emailLog.slice(0, MAX_JOURNAL);
+        // Décompte du quota : un email envoyé avec succès est retiré du nombre relevé dans EmailJS
+        var q = d.parametres && d.parametres.emailQuota;
+        if (resultat.ok && q && typeof q === 'object') q.envoyes = (parseInt(q.envoyes, 10) || 0) + 1;
       });
     } catch (e) { console.warn('Journal des emails non enregistré', e); }
   }
@@ -449,6 +452,61 @@ var PharmaEmail = (function () {
     });
   }
 
+  // ── DÉCOMPTE DES EMAILS RESTANTS ──
+  // Le nombre restant est relevé à la main dans le tableau de bord EmailJS puis saisi dans
+  // l'admin ; chaque email envoyé avec succès ensuite est décompté. Tant que le site n'est pas
+  // relié au serveur, seuls les envois partis de CE navigateur sont comptés : le chiffre réel
+  // peut donc être plus bas (les confirmations partent du téléphone des clients).
+  var SEUIL_ALERTE_QUOTA = 20;
+  function quota(data) {
+    var q = data && data.parametres && data.parametres.emailQuota;
+    if (!q || typeof q !== 'object') return null;
+    var releve = parseInt(q.releve, 10);
+    if (!isFinite(releve) || releve < 0) return null;
+    var envoyes = Math.max(0, parseInt(q.envoyes, 10) || 0);
+    var restants = Math.max(0, releve - envoyes);
+    return { releve: releve, releveLe: q.releveLe || '', envoyes: envoyes, restants: restants,
+      alerte: restants <= SEUIL_ALERTE_QUOTA, epuise: restants === 0 };
+  }
+
+  // ── EMAIL PRÉREMPLI (envoi manuel depuis la messagerie de la pharmacie) ──
+  // Même contenu que l'email automatique, en texte simple, dans la langue du client.
+  // Ne consomme aucun quota : c'est la pharmacie qui l'envoie depuis sa propre boîte.
+  function prerempli(type, data, ctx) {
+    var p = construire(type, data, ctx);
+    var L = [p.txt_salutation, ''];
+    if (type !== 'codeFidelite') {
+      L.push(p.txt_section_commande + ' ' + p.order_id + (p.date ? ' (' + p.date + ')' : ''));
+      if (p.produits) L.push(p.txt_produits_label + ' : ' + p.produits);
+      if (p.remise) L.push(p.txt_remise_label + ' : ' + p.remise);
+      L.push(p.txt_total_label + ' : ' + p.total);
+      if (p.code_retrait) L.push(p.txt_code_label + ' : ' + p.code_retrait);
+      L.push('');
+    }
+    if (p.fid_code) { L.push(p.txt_fid_code_titre + ' : ' + p.fid_code, p.txt_fid_code_texte, ''); }
+    L.push(p.txt_section_retrait + ' : ' + p.pharma_nom);
+    if (p.pharma_adresse) L.push(p.txt_adresse_label + ' : ' + p.pharma_adresse);
+    if (p.pharma_horaires) L.push(p.txt_horaires_label + ' : ' + p.pharma_horaires);
+    if (p.pharma_tel) L.push(p.txt_tel_label + ' : ' + p.pharma_tel);
+    L.push('', p.txt_message_bas);
+    if (p.lien_cta) L.push(p.txt_cta + ' : ' + p.lien_cta);
+    L.push('', p.pharma_nom);
+    return { type: type, destinataire: p.to_email, sujet: p.subject, corps: L.join('\n'), commande: p.order_id, lang: p.lang };
+  }
+  // Lien « mailto: » qui ouvre la messagerie avec l'email prêt à partir.
+  // L'adresse est validée (une seule adresse) et tout le reste est encodé : rien ne peut
+  // ajouter de destinataire caché ni d'en-tête.
+  function lienMailto(pre) {
+    if (!pre || !emailValide(pre.destinataire)) return '';
+    var adr = /^[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+$/.test(pre.destinataire) ? pre.destinataire : encodeURIComponent(pre.destinataire);
+    return 'mailto:' + adr + '?subject=' + encodeURIComponent(pre.sujet) + '&body=' + encodeURIComponent(String(pre.corps).replace(/\n/g, '\r\n'));
+  }
+  // Trace dans le journal qu'un email a été préparé pour un envoi manuel (non décompté du quota)
+  function noterManuel(pre) {
+    if (!pre) return;
+    journaliser(pre.type, { to_email: pre.destinataire, order_id: pre.commande }, { ok: false, manuel: true }, false);
+  }
+
   // Envoie plusieurs emails l'un après l'autre en laissant une seconde entre
   // chaque (le service gratuit limite la cadence des requêtes).
   function envoyerEnSerie(liste) {
@@ -466,6 +524,7 @@ var PharmaEmail = (function () {
     LANGUES: LANGUES, TYPES: TYPES,
     config: config, pret: pret, construire: construire, envoyer: envoyer, envoyerEnSerie: envoyerEnSerie,
     langueClient: langueClient, normaliserLangue: normaliserLangue, emailValide: emailValide,
-    palette: palette, horairesTexte: function (h, l) { return horairesTexte(h, l, TEXTES[l] || TEXTES.fr); }
+    palette: palette, horairesTexte: function (h, l) { return horairesTexte(h, l, TEXTES[l] || TEXTES.fr); },
+    quota: quota, prerempli: prerempli, lienMailto: lienMailto, noterManuel: noterManuel
   };
 })();

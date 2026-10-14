@@ -122,6 +122,9 @@ var PHARMA_SEED_DATA = {
       hebergeurTel: '[Téléphone de l\'hébergeur à compléter]',
       mediateur: '[Médiateur de la consommation à compléter]'
     },
+    // ── DÉCOMPTE DES EMAILS RESTANTS (EmailJS) ──
+    // { releve: nombre relevé dans EmailJS, releveLe: date du relevé, envoyes: envois réussis depuis }
+    emailQuota: null,
     // ── ENVOI D'EMAILS (EmailJS) ──
     // Identifiants du compte EmailJS de la pharmacie (section Emails de
     // l'admin). La clé publique est faite pour être visible dans une page web ;

@@ -101,6 +101,9 @@
           'Préparez les produits, puis cliquez sur <strong>Prête</strong> (dans la liste ou dans le détail).',
           'Le client reçoit automatiquement l\'email « commande prête » si cet envoi est activé dans Notifications.'
         ])
+        + '<h4>Prévenir le client vous-même (email prérempli)</h4>'
+        + '<p>Le détail de chaque commande propose, pour chaque email (confirmation, commande prête, code fidélité), un bouton <strong>Ouvrir l\'email</strong> : votre messagerie s\'ouvre avec l\'adresse du client, l\'objet et le texte déjà rédigés, dans la langue du client. <strong>Copier le texte</strong> sert si votre messagerie ne s\'ouvre pas. Ces emails ne consomment pas le quota EmailJS.</p>'
+        + '<p>Si l\'email automatique « commande prête » ne part pas (échec, quota épuisé, emails coupés), la fenêtre « Prévenir le client » s\'ouvre d\'elle-même après le clic sur Prête.</p>'
         + '<h4>Annuler ou supprimer</h4>'
         + liste([
           '<strong>Annuler</strong> (icône orange) : à utiliser quand le client ne viendra pas. Le stock est remis, le compteur de fidélité du client est corrigé, le code promo utilisé est rendu et un code fidélité non utilisé déclenché par cette commande est retiré.',
@@ -346,7 +349,9 @@
         + '<p>Chaque email envoyé ou en échec y figure, avec le destinataire et la raison de l\'échec. C\'est le premier endroit à regarder quand un client dit ne rien avoir reçu.</p>'
         + '<h4>Envoyer une notification</h4>'
         + '<p>Vous pouvez préparer un message (promotion, garde…). Il est enregistré « En attente d\'envoi » : l\'envoi réel aux clients nécessitera le serveur.</p>'
-        + note('Les emails partent avec le compte EmailJS réglé dans Paramètres. L\'offre gratuite est limitée à 200 emails par mois.'),
+        + '<h4>Emails restants</h4>'
+        + '<p>Le décompte affiché en tête du journal part du nombre relevé dans votre tableau de bord EmailJS (à saisir dans Paramètres) et retire chaque email envoyé. Une alerte apparaît sur le tableau de bord quand il en reste 20 ou moins.</p>'
+        + note('Les emails partent avec le compte EmailJS réglé dans Paramètres. L\'offre gratuite est limitée à 200 emails par mois. Tant que le site n\'est pas relié au serveur, le décompte ne voit que les emails partis de ce navigateur : recalez-le de temps en temps avec le chiffre d\'EmailJS.'),
       visite: [
         { page: 'notifications', cible: '#notif-auto-list', titre: 'Emails automatiques', texte: 'Activez ou coupez chaque envoi automatique.' },
         { page: 'notifications', cible: '#email-journal', parent: '.card', titre: 'Journal des envois', texte: 'Chaque email envoyé ou en échec, avec la raison.' }
@@ -388,7 +393,7 @@
           '<strong>Restriction accès employés</strong> : s\'enregistre dès que vous basculez l\'interrupteur ; l\'administrateur garde toujours l\'accès.',
           '<strong>Informations légales</strong> : obligatoires avant d\'ouvrir le site au public (SIRET, pharmacien titulaire, numéro d\'Ordre, licence d\'officine, hébergeur…). Le compteur indique ce qu\'il reste à compléter.',
           '<strong>Programme de fidélité</strong> : nombre d\'achats pour débloquer un code et pourcentage de réduction.',
-          '<strong>Emails automatiques</strong> : réglages EmailJS et bouton d\'envoi de test.',
+          '<strong>Emails automatiques</strong> : réglages EmailJS, bouton d\'envoi de test et <strong>décompte des emails restants</strong> (saisissez le nombre relevé dans EmailJS, puis « Mettre à jour le décompte »).',
           '<strong>Apparence</strong> : couleur principale (site, administration et emails) et nom affiché.',
           '<strong>Guide de prise en main</strong> : relancer ce guide et choisir s\'il est proposé à l\'ouverture.'
         ])

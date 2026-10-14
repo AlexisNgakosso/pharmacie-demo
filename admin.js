@@ -193,6 +193,7 @@ function renderDashboard() {
   });
   setHTML('dash-tickets', thtml);
   renderGardeTableauDeBord();
+  renderQuotaTableauDeBord();
   // Messages non lus
   var nonLus = DATA.messages.filter(function(m){ return !m.lu; }).length;
   var msgBadge = document.getElementById('msg-badge');
@@ -1207,6 +1208,7 @@ function voirCommande(id) {
   if (c.statut !== 'En préparation') body += '<div class="txt-muted">Marquée prête — validée par '+escHtml(c.valide||'—')+'</div>';
   if (c.statut === 'Retirée') body += '<div class="txt-muted">Retirée en pharmacie</div>';
   body += '</div>';
+  body += blocEmailPrerempliHTML(c);
   var footer = '<button class="btn btn-ghost" onclick="closeModal(\'m-detail\')">Fermer</button>';
   if (c.statut === 'En préparation') footer += '<button class="btn btn-primary" onclick="marquerPrete(\''+escAttr(c.id)+'\');closeModal(\'m-detail\')">Marquer prête & Notifier</button>';
   showDetail('Commande '+c.id, body, footer);
@@ -1230,9 +1232,21 @@ function marquerPrete(id) {
     DATA = PharmaStore.load(); // le journal d'envoi a été écrit en base
     if (currentPage === 'commandes') renderCommandes();
     if (currentPage === 'notifications') renderEmailJournal();
-    if (r && r.ok) toast('Client notifié par email — Commande '+id+' prête');
-    else if (r && r.ignore) toast('Commande '+id+' prête (email non envoyé : '+r.raison+')');
+    if (currentPage === 'parametres') renderEtatQuota();
+    renderQuotaTableauDeBord();
+    if (r && r.ok) { toast('Client notifié par email — Commande '+id+' prête'); return; }
+    if (r && r.ignore) toast('Commande '+id+' prête (email non envoyé : '+r.raison+')');
     else toast('Commande '+id+' prête, mais l\'email n\'a pas pu être envoyé','error');
+    // Proposition immédiate de l'email « commande prête » prérempli, à envoyer soi-même :
+    // si l'envoi a échoué, ou si les emails automatiques sont coupés (quota épuisé…).
+    // Pas de fenêtre quand la pharmacie a volontairement désactivé ce type d'email dans Notifications.
+    var proposer = !(r && r.ignore) || /non configuré/.test(String(r.raison || ''));
+    var c2 = DATA.commandes.find(function(x){ return x.id === id; });
+    if (proposer && c2 && PharmaEmail.emailValide(c2.email)) {
+      showDetail('Prévenir le client — Commande '+id,
+        '<div class="txt-muted" style="font-size:0.8rem">L\'email automatique n\'est pas parti. Envoyez-le depuis votre messagerie : tout est déjà rédigé.</div>' + blocEmailPrerempliHTML(c2),
+        '<button class="btn btn-ghost" onclick="closeModal(\'m-detail\')">Fermer</button>');
+    }
   });
 }
 
@@ -1592,6 +1606,127 @@ function renderEmailParams() {
   setVal('em-key', c.publicKey);
   setVal('em-logo', c.logoUrl);
   setVal('em-site', c.siteUrl);
+  var q = (typeof PharmaEmail !== 'undefined') ? PharmaEmail.quota(DATA) : null;
+  setVal('em-quota', q ? String(q.restants) : '');
+  renderEtatQuota();
+}
+
+// ── DÉCOMPTE DES EMAILS RESTANTS ────────────────────────────
+function texteDateCourte(iso) {
+  var d = new Date(iso);
+  return isNaN(d) ? '' : ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);
+}
+// Résumé du décompte (HTML sûr : uniquement des nombres et des textes fixes)
+function resumeQuotaHTML(q, avecNote) {
+  if (!q) return '<div class="txt-muted" style="font-size:0.78rem">Décompte non activé : saisissez le nombre d\'emails restants relevé dans EmailJS.</div>';
+  var couleur = q.epuise ? 'var(--rouge)' : (q.alerte ? '#B07C00' : 'var(--vert)');
+  var html = '<div style="font-size:0.82rem;line-height:1.5"><strong style="color:'+couleur+'">'+q.restants+' email'+(q.restants > 1 ? 's' : '')+' restant'+(q.restants > 1 ? 's' : '')+'</strong>'
+    + ' <span class="txt-muted">· relevé : '+q.releve+(q.releveLe ? ' le '+texteDateCourte(q.releveLe) : '')+' · '+q.envoyes+' envoyé'+(q.envoyes > 1 ? 's' : '')+' depuis</span></div>';
+  if (avecNote) html += '<div style="font-size:0.72rem;color:var(--texte-3);line-height:1.5;margin-top:4px">Tant que le site n\'est pas relié au serveur, seuls les emails partis de ce navigateur sont décomptés. Les confirmations partent du téléphone des clients : le chiffre réel peut être plus bas. Recalez-le de temps en temps avec celui d\'EmailJS.</div>';
+  if (q.epuise) html += '<div style="font-size:0.76rem;color:var(--rouge);margin-top:4px">Quota sans doute épuisé : utilisez l\'email prérempli depuis le détail de chaque commande.</div>';
+  return html;
+}
+function renderEtatQuota() {
+  var box = document.getElementById('em-quota-etat');
+  if (box) box.innerHTML = resumeQuotaHTML(typeof PharmaEmail !== 'undefined' ? PharmaEmail.quota(DATA) : null, true);
+}
+function saveEmailQuota() {
+  var brut = (getVal('em-quota') || '').trim();
+  if (brut === '') {
+    DATA.parametres.emailQuota = null;
+    persist(); renderEtatQuota(); renderQuotaTableauDeBord();
+    toast('Décompte des emails désactivé');
+    return;
+  }
+  if (!/^\d{1,6}$/.test(brut)) { toast('Indiquez un nombre entier (0 ou plus)','error'); return; }
+  var n = parseInt(brut, 10);
+  DATA.parametres.emailQuota = { releve: n, releveLe: new Date().toISOString(), envoyes: 0 };
+  persist(); renderEtatQuota(); renderQuotaTableauDeBord();
+  toast('Décompte mis à jour : '+n+' email'+(n > 1 ? 's' : '')+' restant'+(n > 1 ? 's' : ''));
+}
+// Alerte du tableau de bord quand il reste peu d'emails (20 ou moins)
+function renderQuotaTableauDeBord() {
+  var box = document.getElementById('dash-quota');
+  if (!box) return;
+  var q = (typeof PharmaEmail !== 'undefined') ? PharmaEmail.quota(DATA) : null;
+  if (!q || !q.alerte) { box.innerHTML = ''; return; }
+  var fond = q.epuise ? 'var(--rouge-pale, rgba(229,83,83,0.1))' : 'var(--or-pale, rgba(217,164,65,0.14))';
+  box.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:'+fond+';border:1px solid var(--bord);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.8rem">'
+    + '<div style="flex:1;min-width:200px"><strong>'+(q.epuise ? 'Plus d\'emails automatiques ce mois-ci' : 'Il reste '+q.restants+' email'+(q.restants > 1 ? 's' : '')+' automatique'+(q.restants > 1 ? 's' : ''))+'</strong>'
+    + '<div class="txt-muted" style="font-size:0.74rem">'+(q.epuise ? 'Prévenez les clients avec l\'email prérempli (détail de la commande).' : 'Pensez à vérifier le chiffre dans EmailJS. Le détail de chaque commande propose un email prérempli à envoyer vous-même.')+'</div></div>'
+    + '<button class="btn btn-ghost" onclick="go(\'parametres\')">Voir le décompte</button></div>';
+}
+
+// ── EMAIL PRÉREMPLI (envoi manuel) ──────────────────────────
+var TYPES_PREREMPLI = { commandeRecue: 'Confirmation de commande', commandePrete: 'Commande prête', codeFidelite: 'Code fidélité' };
+function ctxEmailCommande(c, type) {
+  var ctx = { commande: { id: c.id, client: c.client, email: c.email, produits: c.produits, total: c.total,
+    timestamp: c.timestamp, lang: c.lang, codeRetrait: c.codeRetrait, codePromo: c.codePromo, remise: c.remise } };
+  if (type === 'codeFidelite') {
+    var code = (DATA.codesPromo || []).find(function(x){ return x && x.commandeId === c.id; });
+    if (!code) return null;
+    var cfg = PharmaFidelite.config(DATA);
+    ctx.fidelite = { seuil: cfg.seuil, reduction: cfg.reduction };
+    ctx.code = { code: code.code, pct: code.pct, expire: code.expire };
+  }
+  return ctx;
+}
+function preparerEmail(id, type) {
+  if (typeof PharmaEmail === 'undefined') return null;
+  var c = DATA.commandes.find(function(x){ return x.id === id; });
+  if (!c || !PharmaEmail.emailValide(c.email)) return null;
+  var ctx = ctxEmailCommande(c, type);
+  return ctx ? PharmaEmail.prerempli(type, DATA, ctx) : null;
+}
+// Types d'email proposés pour une commande (selon son état)
+function typesEmailCommande(c) {
+  var t = ['commandeRecue'];
+  if (c.statut === 'Prête') t.push('commandePrete');
+  if ((DATA.codesPromo || []).some(function(x){ return x && x.commandeId === c.id; })) t.push('codeFidelite');
+  return t;
+}
+function blocEmailPrerempliHTML(c) {
+  if (typeof PharmaEmail === 'undefined') return '';
+  if (!PharmaEmail.emailValide(c.email)) return '<div class="txt-muted" style="font-size:0.76rem;margin-top:12px">Pas d\'adresse email valide pour ce client : prévenez-le par téléphone.</div>';
+  var echecs = (DATA.emailLog || []).filter(function(e){ return e && e.commande === c.id && e.statut === 'Échec'; }).length;
+  var html = '<div style="background:var(--fond);border-radius:8px;padding:12px;border:1px solid var(--bord);margin-top:12px">'
+    + '<div style="font-size:0.65rem;font-weight:700;color:var(--texte-3);text-transform:uppercase;margin-bottom:6px">Email au client, à envoyer vous-même</div>';
+  if (echecs) html += '<div style="font-size:0.76rem;color:var(--rouge);margin-bottom:8px">L\'email automatique n\'est pas parti ('+echecs+' échec'+(echecs > 1 ? 's' : '')+'). Envoyez-le depuis votre messagerie :</div>';
+  else html += '<div class="txt-muted" style="font-size:0.74rem;margin-bottom:8px">Ouvre votre messagerie avec l\'email déjà rédigé (sans consommer le quota EmailJS).</div>';
+  typesEmailCommande(c).forEach(function(type) {
+    var pre = preparerEmail(c.id, type);
+    var lien = pre ? PharmaEmail.lienMailto(pre) : '';
+    if (!lien) return;
+    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px"><span style="flex:1;min-width:140px;font-size:0.8rem;font-weight:600">'+escHtml(TYPES_PREREMPLI[type])+'</span>'
+      + '<a class="btn btn-ghost" style="height:28px;font-size:0.72rem" href="'+escHtml(lien)+'" onclick="noterEmailManuel(\''+escAttr(c.id)+'\',\''+type+'\')">Ouvrir l\'email</a>'
+      + '<button class="btn btn-ghost" style="height:28px;font-size:0.72rem" onclick="copierEmailPrerempli(\''+escAttr(c.id)+'\',\''+type+'\')">Copier le texte</button></div>';
+  });
+  return html + '</div>';
+}
+function noterEmailManuel(id, type) {
+  var pre = preparerEmail(id, type);
+  if (!pre) return;
+  PharmaEmail.noterManuel(pre);
+  DATA = PharmaStore.load();
+  if (currentPage === 'notifications') renderEmailJournal();
+}
+function copierEmailPrerempli(id, type) {
+  var pre = preparerEmail(id, type);
+  if (!pre) { toast('Email impossible à préparer pour cette commande','error'); return; }
+  var texte = 'À : ' + pre.destinataire + '\nObjet : ' + pre.sujet + '\n\n' + pre.corps;
+  var fini = function() { noterEmailManuel(id, type); toast('Texte copié : collez-le dans votre messagerie'); };
+  var secours = function() {
+    var zone = document.createElement('textarea');
+    zone.value = texte; zone.setAttribute('readonly', ''); zone.style.position = 'fixed'; zone.style.opacity = '0';
+    document.body.appendChild(zone); zone.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(zone);
+    if (ok) fini(); else toast('Copie impossible : utilisez « Ouvrir l\'email »','error');
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texte).then(fini, secours);
+    else secours();
+  } catch (e) { secours(); }
 }
 
 function saveEmailParams() {
@@ -1628,6 +1763,7 @@ function envoyerEmailTest() {
   };
   PharmaEmail.envoyer('commandeRecue', DATA, ctx, { test: true }).then(function(r) {
     DATA = PharmaStore.load();
+    renderEtatQuota(); // le test compte dans le quota
     if (currentPage === 'parametres') { /* les champs en cours de saisie ne sont pas réinitialisés */ }
     if (r && r.ok) { if (etat) etat.textContent = 'Test envoyé'; toast('Email de test envoyé à '+dest); }
     else {
@@ -1643,20 +1779,22 @@ function renderEmailJournal() {
   var box = document.getElementById('email-journal');
   if (!box) return;
   var log = DATA.emailLog || [];
+  var entete = '<div style="margin-bottom:10px">'+resumeQuotaHTML(typeof PharmaEmail !== 'undefined' ? PharmaEmail.quota(DATA) : null, false)+'</div>';
   if (!log.length) {
-    box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texte-3);font-size:0.82rem">Aucun email automatique envoyé pour le moment.</div>';
+    box.innerHTML = entete + '<div style="text-align:center;padding:20px;color:var(--texte-3);font-size:0.82rem">Aucun email automatique envoyé pour le moment.</div>';
     return;
   }
   var lignes = log.map(function(e) {
     var d = new Date(e.timestamp);
     var date = ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+'h'+('0'+d.getMinutes()).slice(-2);
     var ok = e.statut === 'Envoyé';
+    var manuel = e.statut === 'Préparé (envoi manuel)';
     return '<tr><td class="txt-muted">'+date+'</td><td>'+escHtml(LIBELLES_EMAIL[e.type] || e.type)+'</td>'
       + '<td>'+escHtml(e.commande || '—')+'</td><td class="txt-muted">'+escHtml(e.destinataire)+'</td>'
-      + '<td><span class="badge '+(ok?'b-green':'b-red')+'">'+escHtml(e.statut)+'</span>'
+      + '<td><span class="badge '+(ok?'b-green':(manuel?'b-blue':'b-red'))+'">'+escHtml(e.statut)+'</span>'
       + (ok || !e.detail ? '' : '<div class="td-sub">'+escHtml(e.detail)+'</div>')+'</td></tr>';
   }).join('');
-  box.innerHTML = '<table><thead><tr><th>Date</th><th>Type</th><th>Commande</th><th>Destinataire</th><th>Statut</th></tr></thead><tbody>'+lignes+'</tbody></table>';
+  box.innerHTML = entete + '<table><thead><tr><th>Date</th><th>Type</th><th>Commande</th><th>Destinataire</th><th>Statut</th></tr></thead><tbody>'+lignes+'</tbody></table>';
 }
 
 // ── RAPPORT : configuration, envoi, impression ──────────────

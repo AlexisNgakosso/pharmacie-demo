@@ -373,6 +373,7 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
 
   <!-- DASHBOARD -->
   <div class="page" id="page-dashboard">
+    <div id="dash-quota"></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-glow" style="background:var(--vert-vif)"></div><div class="stat-icon" style="background:var(--vert-pale)"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg></div><div class="stat-label">Commandes</div><div class="stat-value" id="stat-commandes">0</div><div class="stat-sub">En préparation</div></div>
       <div class="stat-card"><div class="stat-glow" style="background:var(--or)"></div><div class="stat-icon" style="background:var(--or-pale)"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--or)" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg></div><div class="stat-label">Stock faible</div><div class="stat-value" id="stat-stocks">0</div><div class="stat-sub">Produits sous le seuil</div></div>
@@ -653,6 +654,10 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
           <hr>
           <div class="form-group mb3"><label>Envoyer un email de test à</label><input class="inp" type="email" id="em-test-dest" placeholder="vous@exemple.fr"></div>
           <div class="flex-gap"><button class="btn btn-ghost" onclick="envoyerEmailTest()">Envoyer un test</button><span class="txt-muted" id="em-test-etat"></span></div>
+          <hr>
+          <div class="form-group mb3"><label for="em-quota">Emails restants ce mois-ci (chiffre relevé dans votre tableau de bord EmailJS)</label>
+            <div class="flex-gap"><input class="inp" type="number" min="0" max="100000" step="1" inputmode="numeric" id="em-quota" placeholder="ex. 180" style="max-width:130px"><button class="btn btn-ghost" onclick="saveEmailQuota()">Mettre à jour le décompte</button></div></div>
+          <div id="em-quota-etat"></div>
           <div style="font-size:0.72rem;color:var(--texte-3);line-height:1.5;margin-top:10px">Le service gratuit est limité à 200 emails par mois. Le test utilise les paramètres enregistrés ci-dessus et compte dans ce quota.</div>
         </div></div>
         <div class="card"><div class="card-header"><div class="card-title">Apparence</div></div><div class="card-body">
