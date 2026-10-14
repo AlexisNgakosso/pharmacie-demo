@@ -289,6 +289,46 @@ function pharmaEmailValide(e) {
   return s.length > 0 && s.length <= 200 && PHARMA_EMAIL_RE.test(s);
 }
 
+// ── NOM ET ADRESSE DANS LES TEXTES DU SITE ─────────────────
+// Les phrases du site reprennent le nom et la ville saisis dans l'admin (Paramètres) :
+// rien n'est à retaper ailleurs quand la pharmacie change de nom ou d'adresse.
+var PharmaTextes = {
+  // « 37 Bd. Roger Salengro, 78711 Mantes-la-Ville » → { rue, cp, ville }
+  decouperAdresse: function(adresse) {
+    var a = String(adresse == null ? '' : adresse).trim().replace(/\s+/g, ' ');
+    var m = /^(?:(.*?)[,\s]+)?(\d{5}) (.+)$/.exec(a);
+    if (!m) return { rue: a, cp: '', ville: '' };
+    return { rue: (m[1] || '').replace(/[,\s]+$/, ''), cp: m[2], ville: m[3].replace(/[,\s]+$/, '') };
+  },
+  // Ville affichée, avec l'arrondissement à Paris, Lyon et Marseille (75017 Paris → « Paris »)
+  villeAffichee: function(adresse) {
+    var d = this.decouperAdresse(adresse);
+    if (!d.ville) return '';
+    var grandes = { '75': 'Paris', '69': 'Lyon', '13': 'Marseille' };
+    var base = grandes[d.cp.slice(0, 2)];
+    if (base && d.ville.toLowerCase() === base.toLowerCase() && /^(750|751|690|130)/.test(d.cp)) {
+      var n = d.cp === '75116' ? 16 : parseInt(d.cp.slice(3), 10);
+      var max = base === 'Paris' ? 20 : (base === 'Lyon' ? 9 : 16);
+      if (n >= 1 && n <= max) return base + ' ' + (n === 1 ? '1er' : n + 'e');
+    }
+    return d.ville;
+  },
+  // « 1 rue de l’Exemple, Paris »
+  adresseCourte: function(adresse) {
+    var d = this.decouperAdresse(adresse), ville = this.villeAffichee(adresse);
+    return (d.rue && ville) ? d.rue + ', ' + ville : String(adresse == null ? '' : adresse).trim();
+  },
+  // « à la Pharmacie So Ouest », « à La Grande Pharmacie », « chez Espace Santé »
+  aLaNom: function(nom) {
+    var n = String(nom == null ? '' : nom).trim().replace(/\s+/g, ' ');
+    if (!n) return 'en pharmacie';
+    if (/^la /i.test(n)) return 'à la ' + n.slice(3);
+    if (/^l['’]/i.test(n)) return 'à l\'' + n.slice(2);
+    if (/^((grande|petite|nouvelle|vieille) )?(para)?pharmacie\b/i.test(n)) return 'à la ' + n;
+    return 'chez ' + n;
+  }
+};
+
 // ── ICÔNES DES CONSEILS (admin et page d'accueil) ──
 var PHARMA_ICONES_CONSEIL = {
   soleil:   '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>',

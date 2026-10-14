@@ -101,7 +101,7 @@ function buildCatalogueData() {
 buildCatalogueData();
 
 var FAQ = [
-  { q:'Comment fonctionne le click & collect ?', a:'Vous choisissez vos produits sur le site, vous validez votre commande, puis vous la récupérez directement à la Pharmacie Démo. Le règlement se fait sur place, au retrait.' },
+  { q:'Comment fonctionne le click & collect ?', a:'Vous choisissez vos produits sur le site, vous validez votre commande, puis vous la récupérez directement {A_LA_NOM}. Le règlement se fait sur place, au retrait.' },
   { q:'Quel est le délai de préparation d\'une commande ?', a:'Vos commandes sont généralement prêtes en 2h en moyenne pendant les horaires d\'ouverture. Vous recevrez une notification dès qu\'elle est disponible au retrait.' },
   { q:'Comment payer ma commande ?', a:'Le paiement se fait exclusivement en pharmacie au moment du retrait (carte bancaire, espèces ou chèque). Aucun paiement n\'est demandé au moment de la commande en ligne.' },
   { q:'Puis-je modifier ou annuler ma commande ?', a:'Oui, contactez la pharmacie par téléphone le plus tôt possible après votre commande. Si elle est déjà en préparation, certaines modifications peuvent ne plus être possibles.' },
@@ -184,10 +184,18 @@ function applyPharmacyConfig() {
   if (cfg.couleurPrimaire && document.documentElement.getAttribute('data-theme') !== 'dark') {
     document.documentElement.style.setProperty('--vert', cfg.couleurPrimaire);
   }
-  document.title = (cfg.nom || 'Pharmacie Démo') + ' — Parapharmacie & Click and Collect';
+  var nomPharma = cfg.nom || 'Pharmacie Démo';
+  var villeTxt = PharmaTextes.villeAffichee(cfg.adresse);
+  document.title = nomPharma + ' — Parapharmacie & Click and Collect' + (villeTxt ? ' à ' + villeTxt : '');
   document.querySelectorAll('#brand-name-header, #brand-name-footer, #brand-name-copyright').forEach(function(el) {
-    el.textContent = cfg.nom || 'Pharmacie Démo';
+    el.textContent = nomPharma;
   });
+  // Phrases du site qui citent la pharmacie : nom et ville repris des Paramètres de l'admin
+  document.querySelectorAll('[data-pharma="a-la-nom"]').forEach(function(el) { el.textContent = PharmaTextes.aLaNom(nomPharma); });
+  document.querySelectorAll('[data-pharma="ville"]').forEach(function(el) { el.textContent = villeTxt; });
+  document.querySelectorAll('[data-pharma="bloc-ville"]').forEach(function(el) { el.style.display = villeTxt ? '' : 'none'; });
+  document.querySelectorAll('[data-pharma="adresse-courte"]').forEach(function(el) { el.textContent = PharmaTextes.adresseCourte(cfg.adresse); });
+  majReferencement(cfg, nomPharma, villeTxt);
   var addrLine = document.getElementById('footer-address-line');
   if (addrLine) addrLine.textContent = cfg.adresse || '';
   var addrPlain = document.getElementById('footer-address-plain');
@@ -212,6 +220,36 @@ function applyPharmacyConfig() {
   majHauteurBandeau();
   renderFooterHoraires();
   renderFideliteTextes();
+}
+
+// Description, aperçu de partage et fiche Google (données structurées) mis à jour avec
+// les informations de l'admin. Les aperçus de partage (WhatsApp, Facebook) lisent la page
+// sans l'exécuter : ils gardent ceux écrits dans site.html, à adapter à l'installation.
+function majReferencement(cfg, nomPharma, villeTxt) {
+  function meta(selecteur, valeur) {
+    var el = document.querySelector(selecteur);
+    if (el && valeur) el.setAttribute('content', valeur);
+  }
+  var adresseCourte = PharmaTextes.adresseCourte(cfg.adresse);
+  meta('meta[name="description"]', 'Commandez vos produits de parapharmacie en ligne et récupérez-les ' + PharmaTextes.aLaNom(nomPharma)
+    + (adresseCourte ? ', ' + adresseCourte : '') + '. Click & collect, sans paiement en ligne.');
+  meta('meta[property="og:site_name"]', nomPharma);
+  meta('meta[property="og:title"]', nomPharma + ' — Click & Collect' + (villeTxt ? ' à ' + villeTxt : ''));
+  var ld = document.querySelector('script[type="application/ld+json"]');
+  if (!ld) return;
+  try {
+    var fiche = JSON.parse(ld.textContent);
+    var d = PharmaTextes.decouperAdresse(cfg.adresse);
+    fiche.name = nomPharma;
+    fiche.address = { '@type': 'PostalAddress', streetAddress: d.rue, postalCode: d.cp, addressLocality: d.ville, addressCountry: 'FR' };
+    var chiffres = String(cfg.tel || '').replace(/\D/g, '');
+    if (/^0\d{9}$/.test(chiffres)) fiche.telephone = '+33' + chiffres.slice(1);
+    var jours = { lundi: 'Monday', mardi: 'Tuesday', mercredi: 'Wednesday', jeudi: 'Thursday', vendredi: 'Friday', samedi: 'Saturday', dimanche: 'Sunday' };
+    var h = DATA.horaires || {};
+    fiche.openingHoursSpecification = JOURS_ORDRE.filter(function(j) { return h[j] && h[j].ouvert && h[j].debut && h[j].fin; })
+      .map(function(j) { return { '@type': 'OpeningHoursSpecification', dayOfWeek: jours[j], opens: h[j].debut, closes: h[j].fin }; });
+    ld.textContent = JSON.stringify(fiche, null, 2);
+  } catch (e) { /* fiche laissée telle quelle */ }
 }
 
 // Textes du programme de fidélité, pilotés par la config admin
@@ -780,7 +818,9 @@ function renderFaq() {
     html += '<span>'+escHtml(f.q)+'</span>';
     html += '<span class="faq-icon"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>';
     html += '</button>';
-    html += '<div class="faq-answer"><div class="faq-answer-inner">'+f.a+'</div></div>';
+    // {A_LA_NOM} : « à la Pharmacie … » d'après le nom saisi dans l'admin
+    var reponse = f.a.replace('{A_LA_NOM}', escHtml(PharmaTextes.aLaNom((DATA.parametres || {}).nom)));
+    html += '<div class="faq-answer"><div class="faq-answer-inner">'+reponse+'</div></div>';
     html += '</div>';
   });
   list.innerHTML = html;
@@ -1295,6 +1335,7 @@ function rafraichirAffichageCloud() {
   renderPromos();
   renderCatalogue();
   renderConseilsSite();
+  renderFaq();
   if (!flipCardsLancees) { flipCardsLancees = true; initFlipCards(); }
   nettoyerPanierCloud();
 }

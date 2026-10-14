@@ -1559,6 +1559,8 @@ function appliquerCouleur() {
   var nom = DATA.parametres.nom || 'Pharmacie';
   var logo = document.getElementById('admin-logo-name');
   if (logo) logo.textContent = nom;
+  var equipe = document.getElementById('messages-nom-pharmacie');
+  if (equipe) equipe.textContent = nom;
   document.title = nom + ' — Administration';
   _titreOriginal = document.title;
 }

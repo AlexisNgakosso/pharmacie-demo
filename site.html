@@ -489,9 +489,9 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 <section class="hero" id="accueil">
   <div class="hero-wrap">
     <div class="hero-text">
-      <span class="hero-eyebrow reveal"><span class="dot"></span>Click & Collect · Paris</span>
+      <span class="hero-eyebrow reveal"><span class="dot"></span>Click & Collect<span data-pharma="bloc-ville"> · <span data-pharma="ville">Paris</span></span></span>
       <h1 class="reveal reveal-d1">Votre parapharmacie, <span class="accent">prête à emporter</span></h1>
-      <p class="reveal reveal-d2">Commandez vos produits en ligne, profitez des promotions du moment et récupérez votre commande à la Pharmacie Démo quand vous voulez. Simple, rapide, sans attente.</p>
+      <p class="reveal reveal-d2">Commandez vos produits en ligne, profitez des promotions du moment et récupérez votre commande <span data-pharma="a-la-nom">à la Pharmacie Démo</span> quand vous voulez. Simple, rapide, sans attente.</p>
       <div class="hero-cta reveal reveal-d3">
         <button class="btn-lg btn-primary" onclick="document.getElementById('promos').scrollIntoView()"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>Voir les promos</button>
         <button class="btn-lg btn-outline" onclick="document.getElementById('catalogue').scrollIntoView()">Parcourir le catalogue</button>
@@ -520,7 +520,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
         <div class="flip-inner">
           <div class="flip-front">
             <div class="fc-head"><div class="fc-ic" style="background:rgba(217,164,65,0.15)"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--or)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div><div class="fc-title">Fidélité</div><div class="fc-sub" id="fid-resume-carte">5 achats = -10%</div></div></div>
-            <div class="fc-body"><div style="font-size:0.76rem;color:var(--texte-2);line-height:1.5">Cumulez vos achats et débloquez des réductions exclusives à la Pharmacie Démo.</div></div>
+            <div class="fc-body"><div style="font-size:0.76rem;color:var(--texte-2);line-height:1.5">Cumulez vos achats et débloquez des réductions exclusives <span data-pharma="a-la-nom">à la Pharmacie Démo</span>.</div></div>
           </div>
           <div class="flip-back" style="background:linear-gradient(135deg,#D9A441,#B07C00)">
             <div><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.5 20.5L3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg></div><div class="tip-title">Le saviez-vous ?</div><div class="tip-text">La Vitamine C booste l'immunité, idéale en été contre la fatigue due à la chaleur.</div></div>
@@ -549,7 +549,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
       <div class="slider-track" id="slider-track">
         <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(27,107,69,0.08),rgba(46,204,122,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--vert);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Promo Été — Crème Solaire SPF50 x3 à <span style="color:var(--vert)">-25%</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Offre valable jusqu'au 30 juin · Click & Collect</div></div><button class="btn-lg btn-primary" style="margin-left:auto;padding:10px 20px;font-size:0.82rem" onclick="document.getElementById('promos').scrollIntoView()">Voir l'offre</button></div></div>
         <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(217,164,65,0.1),rgba(240,198,116,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--or);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Programme fidélité — <span id="fid-resume-slider">5 achats = -10% offert</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Créez votre compte et suivez vos achats</div></div><button class="btn-lg" style="margin-left:auto;padding:10px 20px;font-size:0.82rem;background:var(--or);color:#3A2A05;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="document.getElementById('fidelite').scrollIntoView()">Rejoindre</button></div></div>
-        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(74,144,217,0.08),rgba(95,227,161,0.05));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:#4A90D9;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Pharmacie de garde ce samedi 21 juin · 8h–20h</div><div style="font-size:0.8rem;color:var(--texte-3)">1 rue de l’Exemple, Paris</div></div></div></div>
+        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(74,144,217,0.08),rgba(95,227,161,0.05));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:#4A90D9;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Pharmacie de garde ce samedi 21 juin · 8h–20h</div><div style="font-size:0.8rem;color:var(--texte-3)"><span data-pharma="adresse-courte">1 rue de l’Exemple, Paris</span></div></div></div></div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px">
@@ -699,7 +699,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
       </div>
       <div class="banner-content" style="color:#fff">
         <h3 style="color:#fff">Commandez, on s'occupe du reste</h3>
-        <p>Votre commande préparée en 2h, prête à récupérer à la Pharmacie Démo. Pas de livraison, pas de frais cachés.</p>
+        <p>Votre commande préparée en 2h, prête à récupérer <span data-pharma="a-la-nom">à la Pharmacie Démo</span>. Pas de livraison, pas de frais cachés.</p>
         <button class="banner-btn" style="background:#fff;color:var(--vert)" onclick="document.getElementById('catalogue').scrollIntoView()">Voir le catalogue <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
     </div>
@@ -768,7 +768,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
     <div class="section-head center reveal">
       <span class="eyebrow">Questions fréquentes</span>
       <h2 class="section-title">On répond à vos questions</h2>
-      <p class="section-sub">Tout ce qu'il faut savoir sur le click &amp; collect à la Pharmacie Démo.</p>
+      <p class="section-sub">Tout ce qu'il faut savoir sur le click &amp; collect <span data-pharma="a-la-nom">à la Pharmacie Démo</span>.</p>
     </div>
     <div class="faq-list reveal" id="faq-list"></div>
   </div>
