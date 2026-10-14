@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<!-- Politique de sécurité : seuls ce site, Google Fonts, EmailJS et Supabase sont autorisés -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.emailjs.com https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B6B45'/%3E%3Cpath d='M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z' fill='white'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex">
+<title>Mon espace — Pharmacie Démo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vert:#1B6B45;--vert-vif:#2ECC7A;--vert-clair:#5FE3A1;
+  --or:#D9A441;--or-clair:#F0C674;
+  --texte:#16241C;--texte-2:#4A5C50;--texte-3:#8A988F;
+  --bord:#E6EBE6;--bg:#F7FAF7;--bg-card:#FFFFFF;
+  --rouge:#E55353;--rouge-pale:rgba(229,83,83,0.1);
+  --shadow-s:0 2px 8px rgba(20,40,28,0.06);--shadow:0 8px 30px rgba(20,40,28,0.1);
+  --r:18px;--r-s:12px;
+}
+html[data-theme="dark"]{
+  --vert:#2ECC7A;--vert-vif:#3FE08C;--texte:#EAF2EC;--texte-2:#A8BCB0;--texte-3:#6E827A;
+  --bord:#2C3D34;--bg:#121A16;--bg-card:#1A2620;
+  --shadow-s:0 2px 8px rgba(0,0,0,0.3);--shadow:0 8px 30px rgba(0,0,0,0.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--texte);line-height:1.6;transition:background 0.4s,color 0.4s}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;line-height:1.15}
+a{text-decoration:none;color:inherit}
+
+/* HEADER */
+header{background:var(--bg-card);border-bottom:1px solid var(--bord);padding:12px 0;position:sticky;top:0;z-index:50}
+.nav-wrap{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--vert),var(--vert-vif));border-radius:10px;display:flex;align-items:center;justify-content:center}
+.header-actions{display:flex;gap:10px;align-items:center}
+.theme-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--bord);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--texte-2)}
+.back-link{display:flex;align-items:center;gap:6px;font-size:0.88rem;font-weight:600;color:var(--texte-2);padding:8px 14px;border-radius:10px;transition:all 0.2s}
+.back-link:hover{background:var(--bg);color:var(--vert)}
+
+/* LAYOUT */
+.layout{max-width:1100px;margin:30px auto;padding:0 24px;display:grid;grid-template-columns:240px 1fr;gap:28px}
+
+/* SIDEBAR */
+.profile-card{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);padding:24px;text-align:center;margin-bottom:18px}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--vert),var(--vert-vif));display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;color:#fff;margin:0 auto 12px;font-family:'Fraunces',serif}
+.profile-name{font-weight:700;font-size:1.05rem}
+.profile-email{font-size:0.78rem;color:var(--texte-3)}
+.profile-badge{display:inline-block;margin-top:10px;background:rgba(46,204,122,0.12);color:var(--vert);font-size:0.72rem;font-weight:700;padding:4px 12px;border-radius:20px}
+.menu{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);padding:8px;position:sticky;top:80px}
+.menu-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:11px;cursor:pointer;font-size:0.88rem;font-weight:600;color:var(--texte-2);transition:all 0.2s}
+.menu-item:hover{background:var(--bg);color:var(--texte)}
+.menu-item.active{background:var(--vert);color:#fff}
+.menu-item.active svg{color:#fff}
+.menu-item svg{color:var(--texte-3);flex-shrink:0}
+.menu-item.active svg{color:#fff}
+.menu-divider{height:1px;background:var(--bord);margin:8px 0}
+.menu-item.logout{color:var(--rouge)}
+.menu-item.logout svg{color:var(--rouge)}
+
+/* CONTENT */
+.content-card{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);padding:30px;box-shadow:var(--shadow-s)}
+.page-tab{display:none}
+.page-tab.active{display:block;animation:fade 0.4s}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.ct-title{font-size:1.5rem;margin-bottom:6px}
+.ct-sub{color:var(--texte-2);font-size:0.92rem;margin-bottom:26px}
+
+/* FORM */
+.field{margin-bottom:18px}
+.field label{display:block;font-size:0.82rem;font-weight:600;color:var(--texte-2);margin-bottom:6px}
+.field input,.field select{width:100%;padding:12px 14px;border:1px solid var(--bord);border-radius:12px;font-family:inherit;font-size:0.92rem;background:var(--bg);color:var(--texte);outline:none;transition:border 0.2s}
+.field input:focus{border-color:var(--vert)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{padding:13px 26px;border-radius:12px;font-weight:700;font-size:0.92rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.25s}
+.btn-primary{background:var(--vert);color:#fff}
+.btn-primary:hover{background:#155636;transform:translateY(-2px)}
+.btn-ghost{background:transparent;border:1.5px solid var(--bord);color:var(--texte-2)}
+.btn-danger{background:var(--rouge-pale);color:var(--rouge);border:1px solid rgba(229,83,83,0.2)}
+
+/* TOGGLE */
+.toggle-card{display:flex;align-items:center;justify-content:space-between;padding:16px;border:1px solid var(--bord);border-radius:14px;margin-bottom:12px}
+.toggle-card-info h4{font-size:0.95rem;font-weight:700;margin-bottom:2px}
+.toggle-card-info p{font-size:0.8rem;color:var(--texte-3)}
+.switch{position:relative;width:46px;height:26px;flex-shrink:0}
+.switch input{display:none}
+.switch-track{position:absolute;inset:0;background:var(--bord);border-radius:13px;cursor:pointer;transition:background 0.25s}
+.switch input:checked+.switch-track{background:var(--vert-vif)}
+.switch-track::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.switch input:checked+.switch-track::after{transform:translateX(20px)}
+
+/* QR CARD */
+.qr-card{background:linear-gradient(135deg,var(--vert),#0F4A2E);border-radius:20px;padding:30px;text-align:center;color:#fff;position:relative;overflow:hidden}
+.qr-card::before{content:'';position:absolute;top:-40%;right:-15%;width:280px;height:280px;background:radial-gradient(circle,rgba(95,227,161,0.25),transparent 70%);border-radius:50%}
+.qr-box{width:160px;height:160px;background:#fff;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;padding:14px;position:relative;z-index:1}
+.qr-box svg{width:100%;height:100%;color:var(--vert)}
+.qr-name{font-weight:700;font-size:1.1rem;position:relative;z-index:1}
+.qr-sub{font-size:0.8rem;color:rgba(255,255,255,0.75);position:relative;z-index:1}
+.wallet-btns{display:flex;gap:10px;justify-content:center;margin-top:18px;position:relative;z-index:1;flex-wrap:wrap}
+.wallet-btn{background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:10px 18px;border-radius:11px;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all 0.2s}
+.wallet-btn:hover{background:rgba(255,255,255,0.25)}
+
+/* FIDELITE PROGRESS */
+.fidelite-progress{background:var(--bg);border:1px solid var(--bord);border-radius:16px;padding:22px;margin-top:20px}
+.fp-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.fp-count{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:700;color:var(--vert)}
+.fp-bar{height:10px;background:var(--bord);border-radius:10px;overflow:hidden}
+.fp-fill{height:100%;background:linear-gradient(90deg,var(--vert),var(--vert-vif));border-radius:10px;transition:width 1s}
+
+/* AVATAR UPLOAD */
+.profile-avatar{position:relative;cursor:pointer;overflow:hidden}
+.profile-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-edit-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;border-radius:50%}
+.profile-avatar:hover .avatar-edit-overlay{opacity:1}
+.avatar-edit-overlay svg{color:#fff}
+.avatar-hint{font-size:0.72rem;color:var(--texte-3);margin-top:-6px;margin-bottom:12px}
+
+/* THEME SELECTOR */
+.theme-options{display:flex;gap:8px;margin-bottom:24px}
+.theme-opt{flex:1;padding:12px 8px;border-radius:12px;border:1.5px solid var(--bord);background:var(--bg);color:var(--texte-2);font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.theme-opt:hover{border-color:var(--vert)}
+.theme-opt.active{border-color:var(--vert);background:rgba(46,204,122,0.1);color:var(--vert)}
+
+/* ORDERS */
+.order{border:1px solid var(--bord);border-radius:16px;padding:18px;margin-bottom:14px;transition:box-shadow 0.2s}
+.order:hover{box-shadow:var(--shadow-s)}
+.order-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.order-id{font-weight:700;font-size:0.95rem}
+.order-date{font-size:0.76rem;color:var(--texte-3)}
+.order-badge{font-size:0.72rem;font-weight:700;padding:4px 12px;border-radius:20px}
+.ob-prep{background:rgba(217,164,65,0.12);color:#B07C00}
+.ob-ready{background:rgba(46,204,122,0.12);color:var(--vert)}
+.ob-done{background:rgba(74,144,217,0.1);color:#4A90D9}
+.ob-cancel{background:rgba(229,83,83,0.12);color:#C0392B}
+.order-items{font-size:0.84rem;color:var(--texte-2)}
+.order-total{font-weight:700;margin-top:8px}
+.order-ready-banner{background:rgba(46,204,122,0.1);border:1px solid rgba(46,204,122,0.2);border-radius:11px;padding:10px 14px;margin-top:12px;display:flex;align-items:center;gap:10px;font-size:0.82rem;color:var(--vert);font-weight:600}
+
+/* RGPD */
+.rgpd-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--bord)}
+.rgpd-row:last-child{border-bottom:none}
+.rgpd-info h4{font-size:0.9rem;font-weight:700}
+.rgpd-info p{font-size:0.78rem;color:var(--texte-3)}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--texte);color:var(--bg-card);padding:12px 22px;border-radius:30px;font-size:0.88rem;font-weight:600;box-shadow:var(--shadow);animation:tU 0.4s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:8px}
+@keyframes tU{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:840px){
+  .layout{grid-template-columns:1fr}
+  .menu{position:static;display:flex;overflow-x:auto;gap:4px}
+  .menu-item{white-space:nowrap;flex-shrink:0}
+  .menu-divider{display:none}
+  .profile-card{display:none}
+  .field-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<header>
+  <div class="nav-wrap">
+    <a href="site.html" class="brand"><span class="brand-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><span id="brand-name-header">Pharmacie Démo</span></a>
+    <div class="header-actions">
+      <button class="theme-btn" id="theme-btn" aria-label="Changer le thème clair/sombre"><svg id="theme-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg></button>
+      <a href="site.html" class="back-link"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Retour au site</a>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="profile-card">
+      <div class="profile-avatar" id="profile-avatar" role="button" tabindex="0" aria-label="Changer la photo de profil" onclick="document.getElementById('avatar-input').click()" title="Changer la photo de profil">
+        <span id="avatar-initials">MD</span>
+        <div class="avatar-edit-overlay"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      </div>
+      <input type="file" id="avatar-input" accept="image/*" style="display:none">
+      <div class="profile-name" id="sidebar-nom">Marie Dupont</div>
+      <div class="profile-email" id="sidebar-email">marie.d@email.com</div>
+      <div class="profile-badge">Membre fidélité</div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item active" onclick="showTab('profil',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Mon profil</div>
+      <div class="menu-item" onclick="showTab('fidelite',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Carte fidélité</div>
+      <div class="menu-item" onclick="showTab('commandes',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mes commandes</div>
+      <div class="menu-item" onclick="showTab('notifs',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications</div>
+      <div class="menu-item" onclick="showTab('parametres',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Paramètres</div>
+      <div class="menu-divider"></div>
+      <div class="menu-item logout" onclick="window.location='site.html'"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Déconnexion</div>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- PROFIL -->
+    <div class="page-tab active" id="tab-profil">
+      <div class="content-card">
+        <h2 class="ct-title">Mon profil</h2>
+        <p class="ct-sub">Gérez vos informations personnelles.</p>
+        <div class="field-row">
+          <div class="field"><label>Prénom</label><input id="pf-prenom" maxlength="60" placeholder="Prénom" autocomplete="given-name"></div>
+          <div class="field"><label>Nom</label><input id="pf-nom" maxlength="60" placeholder="Nom" autocomplete="family-name"></div>
+        </div>
+        <div class="field"><label>Email</label><input type="email" id="pf-email" maxlength="200" placeholder="vous@exemple.fr" autocomplete="email"></div>
+        <div class="field"><label>Téléphone</label><input type="tel" id="pf-tel" maxlength="30" placeholder="06 12 34 56 78" autocomplete="tel"></div>
+        <div class="field-row">
+          <div class="field"><label>Date de naissance</label><input type="date" id="pf-naissance"></div>
+          <div class="field"><label>Langue préférée</label>
+            <select id="pf-langue">
+              <option value="fr">Français</option>
+              <option value="en">English</option>
+              <option value="ar">العربية</option>
+              <option value="he">עברית</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Adresse</label><input type="text" id="pf-adresse" maxlength="200" placeholder="12 rue des Lilas"></div>
+        <div class="field-row">
+          <div class="field"><label>Code postal</label><input type="text" id="pf-cp" maxlength="10" placeholder="75017"></div>
+          <div class="field"><label>Ville</label><input type="text" id="pf-ville" maxlength="80" placeholder="Paris"></div>
+        </div>
+        <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveProfil()">Enregistrer</button></div>
+      </div>
+    </div>
+
+    <!-- FIDELITE -->
+    <div class="page-tab" id="tab-fidelite">
+      <div class="content-card">
+        <h2 class="ct-title">Ma carte de fidélité</h2>
+        <p class="ct-sub">Suivez votre progression. Votre carte avec QR code personnel arrive bientôt : en attendant, indiquez votre nom ou votre numéro de commande au comptoir.</p>
+        <div class="qr-card">
+          <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M17 21h4v-4M21 17h.01"/></svg></div>
+          <div class="qr-name" id="fid-nom">Marie Dupont</div>
+          <div class="qr-sub" id="fid-numero">N° fidélité · MD-2025-0147</div>
+          <div class="wallet-btns">
+            <button class="wallet-btn" onclick="pharmaToast('Apple Wallet : bientôt disponible')"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>Apple Wallet</button>
+            <button class="wallet-btn" onclick="pharmaToast('Google Wallet : bientôt disponible')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Google Wallet</button>
+          </div>
+        </div>
+        <div class="fidelite-progress">
+          <div class="fp-head"><div><div class="fp-count" id="fid-compteur">5 / 5 achats</div><div style="font-size:0.8rem;color:var(--texte-3)" id="fid-statut">Palier atteint !</div></div><div style="text-align:right"><div style="font-weight:700;color:var(--vert)" id="fid-code-label">Code -10% débloqué</div><div style="font-size:0.76rem;color:var(--texte-3)" id="fid-code">PHARM-MD10</div></div></div>
+          <div class="fp-bar"><div class="fp-fill" id="fid-fill" style="width:100%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMANDES -->
+    <div class="page-tab" id="tab-commandes">
+      <div class="content-card">
+        <h2 class="ct-title">Mes commandes</h2>
+        <p class="ct-sub">Suivez l'état de vos commandes click &amp; collect.</p>
+        <div id="orders-list"></div>
+      </div>
+    </div>
+
+    <div class="page-tab" id="tab-notifs">
+      <div class="content-card">
+        <h2 class="ct-title">Notifications</h2>
+        <p class="ct-sub">Choisissez ce que vous souhaitez recevoir et comment.</p>
+
+        <div class="toggle-card" style="background:var(--bg);border-color:var(--vert)">
+          <div class="toggle-card-info"><h4>Recevoir des notifications</h4><p>Interrupteur général. Désactivez pour tout couper.</p></div>
+          <label class="switch"><input type="checkbox" id="notif-global" checked onchange="toggleGlobalNotif()"><span class="switch-track"></span></label>
+        </div>
+
+        <div id="notif-types" style="margin-top:20px">
+          <h3 style="font-size:1rem;margin-bottom:14px">Par type</h3>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Commande prête à retirer</h4><p>Soyez alerté dès que votre commande est disponible.</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Promotions & offres</h4><p>Recevez les nouvelles promos et codes fidélité.</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Rappel de renouvellement</h4><p>Pour vos produits achetés régulièrement.</p></div><label class="switch"><input type="checkbox"><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Gardes & horaires exceptionnels</h4><p>Ouvertures spéciales, jours fériés, gardes.</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+
+          <h3 style="font-size:1rem;margin:24px 0 14px">Canal de réception</h3>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Par email</h4><p id="notif-email">marie.d@email.com</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Par SMS</h4><p id="notif-tel">06 12 34 56 78</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+        </div>
+
+        <div style="margin-top:24px"><button class="btn btn-primary" onclick="pharmaToast('Préférences enregistrées')">Enregistrer mes préférences</button></div>
+      </div>
+    </div>
+
+    <!-- PARAMETRES -->
+    <div class="page-tab" id="tab-parametres">
+      <div class="content-card">
+        <h2 class="ct-title">Paramètres</h2>
+        <p class="ct-sub">Apparence, sécurité et confidentialité de votre compte.</p>
+
+        <h3 style="font-size:1rem;margin-bottom:14px">Apparence</h3>
+        <div class="theme-options" id="theme-options">
+          <button type="button" class="theme-opt" data-theme="light" onclick="setThemePref('light')"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>Clair</button>
+          <button type="button" class="theme-opt" data-theme="dark" onclick="setThemePref('dark')"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Sombre</button>
+          <button type="button" class="theme-opt" data-theme="auto" onclick="setThemePref('auto')"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Automatique</button>
+        </div>
+
+        <h3 style="font-size:1rem;margin-bottom:14px">Changer le mot de passe</h3>
+        <div class="field"><label>Mot de passe actuel</label><input type="password" placeholder="••••••••"></div>
+        <div class="field-row">
+          <div class="field"><label>Nouveau mot de passe</label><input type="password" placeholder="••••••••"></div>
+          <div class="field"><label>Confirmer</label><input type="password" placeholder="••••••••"></div>
+        </div>
+        <button class="btn btn-primary" onclick="pharmaToast('Mot de passe modifié')">Modifier le mot de passe</button>
+
+        <h3 style="font-size:1rem;margin:30px 0 14px">Sécurité de connexion</h3>
+        <div class="toggle-card">
+          <div class="toggle-card-info"><h4>Double authentification (2FA)</h4><p>Ajoute un code de vérification supplémentaire à chaque connexion.</p></div>
+          <label class="switch"><input type="checkbox" id="tfa-toggle" onchange="toggle2FA(this.checked)"><span class="switch-track"></span></label>
+        </div>
+
+        <h3 style="font-size:1rem;margin:30px 0 14px">Mes données (RGPD)</h3>
+        <div class="rgpd-row"><div class="rgpd-info"><h4>Télécharger mes données</h4><p>Recevez une copie de toutes vos données personnelles.</p></div><button class="btn btn-ghost" onclick="pharmaToast('Export en cours, vous recevrez un email')">Télécharger</button></div>
+        <div class="rgpd-row"><div class="rgpd-info"><h4>Consentement données</h4><p>Vous avez accepté le traitement de vos données le 12/01/2025.</p></div><span style="color:var(--vert);font-weight:700;font-size:0.82rem">✓ Actif</span></div>
+        <div class="rgpd-row"><div class="rgpd-info"><h4 style="color:var(--rouge)">Supprimer mon compte</h4><p>Suppression définitive de votre compte et vos données.</p></div><button class="btn btn-danger" onclick="confirmDelete()">Supprimer</button></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="compte.js"></script>
+<script src="demo-nav.js"></script>
+</body>
+</html>

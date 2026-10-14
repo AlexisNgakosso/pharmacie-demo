@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Banc d'essai Pharmacie Démo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Mise en page : une colonne étroite, un en-tête sobre, trois portes d'entrée, puis le pas-à-pas */
+:root {
+  --fond: #F4F7F5;
+  --surface: #FFFFFF;
+  --texte: #16211B;
+  --texte-2: #4F5E56;
+  --bord: #DCE5DF;
+  --vert: #1B6B45;
+  --vert-pale: #E3F1E9;
+  --alerte: #8A5A12;
+  --alerte-fond: #FBF1DF;
+  --danger: #B4402F;
+  --titre: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --corps: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fond: #0F1612; --surface: #17211B; --texte: #E8EFEA; --texte-2: #A7B6AD; --bord: #2A3730;
+    --vert: #5FCB93; --vert-pale: #1C3327; --alerte: #F0C77A; --alerte-fond: #2E2616; --danger: #F08A7A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fond: #0F1612; --surface: #17211B; --texte: #E8EFEA; --texte-2: #A7B6AD; --bord: #2A3730;
+  --vert: #5FCB93; --vert-pale: #1C3327; --alerte: #F0C77A; --alerte-fond: #2E2616; --danger: #F08A7A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--fond); color: var(--texte); font-family: var(--corps); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 40px;
+}
+.page { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.surtitre { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--vert); }
+h1 { font-family: var(--titre); font-weight: 600; font-size: clamp(28px, 6vw, 38px); line-height: 1.12; margin: 6px 0 10px; text-wrap: balance; }
+h2 { font-family: var(--titre); font-weight: 500; font-size: 21px; margin: 0 0 12px; text-wrap: balance; }
+p { margin: 0; }
+.chapeau { color: var(--texte-2); max-width: 60ch; }
+.portes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .portes { grid-template-columns: 1fr; } }
+.porte {
+  display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--bord); color: var(--texte); text-decoration: none; min-width: 0;
+}
+.porte strong { font-size: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.porte strong::after { content: '→'; color: var(--vert); }
+.porte span { color: var(--texte-2); font-size: 13.5px; }
+.porte:hover, .porte:focus-visible { border-color: var(--vert); outline: none; }
+.porte:focus-visible { box-shadow: 0 0 0 3px var(--vert-pale); }
+.porte.principale { background: var(--vert); border-color: var(--vert); color: #fff; }
+.porte.principale span { color: rgba(255,255,255,0.85); }
+.porte.principale strong::after { color: #fff; }
+ol.etapes { margin: 0; padding: 0; list-style: none; counter-reset: e; display: flex; flex-direction: column; gap: 10px; }
+ol.etapes li { counter-increment: e; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; }
+ol.etapes li::before {
+  content: counter(e); width: 26px; height: 26px; border-radius: 50%; background: var(--vert-pale); color: var(--vert);
+  font-weight: 700; font-size: 13px; display: grid; place-items: center; font-variant-numeric: tabular-nums;
+}
+code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.92em; background: var(--vert-pale); color: var(--vert); padding: 1px 6px; border-radius: 5px; }
+.limites { background: var(--alerte-fond); color: var(--texte); border-radius: 14px; padding: 16px 18px; }
+.limites h2 { color: var(--alerte); font-size: 18px; margin-bottom: 8px; }
+.limites ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.note { color: var(--texte-2); font-size: 13.5px; }
+.zone-reset { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+button.reset {
+  font: 600 14px var(--corps); padding: 10px 16px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--danger); background: transparent; color: var(--danger);
+}
+button.reset.confirmer { background: var(--danger); color: var(--surface); }
+button.reset:focus-visible { outline: 3px solid var(--vert-pale); outline-offset: 2px; }
+#reset-etat { font-size: 13.5px; color: var(--texte-2); }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="surtitre">Version de test · pharmacie fictive</div>
+    <h1>Banc d'essai Pharmacie Démo</h1>
+    <p class="chapeau">Le site complet, avec une pharmacie inventée, pour le tester dans Safari. Les commandes passées ici restent sur cet appareil : elles apparaissent dans l'administration ouverte dans ce même navigateur.</p>
+  </header>
+
+  <nav class="portes" aria-label="Pages du site">
+    <a class="porte principale" href="site.html"><strong>Site client</strong><span>Catalogue, panier, codes promo, commande</span></a>
+    <a class="porte" href="admin.html"><strong>Administration</strong><span>Commandes, retrait, catalogue, guide</span></a>
+    <a class="porte" href="compte.html"><strong>Espace client</strong><span>Aperçu des commandes et de la fidélité</span></a>
+  </nav>
+
+  <p class="note">Dans chaque page, le petit menu « TEST » en bas à gauche permet de passer du site à l'administration, et de tout remettre à zéro.</p>
+
+  <section>
+    <h2>Parcours conseillé (10 minutes)</h2>
+    <ol class="etapes">
+      <li><span><strong>Site client</strong> : ajoutez deux produits au panier, saisissez le code <code>BIENVENUE</code>, puis commandez avec votre nom, une adresse email et un téléphone.</span></li>
+      <li><span>Notez le <strong>numéro de commande</strong> et le <strong>code de retrait</strong> affichés dans la fenêtre de confirmation.</span></li>
+      <li><span><strong>Administration</strong>, page Commandes : votre commande apparaît « En préparation ». Cliquez sur <strong>Prête</strong>.</span></li>
+      <li><span>Page <strong>Validation Scan</strong> : saisissez le code de retrait. La commande passe à « Retirée ». Ressaisissez-le : le site refuse un second retrait.</span></li>
+      <li><span>Bouton <strong>Guide</strong> en haut de l'administration : lancez la visite guidée.</span></li>
+      <li><span>Pour la fidélité : passez 5 commandes avec le même nom et le même email. À la 5e, un code de réduction s'affiche.</span></li>
+    </ol>
+  </section>
+
+  <section class="limites">
+    <h2>À savoir</h2>
+    <ul>
+      <li><strong>Les emails sont coupés</strong> : les identifiants EmailJS ne sont pas dans cette version publique. Pour tester un vrai envoi : Administration, Paramètres, carte « Emails automatiques », saisissez le Service ID, le Template ID et la clé publique, activez l'interrupteur, puis Sauvegarder. Ils restent enregistrés seulement dans ce navigateur.</li>
+      <li>Noms, adresse et numéros sont <strong>inventés</strong>. La vraie version garde les informations de la pharmacie.</li>
+      <li>Cette page est publique mais non référencée par les moteurs de recherche. N'y saisissez pas de vraies données de clients.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Repartir de zéro</h2>
+    <div class="zone-reset">
+      <button type="button" class="reset" id="btn-reset">Effacer les données de test</button>
+      <span id="reset-etat" role="status"></span>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var btn = document.getElementById('btn-reset');
+  var etat = document.getElementById('reset-etat');
+  var attente = null;
+  btn.addEventListener('click', function () {
+    if (!attente) {
+      btn.textContent = 'Confirmer l’effacement';
+      btn.classList.add('confirmer');
+      etat.textContent = 'Commandes, panier et réglages de test seront effacés.';
+      attente = setTimeout(function () {
+        attente = null; btn.textContent = 'Effacer les données de test'; btn.classList.remove('confirmer'); etat.textContent = '';
+      }, 5000);
+      return;
+    }
+    clearTimeout(attente); attente = null;
+    var n = 0;
+    try {
+      Object.keys(localStorage).forEach(function (k) { if (/^pharma/.test(k)) { localStorage.removeItem(k); n++; } });
+      sessionStorage.clear();
+    } catch (e) {}
+    btn.textContent = 'Effacer les données de test'; btn.classList.remove('confirmer');
+    etat.textContent = n ? 'Données effacées : le site repart des données de démonstration.' : 'Rien à effacer : le site est déjà dans son état de départ.';
+  });
+})();
+</script>
+
+</body>
+</html>

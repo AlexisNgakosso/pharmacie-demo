@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<!-- Politique de sécurité : seuls ce site, Google Fonts, EmailJS et Supabase sont autorisés -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.emailjs.com https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B6B45'/%3E%3Cpath d='M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z' fill='white'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex">
+<title>Pharmacie Démo — Administration</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --anthracite:#1E2228; --anthracite-2:#252B34; --vert:#1B6B45; --vert-vif:#2ECC7A;
+  --vert-pale:#E6F4ED; --vert-glow:rgba(46,204,122,0.12); --or:#F0B429;
+  --or-pale:rgba(240,180,41,0.10); --rouge:#E55353; --rouge-pale:rgba(229,83,83,0.10);
+  --bleu:#4A90D9; --bleu-pale:rgba(74,144,217,0.10);
+  --fond:#F2F4F7; --blanc:#FFFFFF; --bord:#E4E8EE;
+  --texte:#1A1F2B; --texte-2:#5A6478; --texte-3:#9AA3B2;
+  --sidebar:220px; --topbar:52px; --radius:12px; --radius-s:8px;
+  --shadow:0 1px 4px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
+  --shadow-md:0 8px 32px rgba(0,0,0,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:var(--fond);color:var(--texte);display:flex;min-height:100vh;font-size:13px;-webkit-font-smoothing:antialiased}
+
+/* BURGER */
+.burger{display:none;width:34px;height:34px;border-radius:8px;background:var(--fond);border:1px solid var(--bord);cursor:pointer;align-items:center;justify-content:center;color:var(--texte);flex-shrink:0}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(3px);z-index:99}
+.sidebar-backdrop.visible{display:block}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);background:var(--anthracite);background-image:linear-gradient(160deg,#252B34 0%,#1A2030 60%,#162035 100%);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100;border-right:1px solid rgba(255,255,255,0.04);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);animation:gradShift 8s ease-in-out infinite alternate}
+@keyframes gradShift{0%{background-image:linear-gradient(160deg,#252B34 0%,#1A2030 60%,#162035 100%)}100%{background-image:linear-gradient(160deg,#1E2B22 0%,#1A2030 60%,#1B2B38 100%)}}
+canvas#particles{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.logo{padding:16px 14px 12px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--vert),var(--vert-vif));border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;box-shadow:0 0 14px var(--vert-glow)}
+.logo-name{color:#fff;font-size:0.8rem;font-weight:700;line-height:1.3}
+.logo-sub{color:rgba(255,255,255,0.3);font-size:0.62rem;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-top:1px}
+.nav{flex:1;padding:8px 0;overflow-y:auto;position:relative;z-index:1}
+.nav::-webkit-scrollbar{width:0}
+.nav-label{color:rgba(255,255,255,0.22);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:8px 14px 3px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 14px;color:rgba(255,255,255,0.5);cursor:pointer;border-left:2px solid transparent;transition:all 0.16s;font-size:0.76rem;font-weight:500;position:relative;border-radius:0 8px 8px 0;margin-right:6px}
+.nav-item svg{flex-shrink:0;transition:transform 0.16s}
+.nav-item:hover{color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.05)}
+.nav-item:hover svg{transform:translateX(2px)}
+.nav-item.active{color:#fff;background:rgba(46,204,122,0.1);border-left-color:var(--vert-vif);font-weight:600}
+.nav-item.active svg{color:var(--vert-vif)}
+.nav-badge{margin-left:auto;background:var(--rouge);color:#fff;font-size:0.58rem;font-weight:700;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;animation:pulse-badge 2s infinite}
+@keyframes pulse-badge{0%,100%{box-shadow:0 0 0 0 rgba(229,83,83,0.4)}50%{box-shadow:0 0 0 4px rgba(229,83,83,0)}}
+.sidebar-footer{padding:10px 12px;border-top:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
+.user-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);border-radius:9px;padding:7px 9px;cursor:pointer;transition:background 0.16s}
+.user-pill:hover{background:rgba(255,255,255,0.09)}
+.avatar{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--vert),var(--vert-vif));display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:800;color:#fff;flex-shrink:0}
+.user-name{color:#fff;font-size:0.72rem;font-weight:600}
+.user-role{color:rgba(255,255,255,0.35);font-size:0.62rem}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* TOPBAR */
+.topbar{height:var(--topbar);background:var(--blanc);border-bottom:1px solid var(--bord);display:flex;align-items:center;padding:0 18px;gap:10px;position:sticky;top:0;z-index:50}
+
+/* ── NOTIFICATIONS ── */
+.notif-wrap{position:relative;flex-shrink:0}
+.notif-bell{position:relative;padding:0 10px}
+.notif-bell.has-new svg{animation:bellRing 1s ease}
+@keyframes bellRing{0%,100%{transform:rotate(0)}15%{transform:rotate(14deg)}30%{transform:rotate(-12deg)}45%{transform:rotate(9deg)}60%{transform:rotate(-6deg)}75%{transform:rotate(3deg)}}
+.notif-count{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;background:var(--rouge);color:#fff;border-radius:9px;font-size:0.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1}
+.notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:330px;max-width:calc(100vw - 30px);background:var(--blanc);border:1px solid var(--bord);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.14);opacity:0;visibility:hidden;transform:translateY(-6px);transition:all 0.2s;z-index:200}
+.notif-panel.open{opacity:1;visibility:visible;transform:translateY(0)}
+.notif-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bord);font-weight:800;font-size:0.82rem}
+.notif-clear{background:none;border:none;color:var(--vert);font-size:0.7rem;font-weight:700;cursor:pointer;font-family:inherit;padding:0}
+.notif-clear:hover{text-decoration:underline}
+.notif-panel-body{max-height:380px;overflow-y:auto}
+.notif-item{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bord);cursor:pointer;transition:background 0.15s}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--fond)}
+.notif-item.unread{background:rgba(46,204,122,0.06)}
+.notif-item.unread:hover{background:rgba(46,204,122,0.11)}
+.notif-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.notif-body{flex:1;min-width:0}
+.notif-titre{font-weight:700;font-size:0.78rem;margin-bottom:2px}
+.notif-texte{font-size:0.73rem;color:var(--texte-2);line-height:1.45}
+.notif-heure{font-size:0.67rem;color:var(--texte-3);margin-top:3px}
+.notif-dot{width:7px;height:7px;border-radius:50%;background:var(--vert-vif);flex-shrink:0;align-self:center}
+.notif-vide{padding:30px 16px;text-align:center;color:var(--texte-3);font-size:0.78rem}
+@media(max-width:640px){.notif-panel{position:fixed;top:calc(var(--topbar) + 6px);right:10px;left:10px;width:auto}}
+.topbar-title{font-size:0.88rem;font-weight:700;color:var(--texte);flex:1}
+.topbar-search{display:flex;align-items:center;background:var(--fond);border:1px solid var(--bord);border-radius:var(--radius-s);padding:0 10px;gap:6px;height:30px;width:190px;transition:border-color 0.18s,width 0.28s}
+.topbar-search:focus-within{border-color:var(--vert-vif);width:240px}
+.topbar-search input{border:none;background:transparent;outline:none;font-family:'Manrope',sans-serif;font-size:0.76rem;color:var(--texte);width:100%}
+.topbar-search svg{color:var(--texte-3);flex-shrink:0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:0 12px;height:30px;border-radius:var(--radius-s);font-family:'Manrope',sans-serif;font-size:0.73rem;font-weight:600;cursor:pointer;border:none;transition:all 0.16s;position:relative;overflow:hidden}
+.btn-primary{background:var(--vert);color:#fff}
+.btn-primary:hover{background:#155636;box-shadow:0 4px 12px rgba(27,107,69,0.25)}
+.btn-ghost{background:transparent;color:var(--texte-2);border:1px solid var(--bord)}
+.btn-ghost:hover{background:var(--fond);color:var(--texte)}
+
+/* CONTENT */
+.content{padding:18px;flex:1}
+
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--blanc);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--bord);overflow:hidden;margin-bottom:14px}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bord)}
+.card-title{font-size:0.78rem;font-weight:700;color:var(--texte);display:flex;align-items:center;gap:6px}
+.card-title svg{color:var(--vert)}
+.card-body{padding:14px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:var(--blanc);border-radius:var(--radius);border:1px solid var(--bord);padding:13px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:default;transition:transform 0.18s,box-shadow 0.18s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat-glow{position:absolute;top:-20px;right:-20px;width:70px;height:70px;border-radius:50%;opacity:0.08;filter:blur(18px)}
+.stat-icon{position:absolute;top:10px;right:12px;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.stat-label{font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--texte-3);margin-bottom:6px}
+.stat-value{font-size:1.7rem;font-weight:800;line-height:1;color:var(--texte)}
+.stat-sub{font-size:0.63rem;color:var(--texte-3);margin-top:3px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--texte-3);padding:9px 12px;background:#FAFBFC;border-bottom:1px solid var(--bord)}
+td{padding:10px 12px;border-bottom:1px solid var(--bord);font-size:0.76rem;vertical-align:middle}
+td.actions-cell > div{display:flex;align-items:center;gap:6px}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background 0.12s}
+tbody tr:hover td{background:var(--fond)}
+.td-main{font-weight:600;color:var(--texte)}
+.td-sub{font-size:0.65rem;color:var(--texte-3);margin-top:1px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.64rem;font-weight:700;letter-spacing:0.3px}
+.b-green{background:#E6F4ED;color:#1B6B45}
+.b-vif{background:rgba(46,204,122,0.12);color:#1AAA5C}
+.b-orange{background:rgba(240,180,41,0.12);color:#B07C00}
+.b-or{background:rgba(240,180,41,0.12);color:#B07C00}
+.b-red{background:var(--rouge-pale);color:var(--rouge)}
+.b-red.pulse{animation:pulse-red 2s infinite}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(229,83,83,0.3)}50%{box-shadow:0 0 0 4px rgba(229,83,83,0)}}
+.b-blue{background:var(--bleu-pale);color:var(--bleu)}
+.b-grey{background:#EEF0F4;color:#6B7280}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.inp{padding:0 10px;height:32px;border:1px solid var(--bord);border-radius:var(--radius-s);font-family:'Manrope',sans-serif;font-size:0.76rem;background:var(--blanc);outline:none;transition:border-color 0.16s;color:var(--texte)}
+.inp:focus{border-color:var(--vert-vif)}
+.inp-search{padding-left:30px;flex:1;min-width:160px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='%239AA3B2' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:9px center}
+
+/* ACTION BUTTONS */
+.act-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--texte-3);transition:all 0.14s;display:inline-flex}
+.act-btn:hover{background:var(--fond);color:var(--texte);transform:scale(1.12)}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-group.full{grid-column:1/-1}
+label{font-size:0.7rem;font-weight:600;color:var(--texte-2)}
+input:not([type=checkbox]):not([type=file]):not([type=time]):not([type=date]):not([type=number]):not([type=color]),
+select,textarea{font-family:'Manrope',sans-serif;padding:7px 10px;border:1px solid var(--bord);border-radius:var(--radius-s);font-size:0.76rem;outline:none;transition:border-color 0.16s;color:var(--texte);background:var(--blanc)}
+input:focus,select:focus,textarea:focus{border-color:var(--vert-vif)}
+input[type=number],input[type=date],input[type=time]{font-family:'Manrope',sans-serif;padding:7px 10px;border:1px solid var(--bord);border-radius:var(--radius-s);font-size:0.76rem;outline:none;color:var(--texte);background:var(--blanc)}
+textarea{resize:vertical;min-height:72px}
+
+/* TOGGLE */
+.toggle-wrap{display:flex;align-items:center;gap:7px;cursor:pointer}
+.toggle-input{display:none}
+.toggle-track{width:36px;height:20px;border-radius:10px;background:var(--bord);position:relative;transition:background 0.2s;flex-shrink:0}
+.toggle-input:checked+.toggle-track{background:var(--vert-vif)}
+.toggle-track::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle-input:checked+.toggle-track::after{transform:translateX(16px)}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,14,20,0.5);backdrop-filter:blur(3px);z-index:200;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex;animation:fadeOv 0.18s ease}
+@keyframes fadeOv{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{transform:translateY(0);opacity:1}to{transform:translateY(40px);opacity:0}}
+.modal{background:var(--blanc);border-radius:18px 18px 0 0;width:520px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 -20px 60px rgba(0,0,0,0.18);animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:34px;height:4px;background:var(--bord);border-radius:2px;margin:9px auto 0}
+.modal-header{padding:12px 16px;border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:0.88rem;font-weight:700}
+.modal-close{width:26px;height:26px;border-radius:50%;background:var(--fond);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--texte-2);transition:all 0.14s}
+.modal-close:hover{background:var(--rouge-pale);color:var(--rouge)}
+.modal-body{padding:16px}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--bord);display:flex;justify-content:flex-end;gap:7px}
+
+/* TOAST */
+#toast{position:fixed;top:14px;right:18px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast-item{background:var(--anthracite);color:#fff;padding:9px 14px;border-radius:9px;font-size:0.76rem;font-weight:500;display:flex;align-items:center;gap:7px;box-shadow:var(--shadow-md);animation:toastIn 0.28s cubic-bezier(0.34,1.56,0.64,1);border-left:3px solid var(--vert-vif)}
+@keyframes toastIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+
+/* GARDE BANNER */
+.garde-banner{background:linear-gradient(135deg,var(--or-pale),rgba(240,180,41,0.04));border:1px solid rgba(240,180,41,0.22);border-radius:var(--radius);padding:11px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.garde-banner svg{color:var(--or);flex-shrink:0}
+
+/* PROGRESS */
+.progress{background:var(--fond);border-radius:10px;height:5px;overflow:hidden}
+.progress-fill{height:100%;border-radius:10px;background:var(--vert-vif);transition:width 0.8s ease}
+
+/* HORAIRES */
+.hor-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bord)}
+.hor-row:last-child{border-bottom:none}
+.hor-jour{width:85px;font-weight:600;font-size:0.76rem}
+.hor-times{display:flex;align-items:center;gap:6px;font-size:0.76rem;color:var(--texte-2)}
+.sday{display:flex;align-items:center;gap:8px;background:var(--vert-pale);border:1px solid rgba(27,107,69,0.12);border-radius:8px;padding:9px 11px;margin-bottom:7px}
+.sday-date{font-weight:700;font-size:0.76rem}
+.sday-type{font-size:0.65rem;color:var(--texte-3)}
+.sday-hrs{margin-left:auto;font-size:0.73rem;font-weight:700;color:var(--vert)}
+
+/* PROMO PREVIEW */
+.promo-preview{background:linear-gradient(135deg,var(--vert),#155636);border-radius:9px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin:12px 0}
+.promo-pct{font-size:1.8rem;font-weight:800;color:#fff}
+.promo-info{font-size:0.7rem;color:rgba(255,255,255,0.7)}
+.promo-tag{background:rgba(255,255,255,0.15);color:#fff;font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:20px}
+
+/* CODE DISPLAY */
+.code-display{background:var(--anthracite);border-radius:9px;padding:14px;text-align:center;margin:12px 0}
+.code-label{color:rgba(255,255,255,0.4);font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+.code-value{font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:3px;font-family:monospace}
+.code-scope{color:var(--vert-vif);font-size:0.7rem;margin-top:3px}
+
+/* MESSAGES */
+.msg-bubble{padding:8px 12px;border-radius:10px;font-size:0.78rem;max-width:78%;line-height:1.5}
+.msg-client{background:var(--fond);border:1px solid var(--bord)}
+.msg-admin{background:var(--vert-pale);border:1px solid rgba(27,107,69,0.12)}
+.msg-meta{font-size:0.63rem;color:var(--texte-3);margin-top:2px}
+#messages-thread{height:320px;overflow-y:auto;padding:10px;border:1px solid var(--bord);border-radius:var(--radius-s);margin-bottom:10px;display:flex;flex-direction:column;gap:10px}
+
+/* SCAN */
+.scan-zone{border:2px dashed var(--vert-vif);border-radius:var(--radius);padding:24px 18px;text-align:center;background:var(--vert-glow);position:relative;overflow:hidden}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:var(--vert-vif);opacity:0.6;animation:scanMove 1.8s ease-in-out infinite}
+@keyframes scanMove{0%,100%{top:20%}50%{top:80%}}
+
+/* UTILS */
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.flex-gap{display:flex;align-items:center;gap:7px}
+.txt-muted{color:var(--texte-3);font-size:0.72rem}
+.txt-strong{font-weight:700}
+.mt2{margin-top:8px}.mt3{margin-top:12px}.mt4{margin-top:16px}
+.mb2{margin-bottom:8px}.mb3{margin-bottom:12px}
+hr{border:none;border-top:1px solid var(--bord);margin:12px 0}
+code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:5px;font-size:0.8rem;font-weight:700;letter-spacing:0.8px}
+
+/* RESPONSIVE */
+.burger{display:none;width:34px;height:34px;border-radius:8px;background:var(--fond);border:1px solid var(--bord);cursor:pointer;align-items:center;justify-content:center;color:var(--texte);flex-shrink:0}
+@media(max-width:1024px) and (min-width:769px){
+  :root{--sidebar:60px}
+  .logo-name,.logo-sub,.nav-label,.user-name,.user-role{display:none}
+  .nav-item{justify-content:center;padding:9px;border-radius:8px;margin:0 6px}
+  .nav-item span:not(.nav-badge){display:none}
+  .nav-badge{position:absolute;top:4px;right:4px;min-width:13px;height:13px;font-size:0.52rem;padding:0 3px}
+  .logo{padding:12px 8px;text-align:center}
+  .logo-icon{margin:0 auto}
+  .user-pill{justify-content:center;padding:7px}
+  .main{margin-left:60px}
+  .burger{display:flex}
+  .topbar-search{display:none}
+}
+@media(max-width:768px){
+  :root{--sidebar:240px}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,0.28)}
+  .main{margin-left:0}
+  .burger{display:flex}
+  .topbar-search{display:none}
+  .topbar-title{font-size:0.8rem}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.full{grid-column:1}
+  .content{padding:12px}
+  canvas#particles{display:none}
+  table{min-width:580px}
+  .card{overflow-x:auto}
+}
+
+/* Impression du rapport (bouton PDF) : seule la carte du rapport est imprimée */
+@media print {
+  body.impression-rapport * { visibility: hidden !important; }
+  body.impression-rapport #rapport-carte, body.impression-rapport #rapport-carte * { visibility: visible !important; }
+  body.impression-rapport #rapport-carte { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: none; }
+  body.impression-rapport #rapport-carte .flex-gap { display: none !important; }
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <canvas id="particles"></canvas>
+  <div class="logo">
+    <div class="logo-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <div class="logo-name" id="admin-logo-name">Pharmacie Démo</div>
+    <div class="logo-sub">Administration</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item" onclick="go('dashboard')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Tableau de bord</span></div>
+    <div class="nav-item" onclick="go('commandes')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Commandes</span><span class="nav-badge" id="badge-commandes">3</span></div>
+    <div class="nav-item" onclick="go('tickets')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span>Tickets</span><span class="nav-badge" id="badge-tickets">2</span></div>
+    <div class="nav-item" onclick="go('messages')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messages</span><span class="nav-badge" id="msg-badge" style="display:none">1</span></div>
+    <div class="nav-item" onclick="go('scan')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3a2 2 0 0 0-2 2v3M21 21v.01"/></svg><span>Validation Scan</span></div>
+    <div class="nav-label">Catalogue</div>
+    <div class="nav-item" onclick="go('produits')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Produits</span></div>
+    <div class="nav-item" onclick="go('promos')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span>Promotions</span></div>
+    <div class="nav-item" onclick="go('codes-promo')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Codes Promo & Fidélité</span></div>
+    <div class="nav-item" onclick="go('conseils')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Conseils & Raccourcis</span></div>
+    <div class="nav-item" onclick="go('stocks')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg><span>Stocks</span></div>
+    <div class="nav-label">Clients & Notifs</div>
+    <div class="nav-item" onclick="go('clients')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Clients</span></div>
+    <div class="nav-item" onclick="go('notifications')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifications</span></div>
+    <div class="nav-item" onclick="go('rapport')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Rapport hebdo</span></div>
+    <div class="nav-label">Paramètres</div>
+    <div class="nav-item" onclick="go('employes')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg><span>Employés</span></div>
+    <div class="nav-item" onclick="go('horaires')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Horaires & Gardes</span></div>
+    <div class="nav-item" onclick="go('parametres')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg><span>Paramètres</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="avatar">PS</div>
+      <div><div class="user-name">Admin Principal</div><div class="user-role">Pharmacien titulaire</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+  <div class="topbar">
+    <button class="burger" id="burger-btn" onclick="toggleSidebar()"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <div class="topbar-title" id="page-title">Tableau de bord</div>
+    <div class="topbar-search">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="topbar-search" placeholder="Rechercher ou naviguer..." oninput="globalSearch(this.value)">
+    </div>
+    <div class="notif-wrap">
+      <button class="btn btn-ghost notif-bell" id="notif-bell" onclick="toggleNotifPanel()" aria-label="Notifications">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-count" id="notif-count" style="display:none">0</span>
+      </button>
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-panel-head">
+          <span>Notifications</span>
+          <button class="notif-clear" onclick="marquerToutLu()">Tout marquer comme lu</button>
+        </div>
+        <div class="notif-panel-body" id="notif-panel-body"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" onclick="go('horaires')"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Horaires</button>
+    <button class="btn btn-primary" id="topbar-cta" onclick="openModal('m-produit')"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span id="topbar-cta-label">Nouveau produit</span></button>
+  </div>
+
+  <div class="content">
+
+  <!-- DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-glow" style="background:var(--vert-vif)"></div><div class="stat-icon" style="background:var(--vert-pale)"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg></div><div class="stat-label">Commandes</div><div class="stat-value" id="stat-commandes">0</div><div class="stat-sub">En préparation</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--or)"></div><div class="stat-icon" style="background:var(--or-pale)"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--or)" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg></div><div class="stat-label">Stock faible</div><div class="stat-value" id="stat-stocks">0</div><div class="stat-sub">Produits sous le seuil</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--bleu)"></div><div class="stat-icon" style="background:var(--bleu-pale)"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--bleu)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div><div class="stat-label">Promos actives</div><div class="stat-value" id="stat-promos">0</div><div class="stat-sub">En cours</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--rouge)"></div><div class="stat-icon" style="background:var(--rouge-pale)"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--rouge)" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg></div><div class="stat-label">Tickets ouverts</div><div class="stat-value" id="stat-tickets">0</div><div class="stat-sub">À traiter</div></div>
+    </div>
+    <div class="garde-banner"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div style="flex:1"><strong style="display:block;font-size:0.78rem;color:#8A6000" id="dash-garde-titre">Jours spéciaux</strong><span style="font-size:0.7rem;color:#A07020" id="dash-garde-texte"></span></div><button class="btn btn-ghost" onclick="go('horaires')">Modifier</button></div>
+    <div class="g2">
+      <div class="card"><div class="card-header"><div class="card-title"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg>Dernières commandes</div><button class="btn btn-ghost" style="height:26px;font-size:0.68rem" onclick="go('commandes')">Voir tout</button></div><table><thead><tr><th>N°</th><th>Client</th><th>Statut</th><th></th></tr></thead><tbody id="dash-commandes"></tbody></table></div>
+      <div class="card"><div class="card-header"><div class="card-title"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg>Tickets récents</div><button class="btn btn-ghost" style="height:26px;font-size:0.68rem" onclick="go('tickets')">Voir tout</button></div><table><thead><tr><th>Sujet</th><th>Client</th><th>Priorité</th></tr></thead><tbody id="dash-tickets"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- PRODUITS -->
+  <div class="page" id="page-produits">
+    <div class="toolbar">
+      <input class="inp inp-search" id="search-produits" placeholder="Rechercher un produit..." oninput="renderProduits(this.value,document.getElementById('filter-cat-produits').value)">
+      <select class="inp" id="filter-cat-produits" onchange="renderProduits(document.getElementById('search-produits').value,this.value)"></select>
+      <select class="inp" id="filter-stock-produits" onchange="renderProduits(document.getElementById('search-produits').value,document.getElementById('filter-cat-produits').value)"><option value="">Tous stocks</option><option value="ok">Normal</option><option value="faible">Faible</option><option value="rupture">Rupture</option></select>
+    </div>
+    <div class="card"><table><thead><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody-produits"></tbody></table></div>
+  </div>
+
+  <!-- PROMOS -->
+  <div class="page" id="page-promos">
+    <div class="toolbar"><input class="inp inp-search" placeholder="Rechercher..." oninput="renderPromos(this.value)"></div>
+    <div class="card"><table><thead><tr><th>Produit(s)</th><th>Prix normal</th><th>Prix promo</th><th>Réduction</th><th>Fin</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody-promos"></tbody></table></div>
+  </div>
+
+  <!-- CODES PROMO -->
+  <div class="page" id="page-codes-promo">
+    <div class="g2">
+      <div class="card"><div class="card-header"><div class="card-title">Règle automatique de fidélité</div><button class="btn btn-ghost" onclick="go('parametres')">Modifier dans Paramètres</button></div>
+        <div class="card-body" id="regle-fidelite"></div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title">Générer manuellement</div></div>
+        <div class="card-body">
+          <div class="form-group mb3"><label>Client</label><select class="inp" id="cclient"></select></div>
+          <div class="form-grid"><div class="form-group"><label>Réduction (%)</label><input class="inp" type="number" id="cpct" value="10" oninput="calcCode()"></div><div class="form-group"><label>Applicable sur</label><select class="inp" id="cscope" onchange="calcCode()"></select></div></div>
+          <div class="code-display"><div class="code-label">Code généré</div><div class="code-value" id="cval"></div><div class="code-scope" id="cscope-label">-10% sur tous les produits</div></div>
+          <div class="flex-gap"><button class="btn btn-ghost" onclick="regenCode()">Régénérer</button><button class="btn btn-primary" onclick="genererCode()">Créer le code</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title">Tous les codes</div></div><table><thead><tr><th>Code</th><th>Client</th><th>Réduction</th><th>Applicable sur</th><th>Origine</th><th>Utilisations</th><th>Expire</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody-codes">
+      </tbody></table></div>
+  </div>
+
+  <!-- CONSEILS -->
+  <div class="page" id="page-conseils">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Conseils affichés sur les cartes du site
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="background:var(--vert-pale);border:1px solid rgba(27,107,69,0.15);border-radius:9px;padding:12px 14px;margin-bottom:16px;font-size:0.8rem;color:var(--texte-2)">
+          Ces conseils s'affichent au verso des cartes animées sur la page d'accueil du site client. Ils se retournent automatiquement toutes les 6 secondes.
+        </div>
+        <div id="conseils-list"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Raccourcis sur les cartes promos</div></div>
+      <div class="card-body">
+        <div style="background:var(--bleu-pale);border:1px solid rgba(74,144,217,0.15);border-radius:9px;padding:12px 14px;margin-bottom:16px;font-size:0.8rem;color:var(--texte-2)">
+          Quand un client clique sur une carte promo du site, il est redirigé directement vers la promo concernée dans le catalogue.
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:var(--fond);border-radius:10px;padding:14px 16px">
+          <div style="width:40px;height:40px;background:var(--vert-pale);border-radius:10px;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div>
+          <div><div style="font-weight:700;font-size:0.88rem">Clic sur carte promo</div><div style="font-size:0.76rem;color:var(--texte-3)">→ Ouvre le détail de la promo + bouton "Ajouter au panier"</div></div>
+          <span class="badge b-green" style="margin-left:auto">Actif</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STOCKS -->
+  <div class="page" id="page-stocks">
+    <div class="toolbar"><input class="inp inp-search" placeholder="Rechercher..." oninput="renderStocks(this.value)"></div>
+    <div class="card"><table><thead><tr><th>Produit</th><th>Stock actuel</th><th>Seuil alerte</th><th>État</th><th>Modifier</th></tr></thead><tbody id="tbody-stocks"></tbody></table></div>
+  </div>
+
+  <!-- COMMANDES -->
+  <div class="page" id="page-commandes">
+    <div class="toolbar">
+      <input class="inp inp-search" id="search-cmd" placeholder="Rechercher..." oninput="filtrerCommandes()">
+      <select class="inp" id="filter-statut-cmd" onchange="filtrerCommandes()"><option value="">Tous statuts</option><option>En préparation</option><option>Prête</option><option>Retirée</option><option>Annulée</option></select>
+      <button class="btn" style="color:var(--rouge);border:1px solid var(--bord)" onclick="viderCommandesDemo()" title="Supprimer toutes les commandes">Tout vider</button>
+    </div>
+    <div class="card"><table><thead><tr><th>N°</th><th>Client</th><th>Produits</th><th>Total</th><th>Date</th><th>Validé par</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody-commandes"></tbody></table></div>
+  </div>
+
+  <!-- TICKETS -->
+  <div class="page" id="page-tickets">
+    <div class="toolbar">
+      <input class="inp inp-search" id="search-tickets" placeholder="Rechercher..." oninput="filtrerTickets()">
+      <select class="inp" id="filter-statut-tickets" onchange="filtrerTickets()"><option value="">Tous</option><option>Ouvert</option><option>En cours</option><option>Résolu</option></select>
+    </div>
+    <div class="card"><table><thead><tr><th>N°</th><th>Client</th><th>Type</th><th>Sujet</th><th>Commande</th><th>Doc</th><th>Priorité</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody-tickets"></tbody></table></div>
+  </div>
+
+  <!-- CLIENTS -->
+  <div class="page" id="page-clients">
+    <div class="toolbar">
+      <input class="inp inp-search" id="search-clients" placeholder="Rechercher un client..." oninput="filtrerClients()">
+      <select class="inp" id="filter-type-clients" onchange="filtrerClients()"><option value="">Tous</option><option>Compte</option><option>Invité</option></select>
+    </div>
+    <div class="card"><table><thead><tr><th>Client</th><th>Type</th><th>Notifications</th><th>RGPD</th><th>Achats</th><th>Fidélité</th><th>Actions</th></tr></thead><tbody id="tbody-clients"></tbody></table></div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="page" id="page-notifications">
+    <div class="card mb3"><div class="card-header"><div class="card-title">Notifications automatiques</div></div><div class="card-body">
+      <div style="font-size:0.78rem;color:var(--texte-2);line-height:1.6;margin-bottom:14px">Choisissez les événements qui déclenchent automatiquement un email au client. L'envoi utilise le compte EmailJS réglé dans Paramètres &gt; Emails ; chaque envoi apparaît dans le journal ci-dessous.</div>
+      <div id="notif-auto-list"></div>
+    </div></div>
+
+    <div class="card mb3"><div class="card-header"><div class="card-title">Journal des envois automatiques</div></div><div class="card-body">
+      <div id="email-journal"></div>
+    </div></div>
+
+    <div class="card mb3"><div class="card-header"><div class="card-title">Envoyer une notification</div></div><div class="card-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Type</label><select class="inp" id="notif-type"><option>Nouvelle promo</option><option>Garde / Ouverture exceptionnelle</option><option>Message personnalisé</option></select></div>
+        <div class="form-group"><label>Destinataires</label><select class="inp" id="notif-dest"></select></div>
+      </div>
+      <div class="form-group mb3 mt3"><label>Message</label><textarea class="inp" id="notif-msg" style="height:80px" placeholder="Votre message aux clients..."></textarea></div>
+      <button class="btn btn-primary" onclick="envoyerNotification()">Enregistrer l'envoi</button>
+    </div></div>
+
+    <div class="card"><div class="card-header"><div class="card-title">Historique des envois</div></div><div class="card-body">
+      <div id="notif-historique"></div>
+    </div></div>
+  </div>
+
+  <!-- RAPPORT -->
+  <div class="page" id="page-rapport">
+    <div class="g2">
+      <div class="card"><div class="card-header"><div class="card-title">Configuration</div></div><div class="card-body">
+        <div class="form-group mb3"><label>Email destinataire</label><input class="inp" id="par-rapport-email" value="contact@pharmacie-demo.test"></div>
+        <div class="form-grid">
+          <div class="form-group"><label>Jour d'envoi</label><select class="inp" id="par-rapport-jour"><option>lundi</option><option>vendredi</option><option>dimanche</option></select></div>
+          <div class="form-group"><label>Heure</label><input type="time" class="inp" id="par-rapport-heure" value="08:00"></div>
+        </div>
+        <hr>
+        <div class="form-group mb3"><label style="margin-bottom:8px;display:block">Contenu</label>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="rap-promos" checked><span class="toggle-track"></span><span style="font-size:0.76rem">Promos actives & performance</span></label>
+            <label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="rap-codes" checked><span class="toggle-track"></span><span style="font-size:0.76rem">Codes promo générés & utilisés</span></label>
+            <label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="rap-ventes"><span class="toggle-track"></span><span style="font-size:0.76rem">Ventes & chiffre d'affaires</span></label>
+            <label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="rap-employes"><span class="toggle-track"></span><span style="font-size:0.76rem">Activité par employé</span></label>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveRapportConfig()">Sauvegarder</button>
+        <div class="txt-muted" style="margin-top:10px;font-size:0.72rem;line-height:1.5">L'envoi automatique chaque semaine nécessite le serveur (étape Supabase) : la configuration est enregistrée dès maintenant.</div>
+      </div></div>
+      <div class="card" id="rapport-carte"><div class="card-header"><div class="card-title">Rapport de la semaine</div><span class="txt-muted" id="rapport-periode">—</span></div><div class="card-body">
+        <div id="rapport-contenu"></div>
+        <div class="flex-gap mt3">
+          <button class="btn btn-ghost" onclick="envoyerRapport()"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Envoyer</button>
+          <button class="btn btn-ghost" onclick="imprimerRapport()" title="Imprimer ou enregistrer en PDF"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- SCAN -->
+  <div class="page" id="page-scan">
+    <div class="g2">
+      <div class="card"><div class="card-header"><div class="card-title">Validation commande</div><span class="badge b-green">Connecté : Admin Principal</span></div><div class="card-body">
+        <div class="scan-zone"><div class="scan-line"></div><svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke="var(--vert-vif)" stroke-width="1.5" style="margin-bottom:8px"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/></svg><div style="font-size:0.82rem;font-weight:600;color:var(--vert)">Prêt à scanner</div><div class="txt-muted mt2">Saisissez le numéro de commande ou le code de retrait du client</div></div>
+        <div class="mt3"><label style="display:block;margin-bottom:5px">Numéro de commande ou code de retrait</label><div class="flex-gap"><input class="inp" placeholder="#1042 ou code à 6 caractères" id="scan-input" style="flex:1"><button class="btn btn-primary" onclick="simulateScan()">Valider</button></div></div>
+      </div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Historique du jour</div></div><table><thead><tr><th>Commande</th><th>Client</th><th>Validé par</th><th>Heure</th></tr></thead><tbody id="tbody-scan-histo"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- EMPLOYES -->
+  <div class="page" id="page-employes">
+    <div class="card"><table><thead><tr><th>Employé</th><th>Rôle</th><th>Accès</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody-employes"></tbody></table></div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="page" id="page-messages">
+    <div class="card" style="max-width:620px;margin:0 auto">
+      <div class="card-header"><div class="card-title">Messages internes — Équipe Pharmacie Démo</div></div>
+      <div class="card-body">
+        <div id="messages-thread"></div>
+        <div class="flex-gap"><input class="inp" id="msg-input" placeholder="Écrire un message..." style="flex:1" onkeydown="if(event.key==='Enter')envoyerMessage()"><button class="btn btn-primary" onclick="envoyerMessage()"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envoyer</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HORAIRES -->
+  <div class="page" id="page-horaires">
+    <div class="g2">
+      <div class="card"><div class="card-header"><div class="card-title">Horaires habituels</div></div><div class="card-body">
+        <div class="hor-row"><div class="hor-jour">Lundi</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-lundi"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-lundi-deb" style="width:90px"> à <input type="time" class="inp" id="h-lundi-fin" style="width:90px"></div></div>
+        <div class="hor-row"><div class="hor-jour">Mardi</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-mardi"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-mardi-deb" style="width:90px"> à <input type="time" class="inp" id="h-mardi-fin" style="width:90px"></div></div>
+        <div class="hor-row"><div class="hor-jour">Mercredi</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-mercredi"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-mercredi-deb" style="width:90px"> à <input type="time" class="inp" id="h-mercredi-fin" style="width:90px"></div></div>
+        <div class="hor-row"><div class="hor-jour">Jeudi</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-jeudi"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-jeudi-deb" style="width:90px"> à <input type="time" class="inp" id="h-jeudi-fin" style="width:90px"></div></div>
+        <div class="hor-row"><div class="hor-jour">Vendredi</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-vendredi"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-vendredi-deb" style="width:90px"> à <input type="time" class="inp" id="h-vendredi-fin" style="width:90px"></div></div>
+        <div class="hor-row"><div class="hor-jour">Samedi</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-samedi"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-samedi-deb" style="width:90px"> à <input type="time" class="inp" id="h-samedi-fin" style="width:90px"></div></div>
+        <div class="hor-row"><div class="hor-jour">Dimanche</div><label class="toggle-wrap"><input type="checkbox" class="toggle-input" id="h-dimanche"><span class="toggle-track"></span></label><div class="hor-times"><input type="time" class="inp" id="h-dimanche-deb" style="width:90px"> à <input type="time" class="inp" id="h-dimanche-fin" style="width:90px"></div></div>
+        <div class="mt3"><button class="btn btn-primary" onclick="saveHoraires()">Sauvegarder</button></div>
+      </div></div>
+      <div>
+        <div class="card mb3"><div class="card-header"><div class="card-title">Jours spéciaux & Gardes</div><button class="btn btn-primary" style="height:26px;font-size:0.68rem" onclick="openModal('m-garde')">+ Ajouter</button></div><div class="card-body"><div id="jours-speciaux-list"></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Bandeau site</div></div><div class="card-body">
+          <textarea class="inp" id="bandeau-msg" style="background:var(--or-pale);margin-bottom:10px"></textarea>
+          <label class="toggle-wrap mb3"><input type="checkbox" class="toggle-input" id="bandeau-tog"><span class="toggle-track"></span><span style="font-size:0.76rem;font-weight:500">Afficher sur le site</span></label>
+          <div class="mt3"><button class="btn btn-primary" onclick="saveBandeau()">Mettre à jour</button></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARAMETRES -->
+  <div class="page" id="page-parametres">
+    <div class="g2">
+      <div class="card"><div class="card-header"><div class="card-title">Informations pharmacie</div></div><div class="card-body">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nom</label><input class="inp" id="par-nom"></div>
+          <div class="form-group full"><label>Adresse</label><input class="inp" id="par-adresse"></div>
+          <div class="form-group"><label>Téléphone</label><input class="inp" id="par-tel"></div>
+          <div class="form-group"><label>Email</label><input class="inp" id="par-email"></div>
+        </div>
+        <div class="mt3"><button class="btn btn-primary" onclick="saveParametres()">Sauvegarder</button></div>
+      </div></div>
+      <div>
+        <div class="card mb3"><div class="card-header"><div class="card-title">Restriction accès employés</div></div><div class="card-body">
+          <div style="font-size:0.78rem;color:var(--texte-2);line-height:1.6;margin-bottom:12px">Quand activé, les employés ne peuvent accéder au back-office qu'aux heures d'ouverture définies. L'admin garde toujours accès.</div>
+          <label class="toggle-wrap mb3"><input type="checkbox" class="toggle-input" id="par-restriction" onchange="saveRestriction(this.checked)"><span class="toggle-track"></span><span style="font-size:0.76rem;font-weight:600">Activer la restriction horaire</span></label>
+        </div></div>
+        <div class="card mb3"><div class="card-header"><div class="card-title">Informations légales</div></div><div class="card-body">
+          <div style="font-size:0.78rem;color:var(--texte-2);line-height:1.6;margin-bottom:14px">Ces informations sont <strong>obligatoires</strong> (loi LCEN) et alimentent les mentions légales du site. Elles doivent être complètes avant toute mise en ligne publique.</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Raison sociale</label><input class="inp" id="lg-raison"></div>
+            <div class="form-group"><label>Forme juridique</label><input class="inp" id="lg-forme"></div>
+            <div class="form-group"><label>Capital social</label><input class="inp" id="lg-capital"></div>
+            <div class="form-group"><label>SIRET</label><input class="inp" id="lg-siret"></div>
+            <div class="form-group"><label>RCS</label><input class="inp" id="lg-rcs"></div>
+            <div class="form-group"><label>N° TVA intracommunautaire</label><input class="inp" id="lg-tva"></div>
+            <div class="form-group"><label>Pharmacien titulaire</label><input class="inp" id="lg-titulaire"></div>
+            <div class="form-group"><label>N° d'inscription à l'Ordre</label><input class="inp" id="lg-ordre"></div>
+            <div class="form-group"><label>Directeur de la publication</label><input class="inp" id="lg-directeur"></div>
+            <div class="form-group"><label>Médiateur de la consommation</label><input class="inp" id="lg-mediateur"></div>
+            <div class="form-group full"><label>Autorité de tutelle (ARS)</label><input class="inp" id="lg-ars"></div>
+            <div class="form-group full"><label>N° de licence d'officine (autorisation délivrée par l'ARS)</label><input class="inp" id="lg-licence"></div>
+            <div class="form-group full"><label>Hébergeur du site (nom et adresse)</label><input class="inp" id="lg-hebergeur"></div>
+            <div class="form-group full"><label>Téléphone de l'hébergeur</label><input class="inp" id="lg-hebergeur-tel"></div>
+          </div>
+          <div id="lg-alerte" style="margin-top:12px"></div>
+          <div class="mt3"><button class="btn btn-primary" onclick="saveLegal()">Sauvegarder</button></div>
+        </div></div>
+        <div class="card mb3"><div class="card-header"><div class="card-title">Programme de fidélité</div></div><div class="card-body">
+          <div style="font-size:0.78rem;color:var(--texte-2);line-height:1.6;margin-bottom:12px">Définit le palier à atteindre et la réduction accordée. Ces valeurs s'appliquent automatiquement sur le site client.</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Palier (nombre d'achats)</label><input class="inp" type="number" min="1" id="par-fid-seuil"></div>
+            <div class="form-group"><label>Réduction accordée (%)</label><input class="inp" type="number" min="1" max="100" id="par-fid-reduction"></div>
+          </div>
+          <div class="mt3"><button class="btn btn-primary" onclick="saveFidelite()">Sauvegarder</button></div>
+        </div></div>
+        <div class="card mb3"><div class="card-header"><div class="card-title">Emails automatiques</div></div><div class="card-body">
+          <div style="font-size:0.78rem;color:var(--texte-2);line-height:1.6;margin-bottom:12px">Réglages du service d'envoi (EmailJS). Ne saisissez ici que la <strong>clé publique</strong> : la clé privée ne doit jamais être renseignée dans ce site.</div>
+          <label class="toggle-wrap mb3"><input type="checkbox" class="toggle-input" id="em-actif"><span class="toggle-track"></span><span style="font-size:0.76rem;font-weight:600">Envoi d'emails activé</span></label>
+          <div class="form-grid">
+            <div class="form-group"><label>Service ID</label><input class="inp" id="em-service" placeholder="service_xxxxxxx" autocomplete="off"></div>
+            <div class="form-group"><label>Template ID</label><input class="inp" id="em-template" placeholder="template_xxxxxxx" autocomplete="off"></div>
+            <div class="form-group full"><label>Clé publique (Public Key)</label><input class="inp" id="em-key" autocomplete="off"></div>
+            <div class="form-group full"><label>Adresse du logo (https, facultatif)</label><input class="inp" id="em-logo" placeholder="https://..."></div>
+            <div class="form-group full"><label>Adresse publique du site (facultatif)</label><input class="inp" id="em-site" placeholder="https://www.ma-pharmacie.fr"></div>
+          </div>
+          <div class="mt3"><button class="btn btn-primary" onclick="saveEmailParams()">Sauvegarder</button></div>
+          <hr>
+          <div class="form-group mb3"><label>Envoyer un email de test à</label><input class="inp" type="email" id="em-test-dest" placeholder="vous@exemple.fr"></div>
+          <div class="flex-gap"><button class="btn btn-ghost" onclick="envoyerEmailTest()">Envoyer un test</button><span class="txt-muted" id="em-test-etat"></span></div>
+          <div style="font-size:0.72rem;color:var(--texte-3);line-height:1.5;margin-top:10px">Le service gratuit est limité à 200 emails par mois. Le test utilise les paramètres enregistrés ci-dessus et compte dans ce quota.</div>
+        </div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Apparence</div></div><div class="card-body">
+          <div class="form-group mb3"><label>Couleur principale</label><input type="color" id="par-couleur" style="width:50px;height:32px;border:1px solid var(--bord);border-radius:6px;cursor:pointer"></div>
+          <div class="form-group"><label>Logo (texte)</label><input class="inp" id="par-logo"></div>
+          <div class="mt3"><button class="btn btn-primary" onclick="saveApparence()">Sauvegarder</button></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Conseil -->
+<div class="overlay" id="m-conseil">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="m-conseil-title">Nouveau conseil</div><button class="modal-close" onclick="closeModal('m-conseil')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="cs-id" value="">
+      <div class="form-grid">
+        <div class="form-group"><label>Icône</label><select class="inp" id="cs-icone"><option value="soleil">Soleil</option><option value="pilule">Pilule</option><option value="goutte">Goutte</option><option value="coeur">Cœur</option><option value="bouclier">Bouclier</option><option value="feuille">Feuille</option><option value="info">Information</option></select></div>
+        <div class="form-group"><label>Couleur de fond</label><input type="color" id="cs-couleur" value="#1B6B45" style="width:100%;height:38px;border:1px solid var(--bord);border-radius:8px;cursor:pointer"></div>
+        <div class="form-group full"><label>Titre *</label><input class="inp" id="cs-titre" placeholder="Il fait chaud !"></div>
+        <div class="form-group full"><label>Texte du conseil</label><textarea class="inp" id="cs-texte" placeholder="Hydratez-vous et protégez votre peau..." style="min-height:80px"></textarea></div>
+      </div>
+      <div style="background:var(--fond);border-radius:9px;padding:12px;margin-top:10px">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--texte-3);text-transform:uppercase;margin-bottom:8px">Aperçu</div>
+        <div style="background:#1B6B45;border-radius:10px;padding:14px;color:#fff;font-size:0.8rem">
+          <div id="cs-preview-icone" style="margin-bottom:5px"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></div>
+          <div id="cs-preview-titre" style="font-weight:700;margin-bottom:4px">Il fait chaud !</div>
+          <div id="cs-preview-texte" style="opacity:0.85;font-size:0.74rem">Hydratez-vous et protégez votre peau.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-conseil')">Annuler</button><button class="btn btn-primary" onclick="saveConseil()">Sauvegarder</button></div>
+  </div>
+</div>
+
+<!-- Produit -->
+<div class="overlay" id="m-produit">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="m-produit-title">Ajouter un produit</div><button class="modal-close" onclick="closeModal('m-produit')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="p-id" value="">
+      <div style="background:var(--bleu-pale);border:1px solid rgba(74,144,217,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.76rem;color:var(--bleu)"><strong>Astuce :</strong> Si tu as un scanner, passe-le sur le code-barres du produit pour remplir la référence automatiquement.</div>
+      <form id="form-produit">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nom du produit *</label><input class="inp" id="p-nom" placeholder="Crème Solaire SPF50 100ml"></div>
+          <div class="form-group"><label>Référence / Code-barres</label><input class="inp" id="p-ref" placeholder="SOL-001 ou scanner..."></div>
+          <div class="form-group"><label>Catégorie existante</label><select class="inp" id="p-cat"></select></div>
+          <div class="form-group full"><label>Ou créer une nouvelle catégorie</label><input class="inp" id="p-new-cat" placeholder="Ex: Aromathérapie..."></div>
+          <div class="form-group"><label>Prix de vente (€)</label><input class="inp" type="number" step="0.01" id="p-prix" placeholder="0.00"></div>
+          <div class="form-group"><label>Stock initial</label><input class="inp" type="number" id="p-stock" value="0"></div>
+          <div class="form-group"><label>Seuil d'alerte stock</label><input class="inp" type="number" id="p-seuil" value="10"></div>
+          <div class="form-group full"><label>Description</label><textarea class="inp" id="p-desc" placeholder="Description du produit..."></textarea></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-produit');resetForm('form-produit')">Annuler</button><button class="btn btn-primary" onclick="saveProduit()">Sauvegarder</button></div>
+  </div>
+</div>
+
+<!-- Promo -->
+<div class="overlay" id="m-promo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">Créer une promotion</div><button class="modal-close" onclick="closeModal('m-promo')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="p-promo-id" value="">
+      <div class="form-group mb3"><label>Produit(s)</label><select class="inp" id="promo-produit"></select></div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Unités par lot (ex. 3 pour « lot de 3 »)</label><input class="inp" type="number" min="1" id="promo-qte" value="1"></div>
+        <div class="form-group"><label>Prix normal (€)</label><input class="inp" type="number" step="0.01" value="25.20" id="pn" oninput="calcP()"></div>
+        <div class="form-group"><label>Prix promo (€)</label><input class="inp" type="number" step="0.01" value="18.90" id="pp" oninput="calcP()"></div>
+      </div>
+      <div class="promo-preview"><div><div class="promo-pct" id="ppct">-25%</div><div class="promo-info">18,90€ au lieu de 25,20€</div></div><div class="promo-tag">Aperçu client</div></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Début</label><input type="date" class="inp" id="promo-debut" value="2025-06-16"></div>
+        <div class="form-group"><label>Fin</label><input type="date" class="inp" id="promo-fin" value="2025-06-30"></div>
+      </div>
+      <hr>
+      <label style="display:block;margin-bottom:7px">Notifier les clients</label>
+      <div class="flex-gap">
+        <label class="toggle-wrap"><input type="checkbox" class="toggle-input" checked><span class="toggle-track"></span><span style="font-size:0.76rem">Email</span></label>
+        <label class="toggle-wrap"><input type="checkbox" class="toggle-input" checked><span class="toggle-track"></span><span style="font-size:0.76rem">SMS</span></label>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-promo')">Annuler</button><button class="btn btn-primary" onclick="savePromo()">Lancer</button></div>
+  </div>
+</div>
+
+<!-- Client -->
+<div class="overlay" id="m-client">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">Ajouter un client</div><button class="modal-close" onclick="closeModal('m-client')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="cl-id" value="">
+      <form id="form-client">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nom complet *</label><input class="inp" id="cl-nom" placeholder="Marie Dupont"></div>
+          <div class="form-group"><label>Email</label><input class="inp" id="cl-email" type="email" placeholder="marie@email.com"></div>
+          <div class="form-group"><label>Téléphone</label><input class="inp" id="cl-tel" placeholder="06 12 34 56 78"></div>
+          <div class="form-group full"><label>Type de compte</label><select class="inp" id="cl-type"><option value="Compte">Compte (avec email/mdp)</option><option value="Invité">Invité (commande rapide)</option></select></div>
+        </div>
+        <div style="background:var(--vert-pale);border-radius:8px;padding:10px;margin-top:10px;font-size:0.76rem;color:var(--vert)">La fiche sert au suivi des commandes et de la fidélité. L'adresse email identifie le client : elle doit être unique. Aucun email n'est envoyé à la création.</div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-client');resetForm('form-client')">Annuler</button><button class="btn btn-primary" onclick="saveClient()">Ajouter</button></div>
+  </div>
+</div>
+
+<!-- Employé -->
+<div class="overlay" id="m-employe">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">Employé</div><button class="modal-close" onclick="closeModal('m-employe')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="emp-id" value="">
+      <form id="form-employe">
+        <div class="form-grid">
+          <div class="form-group full"><label>Nom complet *</label><input class="inp" id="emp-nom" placeholder="Marie Dupont"></div>
+          <div class="form-group full"><label>Email professionnel</label><input class="inp" id="emp-email" placeholder="marie@pharmacie-demo.test"></div>
+          <div class="form-group full"><label>Rôle</label><select class="inp" id="emp-role"><option value="Employé">Employé (commandes + tickets)</option><option value="Admin">Admin (accès complet)</option></select></div>
+          <div class="form-group full" style="font-size:0.76rem;color:var(--texte-2);line-height:1.5;background:var(--fond);border:1px solid var(--bord);border-radius:8px;padding:10px">Les identifiants de connexion (email et mot de passe personnel) seront créés avec la connexion sécurisée de l'administration. Cette liste sert en attendant à organiser l'équipe.</div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-employe');resetForm('form-employe')">Annuler</button><button class="btn btn-primary" onclick="saveEmploye()">Sauvegarder</button></div>
+  </div>
+</div>
+
+<!-- Garde -->
+<div class="overlay" id="m-garde">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">Jour spécial</div><button class="modal-close" onclick="closeModal('m-garde')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Type</label><select class="inp" id="g-type"><option>Garde</option><option>Fermeture</option><option>Horaires modifiés</option></select></div>
+        <div class="form-group full"><label>Date *</label><input type="date" class="inp" id="g-date"></div>
+        <div class="form-group"><label>Ouverture</label><input type="time" class="inp" id="g-debut" value="08:00"></div>
+        <div class="form-group"><label>Fermeture</label><input type="time" class="inp" id="g-fin" value="20:00"></div>
+        <div class="form-group full"><label>Message affiché sur le site</label><textarea class="inp" id="g-msg">Pharmacie de garde — Ouverts de 8h à 20h</textarea></div>
+      </div>
+      <label class="toggle-wrap mt3"><input type="checkbox" class="toggle-input" checked><span class="toggle-track"></span><span style="font-size:0.76rem;font-weight:500">Notifier les clients (Email/SMS)</span></label>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-garde')">Annuler</button><button class="btn btn-primary" onclick="saveGarde()">Sauvegarder</button></div>
+  </div>
+</div>
+
+<!-- Détail générique -->
+<div class="overlay" id="m-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="m-detail-title"></div><button class="modal-close" onclick="closeModal('m-detail')">✕</button></div>
+    <div class="modal-body" id="m-detail-body"></div>
+    <div class="modal-footer" id="m-detail-footer"></div>
+  </div>
+</div>
+
+<!-- Confirmation suppression -->
+<div class="overlay" id="m-confirm">
+  <div class="modal" style="border-radius:14px;max-width:420px">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" style="color:var(--rouge)" id="confirm-titre">Confirmer la suppression</div><button class="modal-close" onclick="closeModal('m-confirm')">✕</button></div>
+    <div class="modal-body"><p style="font-size:0.82rem;line-height:1.6;color:var(--texte-2)" id="confirm-msg"></p></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('m-confirm')">Annuler</button><button class="btn" style="background:var(--rouge);color:#fff" id="confirm-ok" onclick="confirmOk()">Supprimer définitivement</button></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="emails.js"></script>
+<script src="admin.js"></script>
+<script src="guide-admin.js"></script>
+<script src="demo-nav.js"></script>
+</body>
+</html>

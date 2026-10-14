@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<!-- Politique de sécurité : seuls ce site, Google Fonts, EmailJS et Supabase sont autorisés -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.emailjs.com https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmacie Démo — Parapharmacie &amp; Click and Collect à Paris</title>
+<meta name="description" content="Commandez vos produits de parapharmacie en ligne et récupérez-les à la Pharmacie Démo, 1 rue de l’Exemple, Paris. Click &amp; collect, sans paiement en ligne, prêt en 2h.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#1B6B45">
+<link rel="canonical" href="https://exemple.test/">
+
+<!-- Favicon SVG (croix de pharmacie) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B6B45'/%3E%3Cpath d='M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z' fill='white'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B6B45'/%3E%3Cpath d='M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z' fill='white'/%3E%3C/svg%3E">
+
+<!-- Partage sur les réseaux sociaux et messageries -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pharmacie Démo">
+<meta property="og:title" content="Pharmacie Démo — Click &amp; Collect à Paris">
+<meta property="og:description" content="Réservez vos produits de parapharmacie en ligne et retirez-les en officine. Simple, rapide, sans paiement en ligne.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+
+<!-- Données structurées : aide le référencement local Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Pharmacy",
+  "name": "Pharmacie Démo",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "1 rue de l’Exemple",
+    "postalCode": "75000",
+    "addressLocality": "Paris",
+    "addressCountry": "FR"
+  },
+  "telephone": "+33146271712",
+  "openingHoursSpecification": [
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"], "opens": "09:00", "closes": "21:00" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": "Sunday", "opens": "09:00", "closes": "20:00" }
+  ],
+  "priceRange": "€€"
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --vert:#1B6B45; --vert-vif:#2ECC7A; --vert-clair:#5FE3A1;
+  --or:#D9A441; --or-clair:#F0C674;
+  --creme:#FAF7F0; --blanc:#FFFFFF;
+  --texte:#16241C; --texte-2:#4A5C50; --texte-3:#8A988F;
+  --bord:#E6EBE6;
+  --bg:#F7FAF7; --bg-card:#FFFFFF;
+  --shadow-s:0 2px 8px rgba(20,40,28,0.06);
+  --shadow:0 8px 30px rgba(20,40,28,0.10);
+  --shadow-lg:0 20px 60px rgba(20,40,28,0.16);
+  --r:18px; --r-s:12px;
+}
+/* DARK MODE */
+html[data-theme="dark"] {
+  --vert:#2ECC7A; --vert-vif:#3FE08C; --vert-clair:#5FE3A1;
+  --or:#F0C060; --or-clair:#F5D080;
+  --creme:#1A2620; --blanc:#1E2C24;
+  --texte:#F0F7F2; --texte-2:#C8D8CC; --texte-3:#90A898;
+  --bord:#2C3D34;
+  --bg:#121A16; --bg-card:#1A2620;
+  --shadow-s:0 2px 8px rgba(0,0,0,0.3);
+  --shadow:0 8px 30px rgba(0,0,0,0.4);
+  --shadow-lg:0 20px 60px rgba(0,0,0,0.5);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--texte);line-height:1.6;overflow-x:hidden;transition:background 0.5s,color 0.5s}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;line-height:1.1}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;display:block}
+
+/* ── AMBIENT BACKGROUND (molécules) ── */
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5}
+.ambient canvas{width:100%;height:100%}
+
+/* ── HEADER ── */
+header.scrolled{background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0;backdrop-filter:blur(10px)}
+html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
+.nav-wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:700;font-size:1.15rem;color:var(--texte)}
+.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--vert),var(--vert-vif));border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(46,204,122,0.3)}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-links a{padding:8px 16px;border-radius:10px;font-size:0.9rem;font-weight:600;color:var(--texte-2);transition:all 0.2s}
+.nav-links a:hover{color:var(--vert);background:rgba(46,204,122,0.08)}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.theme-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--bord);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--texte-2);transition:all 0.25s}
+.theme-btn:hover{border-color:var(--vert);color:var(--vert);transform:rotate(20deg)}
+.cart-btn{position:relative;width:38px;height:38px;border-radius:10px;border:1px solid var(--bord);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--texte-2);transition:all 0.25s}
+.cart-btn:hover{border-color:var(--vert);color:var(--vert)}
+.cart-count{position:absolute;top:-6px;right:-6px;background:var(--vert);color:#fff;font-size:0.62rem;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.btn-account{padding:9px 18px;border-radius:10px;background:var(--vert);color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;border:none;transition:all 0.25s;font-family:inherit}
+.btn-account:hover{background:#155636;transform:translateY(-1px);box-shadow:0 6px 18px rgba(27,107,69,0.3)}
+.burger-m{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--bord);background:var(--bg-card);cursor:pointer;align-items:center;justify-content:center;color:var(--texte)}
+
+/* ── HERO ── */
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;padding:120px 0 60px;overflow:hidden}
+.hero-wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:50px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(46,204,122,0.1);color:var(--vert);padding:7px 16px;border-radius:30px;font-size:0.8rem;font-weight:700;margin-bottom:24px;border:1px solid rgba(46,204,122,0.2)}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--vert-vif);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero h1{font-size:clamp(2.6rem,5.5vw,4.4rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:22px}
+.hero h1 .accent{font-style:italic;color:var(--vert);position:relative}
+.hero p{font-size:1.12rem;color:var(--texte-2);max-width:480px;margin-bottom:34px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.btn-lg{padding:15px 30px;border-radius:14px;font-size:0.98rem;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all 0.3s;display:inline-flex;align-items:center;gap:9px}
+.btn-primary{background:var(--vert);color:#fff;box-shadow:0 8px 24px rgba(27,107,69,0.28)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(27,107,69,0.36)}
+.btn-outline{background:transparent;color:var(--texte);border:1.5px solid var(--bord)}
+.btn-outline:hover{border-color:var(--vert);color:var(--vert);transform:translateY(-3px)}
+.hero-stats{display:flex;gap:34px;margin-top:48px}
+.hero-stat .num{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--vert)}
+.hero-stat .lbl{font-size:0.8rem;color:var(--texte-3);font-weight:600}
+
+/* ── HERO VISUEL 3D ── */
+.hero-visual{position:relative;height:480px;perspective:1200px}
+.float-card{position:absolute;background:var(--bg-card);border-radius:var(--r);box-shadow:var(--shadow-lg);border:1px solid var(--bord);overflow:hidden;transition:transform 0.4s}
+.fc-1{width:260px;top:20px;left:30px;z-index:3;transform:rotateY(-8deg) rotateX(4deg)}
+.fc-2{width:210px;bottom:40px;right:10px;z-index:2;transform:rotateY(10deg) rotateX(-3deg)}
+.fc-3{width:170px;bottom:0;left:0;z-index:4;transform:rotateY(-4deg)}
+.fc-head{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bord)}
+.fc-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fc-body{padding:14px 16px}
+.fc-title{font-weight:700;font-size:0.82rem}
+.fc-sub{font-size:0.7rem;color:var(--texte-3)}
+.promo-badge{background:var(--vert);color:#fff;font-size:0.7rem;font-weight:800;padding:3px 10px;border-radius:20px;display:inline-block}
+.price-now{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;color:var(--vert)}
+.price-old{font-size:0.85rem;color:var(--texte-3);text-decoration:line-through}
+
+/* ── SECTIONS ── */
+section{position:relative;z-index:1}
+.container{max-width:1240px;margin:0 auto;padding:0 24px}
+.section-pad{padding:90px 0}
+.eyebrow{display:inline-block;color:var(--vert);font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
+.section-title{font-size:clamp(2rem,4vw,3rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:16px}
+.section-sub{font-size:1.08rem;color:var(--texte-2);max-width:560px}
+.section-head{margin-bottom:48px}
+.section-head.center{text-align:center;margin-left:auto;margin-right:auto}
+.section-head.center .section-sub{margin:0 auto}
+
+/* ── REVEAL ANIM ── */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s cubic-bezier(0.22,1,0.36,1),transform 0.8s cubic-bezier(0.22,1,0.36,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-d1{transition-delay:0.1s}
+.reveal-d2{transition-delay:0.2s}
+.reveal-d3{transition-delay:0.3s}
+
+/* ── PROMOS ── */
+.promo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px;perspective:1200px}
+.promo-card{background:var(--bg-card);border-radius:var(--r);border:1px solid var(--bord);overflow:hidden;box-shadow:var(--shadow-s);transition:transform 0.4s cubic-bezier(0.22,1,0.36,1),box-shadow 0.4s;cursor:pointer;transform-style:preserve-3d}
+.promo-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
+.promo-img{height:170px;background:linear-gradient(135deg,rgba(46,204,122,0.12),rgba(217,164,65,0.12));position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.promo-img svg{width:64px;height:64px;opacity:0.5;color:var(--vert)}
+.promo-discount{position:absolute;top:12px;right:12px;background:var(--vert);color:#fff;font-weight:800;font-size:0.9rem;padding:5px 12px;border-radius:30px;box-shadow:0 4px 12px rgba(27,107,69,0.3)}
+.promo-timer{position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.68rem;font-weight:600;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
+.promo-content{padding:16px}
+.promo-cat{font-size:0.7rem;color:var(--vert);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.promo-name{font-weight:700;font-size:1rem;margin:5px 0 10px}
+.promo-prices{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.promo-add{width:100%;padding:11px;border-radius:11px;background:var(--vert);color:#fff;font-weight:700;font-size:0.85rem;border:none;cursor:pointer;font-family:inherit;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:7px}
+.promo-add:hover{background:#155636}
+
+/* ── FEATURES ── */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;perspective:1200px}
+.feature{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);padding:30px 26px;transition:transform 0.4s,box-shadow 0.4s}
+.feature:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.feature-ic{width:56px;height:56px;border-radius:15px;background:rgba(46,204,122,0.1);display:flex;align-items:center;justify-content:center;color:var(--vert);margin-bottom:18px}
+.feature h3{font-size:1.25rem;margin-bottom:10px}
+.feature p{font-size:0.92rem;color:var(--texte-2)}
+
+/* ── COMMENT ÇA MARCHE ── */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;counter-reset:step;perspective:1200px}
+.step{position:relative;padding:28px 22px;background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);transition:transform 0.4s}
+.step:hover{transform:translateY(-5px)}
+.step-num{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:700;color:var(--vert);opacity:0.25;line-height:1}
+.step h3{font-size:1.1rem;margin:10px 0 8px}
+.step p{font-size:0.86rem;color:var(--texte-2)}
+
+/* ── CTA FIDÉLITÉ ── */
+.fidelite{background:linear-gradient(135deg,var(--vert),#0F4A2E);border-radius:28px;padding:60px 50px;position:relative;overflow:hidden;color:#fff}
+.fidelite::before{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(95,227,161,0.3),transparent 70%);border-radius:50%}
+.fidelite-wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.3fr 0.7fr;gap:40px;align-items:center}
+.fidelite h2{font-size:2.4rem;color:#fff;margin-bottom:16px}
+.fidelite p{color:rgba(255,255,255,0.85);font-size:1.05rem;margin-bottom:26px;max-width:420px}
+.fidelite-card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r);padding:24px;text-align:center}
+.qr-placeholder{width:130px;height:130px;background:#fff;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;padding:12px}
+.qr-placeholder svg{width:100%;height:100%;color:var(--vert)}
+.btn-white{background:#fff;color:var(--vert);padding:14px 28px;border-radius:13px;font-weight:700;border:none;cursor:pointer;font-family:inherit;font-size:0.95rem;transition:all 0.25s}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.2)}
+
+/* ── PAGES LÉGALES ── */
+.footer-legal a{color:inherit;text-decoration:none;cursor:pointer;transition:color 0.2s}
+.footer-legal a:hover{color:var(--vert);text-decoration:underline}
+.legal-box{max-width:720px;max-height:85vh;display:flex;flex-direction:column}
+.legal-content{overflow-y:auto;padding-right:6px;margin-top:8px;font-size:0.86rem;line-height:1.7;color:var(--texte-2)}
+.legal-content h3{font-size:0.95rem;color:var(--texte);margin:20px 0 8px;font-weight:800}
+.legal-content h3:first-child{margin-top:0}
+.legal-content p{margin-bottom:10px}
+.legal-content ul{margin:0 0 12px 18px}
+.legal-content li{margin-bottom:5px}
+.legal-todo{background:rgba(217,164,65,0.14);color:#8a6414;border:1px dashed rgba(217,164,65,0.6);border-radius:5px;padding:1px 7px;font-weight:700;font-size:0.82rem}
+.legal-maj{font-size:0.76rem;color:var(--texte-3);margin-top:20px;padding-top:12px;border-top:1px solid var(--bord)}
+
+/* ── BANDEAU COOKIES ── */
+/* Sous le panier et les fenêtres (z-index 300+) : sinon le bandeau masque le bouton « Commander » */
+.cookie-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--bord);box-shadow:0 -6px 28px rgba(0,0,0,0.13);padding:16px 22px;display:none;align-items:center;justify-content:space-between;gap:20px;z-index:250;flex-wrap:wrap}
+.cookie-bar.show{display:flex}
+.cookie-text{flex:1;min-width:250px}
+.cookie-text strong{display:block;font-size:0.88rem;margin-bottom:3px;color:var(--texte)}
+.cookie-text p{font-size:0.78rem;color:var(--texte-2);line-height:1.55;margin:0}
+.cookie-actions{display:flex;gap:9px;flex-shrink:0}
+.cookie-btn{padding:10px 22px;border-radius:var(--r-s);font-family:inherit;font-size:0.84rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1.5px solid var(--bord)}
+.cookie-refuse{background:var(--bg-card);color:var(--texte-2)}
+.cookie-refuse:hover{border-color:var(--texte-3);color:var(--texte)}
+.cookie-accept{background:var(--vert);color:#fff;border-color:var(--vert)}
+.cookie-accept:hover{filter:brightness(1.1)}
+@media(max-width:640px){.cookie-bar{padding:14px 16px}.cookie-actions{width:100%}.cookie-btn{flex:1}}
+
+/* ── COMMANDE INVITÉ ── */
+.or-sep{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--texte-3);font-size:0.76rem}
+.or-sep::before,.or-sep::after{content:"";flex:1;height:1px;background:var(--bord)}
+.btn-guest{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px 18px;background:var(--bg-card);color:var(--vert);border:1.5px solid var(--vert);border-radius:var(--r-s);font-family:inherit;font-size:0.92rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-guest:hover{background:var(--vert);color:#fff;transform:translateY(-1px);box-shadow:var(--shadow-s)}
+.guest-hint{text-align:center;font-size:0.76rem;color:var(--texte-3);margin-top:9px}
+.compte-info{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--bord);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:0.82rem;line-height:1.55;color:var(--texte-2)}
+.compte-info svg{flex-shrink:0;color:var(--vert);margin-top:2px}
+.guest-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(46,204,122,0.11);color:var(--vert);border:1px solid rgba(46,204,122,0.28);border-radius:99px;padding:7px 13px;font-size:0.76rem;font-weight:700;margin-bottom:16px}
+/* CONFIRMATION DE COMMANDE */
+.conf-ok{width:56px;height:56px;border-radius:50%;background:rgba(46,204,122,0.14);color:var(--vert);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.conf-box{text-align:center}
+.conf-box h2{margin-bottom:6px}
+.conf-num{font-size:0.82rem;color:var(--texte-2);margin-bottom:18px}
+.conf-code{background:var(--bg);border:1px dashed var(--vert);border-radius:14px;padding:16px;margin-bottom:14px}
+.conf-code small{display:block;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--texte-3);margin-bottom:6px}
+.conf-code strong{font-family:'Courier New',Courier,monospace;font-size:1.9rem;letter-spacing:4px;color:var(--vert)}
+.conf-info{font-size:0.84rem;color:var(--texte-2);line-height:1.6;margin-bottom:12px}
+.conf-fid{background:rgba(217,164,65,0.12);border:1px solid rgba(217,164,65,0.4);border-radius:12px;padding:12px;font-size:0.84rem;color:var(--texte);margin-bottom:12px}
+.conf-fid strong{font-family:'Courier New',Courier,monospace;letter-spacing:1.5px}
+.conf-mail{font-size:0.78rem;color:var(--texte-3);margin-bottom:18px}
+
+/* ── FAQ ── */
+.faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.faq-item{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r-s);overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s}
+.faq-item.open{border-color:rgba(46,204,122,0.35);box-shadow:var(--shadow-s)}
+.faq-question{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.96rem;font-weight:700;color:var(--texte);text-align:left;transition:color 0.2s}
+.faq-question:hover{color:var(--vert)}
+.faq-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(46,204,122,0.1);color:var(--vert);display:flex;align-items:center;justify-content:center;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1)}
+.faq-item.open .faq-icon{transform:rotate(180deg)}
+.faq-answer{max-height:0;overflow:hidden;transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1)}
+.faq-answer-inner{padding:0 22px 20px;color:var(--texte-2);font-size:0.88rem;line-height:1.65}
+
+/* ── FOOTER ── */
+footer{background:var(--bg-card);border-top:1px solid var(--bord);padding:60px 0 30px;position:relative;z-index:1}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-brand p{color:var(--texte-2);font-size:0.9rem;margin-top:16px;max-width:280px}
+.footer-col h4{font-size:0.95rem;font-weight:700;margin-bottom:16px}
+.footer-col a{display:block;color:var(--texte-2);font-size:0.88rem;padding:5px 0;transition:color 0.2s}
+.footer-col a:hover{color:var(--vert)}
+.footer-bottom{border-top:1px solid var(--bord);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:0.82rem;color:var(--texte-3)}
+
+/* ── CART DRAWER ── */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);z-index:300;opacity:0;visibility:hidden;transition:all 0.3s}
+.cart-overlay.open{opacity:1;visibility:visible}
+.cart-drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;background:var(--bg-card);z-index:301;transform:translateX(100%);transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column}
+.cart-drawer.open{transform:translateX(0)}
+.cart-header{padding:22px;border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between}
+.cart-header h3{font-size:1.3rem}
+.cart-items{flex:1;overflow-y:auto;padding:16px 22px}
+.cart-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--bord)}
+.cart-item-img{width:56px;height:56px;border-radius:11px;background:rgba(46,204,122,0.1);display:flex;align-items:center;justify-content:center;color:var(--vert);flex-shrink:0}
+.cart-item-info{flex:1}
+.cart-item-name{font-weight:700;font-size:0.86rem}
+.cart-item-price{color:var(--vert);font-weight:700;font-size:0.9rem}
+.cart-qty{display:flex;align-items:center;gap:8px;margin-top:6px}
+.cart-qty button{width:24px;height:24px;border-radius:6px;border:1px solid var(--bord);background:var(--bg);cursor:pointer;color:var(--texte);font-weight:700}
+.cart-footer{padding:22px;border-top:1px solid var(--bord)}
+.cart-total{display:flex;justify-content:space-between;margin-bottom:16px;font-size:1.1rem;font-weight:700}
+.cart-total .amount{color:var(--vert);font-family:'Fraunces',serif}
+.cart-empty{text-align:center;padding:50px 20px;color:var(--texte-3)}
+
+/* ── MODAL ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:400;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-ov.open{display:flex;animation:fadeIn 0.25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:var(--bg-card);border-radius:24px;width:440px;max-width:100%;padding:32px;box-shadow:var(--shadow-lg);animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);margin:auto 0}
+@keyframes popIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-box h2{font-size:1.6rem;margin-bottom:8px}
+.modal-box .sub{color:var(--texte-2);font-size:0.92rem;margin-bottom:24px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:0.82rem;font-weight:600;color:var(--texte-2);margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border:1px solid var(--bord);border-radius:12px;font-family:inherit;font-size:0.92rem;background:var(--bg);color:var(--texte);outline:none;transition:border 0.2s}
+.field input:focus{border-color:var(--vert)}
+.modal-tabs{display:flex;gap:6px;background:var(--bg);padding:5px;border-radius:12px;margin-bottom:24px}
+.modal-tab{flex:1;padding:10px;text-align:center;border-radius:9px;font-weight:600;font-size:0.88rem;cursor:pointer;color:var(--texte-2);transition:all 0.2s}
+.modal-tab.active{background:var(--bg-card);color:var(--vert);box-shadow:var(--shadow-s)}
+.modal-close{position:absolute;top:20px;right:20px;width:32px;height:32px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;color:var(--texte-2);display:flex;align-items:center;justify-content:center}
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:0.82rem;color:var(--texte-2)}
+.checkbox-row input{margin-top:3px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--texte);color:var(--bg-card);padding:12px 22px;border-radius:30px;font-size:0.88rem;font-weight:600;box-shadow:var(--shadow-lg);animation:toastUp 0.4s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:8px}
+@keyframes toastUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── GARDE BANNER ── */
+.garde-bar{background:linear-gradient(90deg,var(--or),var(--or-clair));color:#3A2A05;text-align:center;padding:12px 20px;font-size:0.85rem;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:102;letter-spacing:0.2px;line-height:1.5}
+header{position:fixed;top:46px;left:0;right:0;z-index:100;padding:14px 0;transition:all 0.4s}
+header.scrolled{top:0;background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0;backdrop-filter:blur(10px)}
+html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
+.hero{padding-top:170px}
+
+/* ── CARROUSEL PROMOS ── */
+.slider-wrap{position:relative;overflow:hidden;margin-bottom:14px}
+.slider-track{display:flex;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1)}
+.slider-slide{min-width:100%;padding:0 4px}
+.slider-dots{display:flex;justify-content:center;gap:7px;margin-top:16px}
+.slider-dot{width:8px;height:8px;border-radius:50%;background:var(--bord);cursor:pointer;transition:all 0.3s}
+.slider-dot.active{background:var(--vert);width:22px;border-radius:4px}
+.slider-arrows{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.slider-arrow{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--bord);background:var(--bg-card);cursor:pointer;color:var(--texte-2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.slider-arrow:hover{border-color:var(--vert);color:var(--vert)}
+
+/* ── ANIMATION BOUTON PANIER ── */
+.promo-add{position:relative;overflow:hidden}
+.promo-add::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.15);transform:translateX(-100%);transition:transform 0.4s}
+.promo-add:hover::after{transform:translateX(100%)}
+.promo-add:hover{background:#155636;transform:translateY(-2px);box-shadow:0 6px 18px rgba(27,107,69,0.3)}
+.promo-add:active{transform:scale(0.97)}
+.promo-add .cart-ic{transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+.promo-add:hover .cart-ic{transform:scale(1.25) rotate(-12deg)}
+
+/* ── CARTES SERVICES (effet hover Aprium) ── */
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.service-card{border-radius:var(--r);overflow:hidden;position:relative;height:280px;cursor:pointer;box-shadow:var(--shadow)}
+.service-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform 0.5s cubic-bezier(0.22,1,0.36,1)}
+.service-card:hover .service-bg{transform:scale(1.04)}
+.service-overlay{position:absolute;bottom:0;left:0;right:0;padding:24px;transform:translateY(0);transition:all 0.4s cubic-bezier(0.22,1,0.36,1)}
+.service-overlay-inner{background:var(--vert);border-radius:12px;padding:18px 20px;transform:translateY(8px);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.service-card:hover .service-overlay-inner{transform:translateY(0)}
+.service-title{color:#fff;font-weight:800;font-size:1.05rem;text-transform:uppercase;letter-spacing:0.5px}
+.service-sub{color:rgba(255,255,255,0.8);font-size:0.8rem;margin-top:4px;max-height:0;overflow:hidden;transition:max-height 0.4s}
+.service-card:hover .service-sub{max-height:60px}
+
+/* ── BANNERS SVG ── */
+.banner-section{padding:70px 0}
+.banner-card{border-radius:24px;overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:220px;margin-bottom:22px;box-shadow:var(--shadow)}
+.banner-card.reverse{direction:rtl}
+.banner-card.reverse > *{direction:ltr}
+.banner-illus{display:flex;align-items:center;justify-content:center;padding:30px;position:relative;overflow:hidden}
+.banner-illus svg{width:180px;height:180px;position:relative;z-index:1}
+.banner-content{display:flex;flex-direction:column;justify-content:center;padding:36px 40px}
+.banner-content h3{font-size:1.6rem;margin-bottom:10px}
+.banner-content p{font-size:0.95rem;margin-bottom:20px;opacity:0.85}
+.banner-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.25s;width:fit-content}
+@media(max-width:700px){
+  .banner-card{grid-template-columns:1fr}
+  .banner-illus{display:none}
+  .services-grid{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+  .hero-wrap{grid-template-columns:1fr;gap:20px}
+  .hero-visual{order:-1;margin-bottom:10px}
+  .hero{padding-top:140px;padding-bottom:30px;min-height:auto}
+  .features{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .fidelite-wrap{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+  .burger-m{display:flex}
+  .btn-account{display:none}
+}
+@media(max-width:768px){
+  .hero{padding-top:120px;padding-bottom:20px}
+}
+@media(max-width:560px){
+  .steps{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr}
+  .hero-stats{gap:20px}
+  .cart-drawer{width:100%}
+  .section-pad{padding:60px 0}
+}
+/* ── FLIP CARDS ── */
+.flip-card{perspective:1000px;background:transparent !important;border:none !important;box-shadow:none !important}
+/* Les deux faces sont superposées dans la même cellule de grille : la carte
+   prend automatiquement la hauteur de la plus haute des deux, ce qui évite
+   que le texte du conseil (verso) soit tronqué par la hauteur du recto. */
+.flip-inner{position:relative;width:100%;display:grid;transform-style:preserve-3d;transition:transform 0.7s cubic-bezier(0.4,0,0.2,1)}
+.flip-inner > .flip-front,.flip-inner > .flip-back{grid-area:1/1}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-front{position:relative;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--bg-card);border-radius:var(--r);border:1px solid var(--bord);box-shadow:var(--shadow-lg);overflow:hidden}
+.flip-back{position:relative;display:flex;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);border-radius:var(--r);overflow:hidden;border:none}
+.flip-back > div{flex:1;padding:14px;color:#fff;display:flex;flex-direction:column;justify-content:center}
+.flip-back .tip-icon{width:26px;height:26px;color:#fff;margin-bottom:7px;flex-shrink:0}
+.flip-back .tip-title{font-weight:700;font-size:0.88rem;margin-bottom:6px;flex-shrink:0}
+.flip-back .tip-text{font-size:0.78rem;opacity:0.9;line-height:1.55}
+
+/* REPOSITIONNEMENT CARTES MOBILE */
+@media(max-width:768px){
+  .hero-visual{
+    height:auto !important;min-height:auto;
+    display:flex;flex-direction:column;align-items:center;
+    gap:8px;margin-top:8px;perspective:none;padding:0 16px;width:100%
+  }
+  .float-card{
+    position:relative !important;top:auto !important;left:auto !important;
+    right:auto !important;bottom:auto !important;transform:none !important;
+    width:100% !important;max-width:340px;z-index:1 !important;
+    border-radius:16px
+  }
+  .flip-inner{transform-style:preserve-3d}
+  /* Cartes compactes sur mobile */
+  .fc-head{padding:10px 14px}
+  .fc-body{padding:10px 14px}
+  .fc-ic{width:30px;height:30px;border-radius:8px}
+  .fc-title{font-size:0.82rem}
+  .fc-sub{font-size:0.65rem}
+  .price-now{font-size:1.2rem}
+  .price-old{font-size:0.78rem}
+  .promo-badge{font-size:0.68rem;padding:3px 9px}
+  .flip-back > div{padding:12px}
+  .flip-back .tip-icon{width:22px;height:22px;margin-bottom:5px}
+  .flip-back .tip-title{font-size:0.82rem;margin-bottom:4px}
+  .flip-back .tip-text{font-size:0.74rem;line-height:1.45}
+}
+.mobile-menu{position:fixed;inset:0;background:var(--bg-card);z-index:200;transform:translateX(100%);transition:transform 0.4s;display:flex;flex-direction:column;padding:80px 30px 30px}
+.mobile-menu.open{transform:translateX(0)}
+.mobile-menu a{padding:16px 0;font-size:1.2rem;font-weight:600;border-bottom:1px solid var(--bord)}
+.mobile-menu-close{position:absolute;top:24px;right:24px;width:40px;height:40px;border:none;background:var(--bg);border-radius:50%;cursor:pointer;color:var(--texte)}
+</style>
+</head>
+<body>
+
+<div class="ambient"><canvas id="ambient-canvas" aria-hidden="true"></canvas></div>
+<div id="toast"></div>
+
+<!-- GARDE BANNER -->
+<div class="garde-bar" id="garde-bar">Pharmacie de garde ce samedi 21 juin · Ouverts de 8h à 20h</div>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="nav-wrap">
+    <a href="#accueil" class="brand">
+      <span class="brand-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>
+      <span id="brand-name-header">Pharmacie Démo</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#accueil">Accueil</a>
+      <a href="#promos">Promotions</a>
+      <a href="#catalogue">Catalogue</a>
+      <a href="#fidelite">Fidélité</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-btn" id="theme-btn" aria-label="Changer le thème clair/sombre" title="Mode jour/nuit"><svg id="theme-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/></svg></button>
+      <button class="cart-btn" id="cart-btn" aria-label="Ouvrir le panier" title="Panier"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="cart-count" id="cart-count" style="display:none">0</span></button>
+      <button class="btn-account" id="account-btn">Mon compte</button>
+      <button class="burger-m" id="burger-m" aria-label="Ouvrir le menu"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobile-menu">
+  <button class="mobile-menu-close" id="mobile-menu-close" aria-label="Fermer le menu"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <a href="#accueil" class="mm-link">Accueil</a>
+  <a href="#promos" class="mm-link">Promotions</a>
+  <a href="#catalogue" class="mm-link">Catalogue</a>
+  <a href="#fidelite" class="mm-link">Fidélité</a>
+  <a href="#faq" class="mm-link">FAQ</a>
+  <button class="btn-account" style="display:block;margin-top:20px" id="account-btn-m">Mon compte</button>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="accueil">
+  <div class="hero-wrap">
+    <div class="hero-text">
+      <span class="hero-eyebrow reveal"><span class="dot"></span>Click & Collect · Paris</span>
+      <h1 class="reveal reveal-d1">Votre parapharmacie, <span class="accent">prête à emporter</span></h1>
+      <p class="reveal reveal-d2">Commandez vos produits en ligne, profitez des promotions du moment et récupérez votre commande à la Pharmacie Démo quand vous voulez. Simple, rapide, sans attente.</p>
+      <div class="hero-cta reveal reveal-d3">
+        <button class="btn-lg btn-primary" onclick="document.getElementById('promos').scrollIntoView()"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>Voir les promos</button>
+        <button class="btn-lg btn-outline" onclick="document.getElementById('catalogue').scrollIntoView()">Parcourir le catalogue</button>
+      </div>
+      <div class="hero-stats reveal reveal-d3">
+        <div class="hero-stat"><div class="num">500+</div><div class="lbl">Produits</div></div>
+        <div class="hero-stat"><div class="num">24h</div><div class="lbl">Retrait rapide</div></div>
+        <div class="hero-stat"><div class="num">-25%</div><div class="lbl">Jusqu'à</div></div>
+      </div>
+    </div>
+    <div class="hero-visual" id="hero-visual">
+      <!-- Carte 1 : Promo (flip vers conseil solaire) -->
+      <div class="float-card fc-1 flip-card" data-depth="0.3" data-flip-delay="0">
+        <div class="flip-inner">
+          <div class="flip-front">
+            <div class="fc-head"><div class="fc-ic" style="background:rgba(46,204,122,0.12)"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><div class="fc-title">Commande prête</div><div class="fc-sub">en 2h en moyenne</div></div></div>
+            <div class="fc-body"><span class="promo-badge">-25%</span><div style="margin-top:10px"><div class="fc-title">Crème Solaire SPF50</div><div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span class="price-now">18,90€</span><span class="price-old">25,20€</span></div></div></div>
+          </div>
+          <div class="flip-back" style="background:linear-gradient(135deg,#1B6B45,#0F4A2E)">
+            <div><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></div><div class="tip-title">Il fait chaud !</div><div class="tip-text">Hydratez-vous et protégez votre peau. Crème SPF50 en promo jusqu'au 30 juin.</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Carte 2 : Fidélité (flip vers conseil vitamines) -->
+      <div class="float-card fc-2 flip-card" data-depth="0.5" data-flip-delay="4000">
+        <div class="flip-inner">
+          <div class="flip-front">
+            <div class="fc-head"><div class="fc-ic" style="background:rgba(217,164,65,0.15)"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--or)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div><div class="fc-title">Fidélité</div><div class="fc-sub" id="fid-resume-carte">5 achats = -10%</div></div></div>
+            <div class="fc-body"><div style="font-size:0.76rem;color:var(--texte-2);line-height:1.5">Cumulez vos achats et débloquez des réductions exclusives à la Pharmacie Démo.</div></div>
+          </div>
+          <div class="flip-back" style="background:linear-gradient(135deg,#D9A441,#B07C00)">
+            <div><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.5 20.5L3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg></div><div class="tip-title">Le saviez-vous ?</div><div class="tip-text">La Vitamine C booste l'immunité, idéale en été contre la fatigue due à la chaleur.</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Carte 3 : QR Code (flip vers conseil hydratation) -->
+      <div class="float-card fc-3 flip-card" data-depth="0.4" data-flip-delay="8000">
+        <div class="flip-inner">
+          <div class="flip-front">
+            <div class="fc-body" style="text-align:center;padding:18px"><div style="font-family:'Fraunces',serif;font-size:1.8rem;font-weight:700;color:var(--vert)">QR</div><div class="fc-sub">Carte fidélité</div></div>
+          </div>
+          <div class="flip-back" style="background:linear-gradient(135deg,#2ECC7A,#1B6B45)">
+            <div style="text-align:center"><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="tip-title">Hydratation</div><div class="tip-text">Buvez au moins 1,5L d'eau par jour, surtout en été !</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CARROUSEL ANNONCES -->
+<section style="background:var(--bg-card);padding:0;position:relative;z-index:1;border-bottom:1px solid var(--bord)">
+  <div class="container" style="padding-top:18px;padding-bottom:18px">
+    <div class="slider-wrap">
+      <div class="slider-track" id="slider-track">
+        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(27,107,69,0.08),rgba(46,204,122,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--vert);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Promo Été — Crème Solaire SPF50 x3 à <span style="color:var(--vert)">-25%</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Offre valable jusqu'au 30 juin · Click & Collect</div></div><button class="btn-lg btn-primary" style="margin-left:auto;padding:10px 20px;font-size:0.82rem" onclick="document.getElementById('promos').scrollIntoView()">Voir l'offre</button></div></div>
+        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(217,164,65,0.1),rgba(240,198,116,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--or);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Programme fidélité — <span id="fid-resume-slider">5 achats = -10% offert</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Créez votre compte et suivez vos achats</div></div><button class="btn-lg" style="margin-left:auto;padding:10px 20px;font-size:0.82rem;background:var(--or);color:#3A2A05;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="document.getElementById('fidelite').scrollIntoView()">Rejoindre</button></div></div>
+        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(74,144,217,0.08),rgba(95,227,161,0.05));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:#4A90D9;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Pharmacie de garde ce samedi 21 juin · 8h–20h</div><div style="font-size:0.8rem;color:var(--texte-3)">1 rue de l’Exemple, Paris</div></div></div></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px">
+      <button class="slider-arrow" aria-label="Annonce précédente" onclick="sliderPrev()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="slider-dots" id="slider-dots"></div>
+      <button class="slider-arrow" aria-label="Annonce suivante" onclick="sliderNext()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<!-- PROMOS -->
+<section class="section-pad" id="promos">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Offres du moment</span>
+      <h2 class="section-title">Promotions en cours</h2>
+      <p class="section-sub">Des prix réduits sur une sélection de produits parapharmacie. Profitez-en avant la fin !</p>
+    </div>
+    <div class="promo-grid" id="promo-grid"></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section-pad" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Pourquoi nous choisir</span>
+      <h2 class="section-title">Le click & collect, simplifié</h2>
+    </div>
+    <div class="features">
+      <div class="feature reveal"><div class="feature-ic"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h3>Gagnez du temps</h3><p>Commandez en ligne et récupérez sans attendre. Plus de file d'attente, votre commande est prête à votre arrivée.</p></div>
+      <div class="feature reveal reveal-d1"><div class="feature-ic"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><h3>Programme fidélité</h3><p>Cumulez vos achats et recevez des codes promo personnalisés. Plus vous achetez, plus vous économisez.</p></div>
+      <div class="feature reveal reveal-d2"><div class="feature-ic"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><h3>Conseil pharmacien</h3><p>Une question sur un produit ? Notre équipe vous accompagne et répond à vos demandes via votre espace client.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMENT ÇA MARCHE -->
+<section class="section-pad">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">En 4 étapes</span>
+      <h2 class="section-title">Comment ça marche</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="step-num">01</div><h3>Choisissez</h3><p>Parcourez le catalogue et ajoutez vos produits au panier.</p></div>
+      <div class="step reveal reveal-d1"><div class="step-num">02</div><h3>Commandez</h3><p>Validez votre commande en quelques clics, avec ou sans compte.</p></div>
+      <div class="step reveal reveal-d2"><div class="step-num">03</div><h3>On prépare</h3><p>On vous notifie dès que votre commande est prête à récupérer.</p></div>
+      <div class="step reveal reveal-d3"><div class="step-num">04</div><h3>Récupérez</h3><p>Donnez votre numéro de commande et votre code de retrait en pharmacie, puis réglez sur place.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES SANTÉ -->
+<section class="section-pad" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Ce qu'on vous propose</span>
+      <h2 class="section-title">Nos <span style="color:var(--vert)">Services</span> Santé</h2>
+    </div>
+    <div class="services-grid">
+      <div class="service-card reveal" onclick="document.getElementById('catalogue').scrollIntoView()">
+        <div class="service-bg" style="background:linear-gradient(135deg,#E8F5EE,#C8EADA)">
+          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="60" fill="rgba(27,107,69,0.08)"/>
+            <rect x="80" y="60" width="40" height="80" rx="8" fill="rgba(27,107,69,0.15)" stroke="#1B6B45" stroke-width="2"/>
+            <rect x="92" y="48" width="16" height="30" rx="4" fill="#1B6B45"/>
+            <circle cx="130" cy="140" r="10" fill="#1B6B45"/>
+            <circle cx="70" cy="140" r="10" fill="#1B6B45"/>
+            <path d="M70 140 L130 140" stroke="#1B6B45" stroke-width="3"/>
+            <rect x="85" y="75" width="30" height="4" rx="2" fill="white"/>
+            <rect x="85" y="85" width="20" height="4" rx="2" fill="white"/>
+            <rect x="85" y="95" width="25" height="4" rx="2" fill="white"/>
+          </svg>
+        </div>
+        <div class="service-overlay">
+          <div class="service-overlay-inner">
+            <div class="service-title">Click & Collect</div>
+            <div class="service-sub">Commandez en ligne et récupérez en pharmacie sans attente</div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card reveal reveal-d1" onclick="document.getElementById('fidelite').scrollIntoView()">
+        <div class="service-bg" style="background:linear-gradient(135deg,#FDF3E3,#FAE8C0)">
+          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+            <rect x="50" y="70" width="100" height="70" rx="12" fill="rgba(217,164,65,0.2)" stroke="#D9A441" stroke-width="2"/>
+            <rect x="50" y="90" width="100" height="3" fill="#D9A441" opacity="0.4"/>
+            <rect x="62" y="104" width="30" height="5" rx="2" fill="#D9A441"/>
+            <rect x="62" y="114" width="20" height="4" rx="2" fill="rgba(217,164,65,0.5)"/>
+            <rect x="130" y="100" width="8" height="24" rx="2" fill="#D9A441"/>
+            <circle cx="100" cy="52" r="18" fill="#D9A441"/>
+            <path d="M93 52l5 5 9-9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="service-overlay">
+          <div class="service-overlay-inner" style="background:#D9A441">
+            <div class="service-title">Programme Fidélité</div>
+            <div class="service-sub">Cumulez vos achats et débloquez des réductions exclusives</div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card reveal reveal-d2" onclick="openAccount()">
+        <div class="service-bg" style="background:linear-gradient(135deg,#EAF0FA,#D0DEF5)">
+          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="75" r="28" fill="rgba(74,144,217,0.2)" stroke="#4A90D9" stroke-width="2"/>
+            <path d="M100 55 L100 75 L118 75" stroke="#4A90D9" stroke-width="3" stroke-linecap="round"/>
+            <path d="M55 140 C55 118 72 108 100 108 C128 108 145 118 145 140" fill="rgba(74,144,217,0.15)" stroke="#4A90D9" stroke-width="2"/>
+            <circle cx="156" cy="68" r="14" fill="#4A90D9"/>
+            <path d="M150 68l4 4 7-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="service-overlay">
+          <div class="service-overlay-inner" style="background:#4A90D9">
+            <div class="service-title">Mon Espace Client</div>
+            <div class="service-sub">Suivez vos commandes et gérez votre profil</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BANNERS SVG -->
+<section class="banner-section">
+  <div class="container">
+    <div class="banner-card reveal" style="background:linear-gradient(135deg,#1B6B45,#0F4A2E)">
+      <div class="banner-illus" style="background:rgba(255,255,255,0.05)">
+        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+          <!-- Pharmacie stylisée -->
+          <rect x="40" y="90" width="120" height="80" rx="6" fill="rgba(255,255,255,0.15)"/>
+          <rect x="60" y="50" width="80" height="50" rx="4" fill="rgba(255,255,255,0.1)"/>
+          <rect x="85" y="120" width="30" height="50" rx="4" fill="rgba(255,255,255,0.2)"/>
+          <!-- Croix pharmacie -->
+          <rect x="92" y="60" width="16" height="30" rx="3" fill="#2ECC7A"/>
+          <rect x="82" y="70" width="36" height="10" rx="3" fill="#2ECC7A"/>
+          <!-- Personne -->
+          <circle cx="150" cy="95" r="12" fill="#5FE3A1"/>
+          <path d="M138 130 C138 116 162 116 162 130 L162 170 L138 170 Z" fill="#5FE3A1" opacity="0.7"/>
+          <!-- Sac -->
+          <rect x="155" y="115" width="18" height="20" rx="4" fill="rgba(255,255,255,0.4)"/>
+          <path d="M158 115 L158 111 Q163 107 168 111 L168 115" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+          <!-- Étoiles -->
+          <circle cx="50" cy="55" r="3" fill="rgba(255,255,255,0.3)"/>
+          <circle cx="170" cy="75" r="2" fill="rgba(255,255,255,0.2)"/>
+          <circle cx="35" cy="120" r="2" fill="rgba(255,255,255,0.2)"/>
+        </svg>
+      </div>
+      <div class="banner-content" style="color:#fff">
+        <h3 style="color:#fff">Commandez, on s'occupe du reste</h3>
+        <p>Votre commande préparée en 2h, prête à récupérer à la Pharmacie Démo. Pas de livraison, pas de frais cachés.</p>
+        <button class="banner-btn" style="background:#fff;color:var(--vert)" onclick="document.getElementById('catalogue').scrollIntoView()">Voir le catalogue <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+    <div class="banner-card reverse reveal reveal-d1" style="background:linear-gradient(135deg,#FDF3E3,#FAE8C0)">
+      <div class="banner-illus" style="background:rgba(217,164,65,0.1)">
+        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+          <rect x="55" y="45" width="90" height="90" rx="12" fill="white" opacity="0.8"/>
+          <rect x="65" y="55" width="28" height="28" rx="4" fill="#D9A441"/>
+          <rect x="107" y="55" width="28" height="28" rx="4" fill="#D9A441"/>
+          <rect x="65" y="97" width="28" height="28" rx="4" fill="#D9A441"/>
+          <rect x="107" y="97" width="12" height="12" rx="2" fill="#D9A441"/>
+          <rect x="123" y="107" width="12" height="18" rx="2" fill="#D9A441"/>
+          <rect x="107" y="117" width="12" height="8" rx="2" fill="#D9A441"/>
+          <rect x="110" y="140" width="50" height="38" rx="8" fill="#D9A441" opacity="0.6" transform="rotate(-15 135 159)"/>
+          <rect x="114" y="144" width="42" height="28" rx="5" fill="rgba(255,255,255,0.8)" transform="rotate(-15 135 158)"/>
+          <circle cx="48" cy="160" r="6" fill="#D9A441"/>
+          <circle cx="64" cy="160" r="6" fill="#D9A441"/>
+          <circle cx="80" cy="160" r="6" fill="#D9A441" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="banner-content" style="color:#2C1A00">
+        <h3 style="color:#2C1A00">Votre carte fidélité, bientôt dans votre téléphone</h3>
+        <p style="color:#5C3D00;opacity:1">Bientôt : votre QR code personnel à ajouter à Apple Wallet ou Google Wallet. En attendant, créez votre compte pour suivre vos achats et vos réductions.</p>
+        <button class="banner-btn" style="background:#B07C00;color:#fff" onclick="document.getElementById('fidelite').scrollIntoView()">Créer ma carte <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATALOGUE -->
+<section class="section-pad" id="catalogue" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Click & Collect</span>
+      <h2 class="section-title">Notre catalogue</h2>
+      <p class="section-sub">Une sélection de produits parapharmacie à commander et récupérer en pharmacie.</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px" id="cat-filters"></div>
+    <div class="promo-grid" id="catalogue-grid"></div>
+  </div>
+</section>
+
+<!-- FIDÉLITÉ -->
+<section class="section-pad" id="fidelite">
+  <div class="container">
+    <div class="fidelite reveal">
+      <div class="fidelite-wrap">
+        <div>
+          <h2>Votre carte de fidélité, dans votre poche</h2>
+          <p>Créez votre compte pour suivre vos achats et recevoir un code de réduction à chaque palier. Votre QR code personnel, à ajouter à votre wallet, arrive bientôt.</p>
+          <button class="btn-white" id="fidelite-btn">Créer mon compte fidélité</button>
+        </div>
+        <div class="fidelite-card">
+          <div class="qr-placeholder"><svg width="100" height="100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M17 21h4v-4M21 17h.01"/></svg></div>
+          <div style="font-weight:700;font-size:0.92rem;color:#fff">Marie Dupont</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.7)" id="fid-resume-carte-qr">Membre · 5 achats</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section-pad" id="faq" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Questions fréquentes</span>
+      <h2 class="section-title">On répond à vos questions</h2>
+      <p class="section-sub">Tout ce qu'il faut savoir sur le click &amp; collect à la Pharmacie Démo.</p>
+    </div>
+    <div class="faq-list reveal" id="faq-list"></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#accueil" class="brand"><span class="brand-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><span id="brand-name-footer">Pharmacie Démo</span></a>
+        <p><span id="footer-address-line">1 rue de l’Exemple, 75000 Paris</span>. Votre parapharmacie de proximité en click &amp; collect.</p>
+      </div>
+      <div class="footer-col"><h4>Navigation</h4><a href="#accueil">Accueil</a><a href="#promos">Promotions</a><a href="#catalogue">Catalogue</a><a href="#fidelite">Fidélité</a><a href="#faq">FAQ</a></div>
+      <div class="footer-col"><h4>Horaires</h4><div id="footer-horaires"></div></div>
+      <div class="footer-col"><h4>Contact</h4><a href="tel:0100000000" id="footer-tel-link">01 00 00 00 00</a><a href="mailto:contact@pharmacie-demo.test" id="footer-email-link">Email</a><a style="cursor:default" id="footer-address-plain">1 rue de l’Exemple</a></div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 <span id="brand-name-copyright">Pharmacie Démo</span>. Tous droits réservés.</p>
+      <p class="footer-legal"><a href="#" onclick="ouvrirLegal('mentions');return false">Mentions légales</a> · <a href="#" onclick="ouvrirLegal('confidentialite');return false">Confidentialité</a> · <a href="#" onclick="ouvrirLegal('cgv');return false">CGV</a></p>
+    </div>
+  </div>
+</footer>
+
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cart-overlay"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-header"><h3>Votre panier</h3><button class="modal-close" style="position:static" id="cart-close" aria-label="Fermer le panier"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-footer">
+    <div id="promo-zone" style="margin-bottom:14px">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="promo-input" maxlength="40" placeholder="Code promo" style="flex:1;padding:11px 14px;border:1px solid var(--bord);border-radius:11px;font-family:inherit;font-size:0.88rem;background:var(--bg);color:var(--texte);outline:none;text-transform:uppercase">
+        <button onclick="applyPromo()" style="padding:11px 18px;border-radius:11px;background:var(--texte);color:var(--bg-card);font-weight:700;font-size:0.85rem;border:none;cursor:pointer;font-family:inherit">Appliquer</button>
+      </div>
+      <div id="promo-feedback" style="font-size:0.78rem;margin-top:8px"></div>
+    </div>
+    <div id="cart-discount-row" style="display:none;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;color:var(--vert)"><span>Réduction <span id="promo-label"></span></span><span id="cart-discount">-0,00€</span></div>
+    <div class="cart-total"><span>Total</span><span class="amount" id="cart-total">0,00€</span></div>
+    <button class="btn-lg btn-primary" style="width:100%;justify-content:center" id="checkout-btn">Commander en click & collect</button>
+    <p style="text-align:center;font-size:0.72rem;color:var(--texte-3);margin-top:10px">Paiement en pharmacie au retrait</p>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL PROMO -->
+<div class="modal-ov" id="promo-detail-modal">
+  <div class="modal-box" style="position:relative;max-width:420px">
+    <button class="modal-close" aria-label="Fermer" onclick="closePromoDetail()"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div id="pd-icon" style="width:80px;height:80px;background:rgba(46,204,122,0.1);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--vert)"></div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div id="pd-cat" style="font-size:0.72rem;color:var(--vert);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"></div>
+      <h2 style="font-size:1.4rem;margin-bottom:10px" id="pd-nom"></h2>
+      <span id="pd-badge" class="promo-badge" style="font-size:0.9rem;padding:5px 14px"></span>
+    </div>
+    <div style="display:flex;align-items:baseline;justify-content:center;gap:12px;margin-bottom:10px">
+      <span class="price-now" style="font-size:2rem" id="pd-prix-promo"></span>
+      <span class="price-old" id="pd-prix-normal"></span>
+    </div>
+    <div id="pd-timer" style="text-align:center;font-size:0.8rem;color:var(--texte-3);margin-bottom:24px"></div>
+    <button class="btn-lg btn-primary" style="width:100%;justify-content:center" id="pd-add"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Ajouter au panier</button>
+  </div>
+</div>
+
+<!-- MODAL COMPTE -->
+<div class="modal-ov" id="account-modal">
+  <div class="modal-box" style="position:relative">
+    <button class="modal-close" id="account-close" aria-label="Fermer"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-tabs"><div class="modal-tab active" id="tab-login">Connexion</div><div class="modal-tab" id="tab-signup">Inscription</div></div>
+    <div id="login-form">
+      <h2>Mon espace client</h2>
+      <p class="sub"><strong>Le compte n'est pas obligatoire pour commander.</strong> Il servira à retrouver vos commandes et votre carte de fidélité.</p>
+      <div class="compte-info">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div>La connexion sécurisée par mot de passe arrive très bientôt. En attendant, vos achats sont déjà comptés pour la fidélité grâce à l'adresse email que vous indiquez à chaque commande.</div>
+      </div>
+      <button class="btn-lg btn-primary" style="width:100%;justify-content:center" onclick="window.location='compte.html'">Voir l'espace client (aperçu)</button>
+      <div class="or-sep"><span>ou</span></div>
+      <button class="btn-guest" onclick="continuerEnInvite()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Continuer en invité
+      </button>
+      <p class="guest-hint">Commandez en 30 secondes, sans créer de compte.</p>
+    </div>
+    <div id="signup-form" style="display:none">
+      <h2>Créer mon compte</h2>
+      <p class="sub">La création de compte sera disponible très prochainement.</p>
+      <div class="compte-info">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <div>Inutile d'attendre pour profiter du programme de fidélité : commandez en invité avec la même adresse email, chaque achat est comptabilisé.</div>
+      </div>
+      <button class="btn-guest" onclick="continuerEnInvite()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Continuer en invité
+      </button>
+      <p class="guest-hint">Commandez en 30 secondes, sans créer de compte.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GUEST CHECKOUT -->
+<div class="modal-ov" id="checkout-modal">
+  <div class="modal-box" style="position:relative">
+    <button class="modal-close" id="checkout-close" aria-label="Fermer"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <h2>Finaliser la commande</h2>
+    <p class="sub">Commande sans création de compte. Renseignez simplement vos coordonnées pour le retrait en pharmacie.</p>
+    <div class="guest-badge"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Commande express — aucun compte requis</div>
+    <div class="field"><label>Nom complet</label><input type="text" id="co-nom" maxlength="120" placeholder="Marie Dupont"></div>
+    <div class="field"><label>Email</label><input type="email" id="co-email" maxlength="200" placeholder="vous@email.com"></div>
+    <div class="field"><label>Téléphone (pour la notification)</label><input type="tel" id="co-tel" maxlength="30" placeholder="06 12 34 56 78"></div>
+    <div id="co-erreur" style="display:none;color:#E55353;font-size:0.8rem;margin-bottom:10px"></div>
+    <div class="checkbox-row"><input type="checkbox" id="cgu-checkout"><label for="cgu-checkout">J'accepte les conditions et la politique de confidentialité.</label></div>
+    <button class="btn-lg btn-primary" style="width:100%;justify-content:center" id="confirm-order">Confirmer la commande</button>
+    <p style="text-align:center;font-size:0.72rem;color:var(--texte-3);margin-top:12px">Vous recevrez un email de confirmation avec votre code de retrait, puis un second quand votre commande est prête.</p>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION DE COMMANDE -->
+<div class="modal-ov" id="confirm-modal" role="dialog" aria-labelledby="conf-titre">
+  <div class="modal-box conf-box" style="position:relative">
+    <div class="conf-ok"><svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <h2 id="conf-titre">Commande enregistrée</h2>
+    <div class="conf-num" id="conf-num"></div>
+    <div class="conf-code"><small>Votre code de retrait</small><strong id="conf-code"></strong></div>
+    <div class="conf-info" id="conf-info">Présentez votre numéro de commande et ce code en pharmacie pour retirer vos produits.</div>
+    <div class="conf-fid" id="conf-fid" style="display:none"></div>
+    <div class="conf-mail" id="conf-mail"></div>
+    <button class="btn-lg btn-primary" style="width:100%;justify-content:center" id="conf-close">Fermer</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="emails.js"></script>
+<script src="site.js"></script>
+
+<!-- MODAL PAGES LÉGALES -->
+<div class="modal-ov" id="legal-modal">
+  <div class="modal-box legal-box" style="position:relative">
+    <button class="modal-close" aria-label="Fermer" onclick="fermerLegal()"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <h2 id="legal-titre">Mentions légales</h2>
+    <div class="legal-content" id="legal-content"></div>
+  </div>
+</div>
+
+<!-- BANDEAU COOKIES (RGPD / CNIL) -->
+<div class="cookie-bar" id="cookie-bar" role="dialog" aria-label="Gestion des cookies">
+  <div class="cookie-text">
+    <strong>Votre vie privée</strong>
+    <p>Ce site utilise uniquement des cookies techniques nécessaires à son fonctionnement (panier, préférences d'affichage). Aucun cookie publicitaire ni de suivi n'est déposé.</p>
+  </div>
+  <div class="cookie-actions">
+    <button class="cookie-btn cookie-refuse" onclick="cookieChoix(false)">Refuser</button>
+    <button class="cookie-btn cookie-accept" onclick="cookieChoix(true)">Accepter</button>
+  </div>
+</div>
+
+<script src="demo-nav.js"></script>
+</body>
+</html>
