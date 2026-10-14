@@ -1255,48 +1255,39 @@ function fermerConfirmation() {
   if (modal) modal.classList.remove('open');
 }
 
-// ── REVEAL ON SCROLL (rejoue à chaque passage) ──
+// ── APPARITION AU DÉFILEMENT ──
+// Un seul mécanisme pour tous les blocs « .reveal » (titres, cartes promo, catalogue,
+// services, étapes) : le bloc apparaît dès qu'il entre à l'écran, une seule fois.
+// Les cartes qui arrivent ensemble apparaissent l'une après l'autre, de gauche à droite.
 var revealObserver;
+function montrerSansAnimation() {
+  document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
+}
 function observeReveals() {
+  if (prefersReducedMotion() || !window.IntersectionObserver) { montrerSansAnimation(); return; }
   if (!revealObserver) {
     revealObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
-        // Ne pas appliquer reveal sur les cartes qui ont déjà venetian blinds
-        if (e.target.classList.contains('promo-card') || e.target.classList.contains('feature') || e.target.classList.contains('step') || e.target.classList.contains('service-card') || e.target.classList.contains('banner-card')) return;
-        if (e.isIntersecting) {
-          e.target.classList.add('visible');
-        } else {
-          e.target.classList.remove('visible');
-        }
+      var entrees = entries.filter(function(e) { return e.isIntersecting; });
+      entrees.sort(function(x, y) {
+        return (x.boundingClientRect.top - y.boundingClientRect.top) || (x.boundingClientRect.left - y.boundingClientRect.left);
       });
-    }, { threshold:0.12 });
+      entrees.forEach(function(e, i) {
+        var el = e.target;
+        // Décalage court entre cartes d'une même rangée (les autres blocs gardent leur délai prévu)
+        if (el.classList.contains('promo-card')) {
+          el.style.transitionDelay = (Math.min(i, 4) * 0.06) + 's';
+          // Une fois apparue, la carte réagit de nouveau sans délai (survol, inclinaison à la souris)
+          el.addEventListener('transitionend', function fin() { el.style.transitionDelay = ''; el.removeEventListener('transitionend', fin); });
+        }
+        el.classList.add('visible');
+        revealObserver.unobserve(el);
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
   }
-  document.querySelectorAll('.reveal').forEach(function(el){ revealObserver.observe(el); });
+  document.querySelectorAll('.reveal:not(.visible)').forEach(function(el){ revealObserver.observe(el); });
 }
 
 // ── GYROSCOPE (accéléromètre iPhone/Android) ──
-
-// ── EFFET STORE / VOLET AU SCROLL ──
-function initScrollTilt() {
-  var isTouchDevice = ('ontouchstart' in window) || window.innerWidth <= 1024;
-  if (!isTouchDevice) return;
-  if (prefersReducedMotion()) return;
-  function applyTilt() {
-    var cards = document.querySelectorAll('[data-tilt]');
-    var vh = window.innerHeight;
-    cards.forEach(function(card) {
-      var r = card.getBoundingClientRect();
-      var center = r.top + r.height/2;
-      var offset = (center - vh/2) / (vh/2); // -1 (haut) à 1 (bas)
-      if (r.top < vh && r.bottom > 0) {
-        var tilt = Math.max(-1, Math.min(1, offset)) * 6;
-        card.style.transform = 'perspective(900px) rotateX('+(-tilt)+'deg)';
-      }
-    });
-  }
-  window.addEventListener('scroll', applyTilt, { passive:true });
-  applyTilt();
-}
 
 // ── TILT 3D (souris desktop) ──
 function initTilt() {
@@ -1431,55 +1422,6 @@ function initGyroscope() {
   }
 }
 
-// ── VENETIAN BLINDS EFFECT ──
-function initStoreEffect() {
-  if (prefersReducedMotion()) return;
-
-  // Appliquer sur les cartes promos et catalogue
-  function applyBlinds(selector) {
-    var items = document.querySelectorAll(selector);
-    items.forEach(function(item, i) {
-      item.style.transformOrigin = 'top center';
-      item.style.transition = 'transform 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.55s';
-      item.style.transitionDelay = (i % 4) * 0.08 + 's';
-      item.style.willChange = 'transform, opacity';
-    });
-
-    var observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
-        if (e.isIntersecting) {
-          e.target.style.transform = 'rotateX(0deg) scaleY(1)';
-          e.target.style.opacity = '1';
-        } else {
-          e.target.style.transform = 'rotateX(-35deg) scaleY(0.85)';
-          e.target.style.opacity = '0';
-        }
-      });
-    }, { threshold: 0.15 });
-
-    items.forEach(function(item) {
-      item.style.transform = 'rotateX(-35deg) scaleY(0.85)';
-      item.style.opacity = '0';
-      item.style.perspective = '800px';
-      observer.observe(item);
-    });
-  }
-
-  // Attendre que les grilles soient rendues
-  setTimeout(function() {
-    applyBlinds('.promo-card');
-    applyBlinds('.feature');
-    applyBlinds('.step');
-    applyBlinds('.service-card');
-    applyBlinds('.banner-card');
-  }, 600);
-
-  // Réappliquer quand de nouvelles cartes sont ajoutées (catalogue filtré)
-  window._reapplyBlinds = function() {
-    setTimeout(function() { applyBlinds('.promo-card'); }, 100);
-  };
-}
-
 // ── HERO PARALLAX 3D ──
 function initHeroParallax() {
   var visual = document.getElementById('hero-visual');
@@ -1496,27 +1438,33 @@ function initHeroParallax() {
   });
 }
 
-// ── SCROLL PARALLAX ──
+// ── DÉFILEMENT : en-tête, bandeau et profondeur des cartes du haut ──
+// Calculé une seule fois par image affichée (requestAnimationFrame). Les cartes du haut
+// bougent avec la propriété « translate », qui ne déclenche aucun recalcul de mise en page
+// et ne touche pas à leur rotation 3D (gérée par « transform »).
 function initScrollParallax() {
-  window.addEventListener('scroll', function() {
-    var y = window.scrollY;
-    var header = document.getElementById('header');
+  var header = document.getElementById('header');
+  var gb = document.getElementById('garde-bar');
+  var visual = document.getElementById('hero-visual');
+  var cartes = visual ? Array.prototype.slice.call(visual.querySelectorAll('[data-depth]')) : [];
+  var profondeurs = cartes.map(function(c) { return parseFloat(c.getAttribute('data-depth')) || 0; });
+  var parallaxe = cartes.length && !prefersReducedMotion() && ('translate' in document.documentElement.style);
+  var enAttente = false, dernierY = -1;
+  function majDefilement() {
+    enAttente = false;
+    var y = window.scrollY || window.pageYOffset || 0;
+    if (y === dernierY) return;
+    dernierY = y;
     if (header) header.classList.toggle('scrolled', y > 30);
-    // Bandeau garde disparait au scroll
-    var gb = document.getElementById('garde-bar');
-    if (gb) {
-      if (y > 30) { gb.style.transform = 'translateY(-100%)'; gb.style.transition = 'transform 0.3s'; }
-      else { gb.style.transform = 'translateY(0)'; }
+    if (gb) { gb.style.transition = 'transform 0.3s'; gb.style.transform = y > 30 ? 'translateY(-100%)' : 'translateY(0)'; }
+    if (parallaxe && y < 900) {
+      cartes.forEach(function(c, i) { c.style.translate = '0 ' + (y * profondeurs[i] * 0.15).toFixed(1) + 'px'; });
     }
-    // Hero cards subtle parallax
-    var visual = document.getElementById('hero-visual');
-    if (visual && y < 800) {
-      visual.querySelectorAll('[data-depth]').forEach(function(card) {
-        var d = parseFloat(card.getAttribute('data-depth'));
-        card.style.marginTop = (y*d*0.15)+'px';
-      });
-    }
+  }
+  window.addEventListener('scroll', function() {
+    if (!enAttente) { enAttente = true; requestAnimationFrame(majDefilement); }
   }, { passive: true });
+  majDefilement();
 }
 
 // ── TOAST ──
@@ -1552,9 +1500,7 @@ window.addEventListener('DOMContentLoaded', function() {
   observeReveals();
   initHeroParallax();
   initScrollParallax();
-  initScrollTilt();
   initGyroscope();
-  initStoreEffect();
   renderConseilsSite();
   initFlipCards();
 
