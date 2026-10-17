@@ -87,6 +87,9 @@ var PHARMA_SEED_DATA = {
   // Photos des rayons de la page d'accueil ({ 'Solaire': adresse de la photo }), ajoutées dans l'admin.
   // Les photos des produits sont dans le champ « photo » de chaque produit.
   photosRayons: {},
+  // Contenu des rayons, dans l'ordre choisi dans l'admin ({ 'Bébé': [4, 1] }). Un produit figure toujours
+  // dans son rayon principal (champ « cat ») ; cette liste ajoute d'autres rayons et règle l'ordre d'affichage.
+  contenuRayons: {},
   joursSpeciaux: [
     { date:_pharmaDate(5), type:'Garde', debut:'08:00', fin:'20:00', msg:'Pharmacie de garde — Ouverts de 8h à 20h' },
     { date:_pharmaDate(40), type:'Fermeture', debut:'', fin:'', msg:'Fermés exceptionnellement ce jour' }
@@ -312,6 +315,43 @@ function pharmaPhotoRayon(data, cat) {
   var photos = data && data.photosRayons;
   if (!photos || typeof photos !== 'object' || !Object.prototype.hasOwnProperty.call(photos, cat)) return '';
   return pharmaPhotoValide(photos[cat]);
+}
+
+// ── RAYONS : contenu, ordre et adresse de leur page ─────────
+// Adresse d'un rayon : « Hygiène » → « hygiene » (site.html?rayon=hygiene)
+function pharmaSlugRayon(nom) {
+  return String(nom == null ? '' : nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+}
+function pharmaRayonDepuisSlug(data, slug) {
+  var s = String(slug == null ? '' : slug).toLowerCase();
+  return ((data && data.categories) || []).find(function(c) { return pharmaSlugRayon(c) === s; }) || null;
+}
+// Liste ordonnée des numéros de produits d'un rayon (sans doublon), ou []
+function pharmaListeRayon(data, nom) {
+  var c = data && data.contenuRayons;
+  var l = (c && typeof c === 'object' && Object.prototype.hasOwnProperty.call(c, nom) && Array.isArray(c[nom])) ? c[nom] : [];
+  return l.filter(function(id, i) { return l.indexOf(id) === i; });
+}
+// Produits d'un rayon, dans l'ordre choisi : ceux de la liste d'abord, puis ceux dont c'est le rayon
+// principal et qui n'y ont pas encore été placés
+function pharmaProduitsDuRayon(data, nom) {
+  var produits = (data && data.produits) || [];
+  var liste = pharmaListeRayon(data, nom);
+  var parId = {};
+  produits.forEach(function(p) { parId[p.id] = p; });
+  var res = liste.map(function(id) { return parId[id]; }).filter(Boolean);
+  produits.forEach(function(p) { if (p.cat === nom && res.indexOf(p) === -1) res.push(p); });
+  return res;
+}
+// Rayons d'un produit : son rayon principal, puis les autres (dans l'ordre des rayons)
+function pharmaRayonsDuProduit(data, produit) {
+  if (!produit) return [];
+  var res = produit.cat ? [produit.cat] : [];
+  ((data && data.categories) || []).forEach(function(nom) {
+    if (res.indexOf(nom) === -1 && pharmaListeRayon(data, nom).indexOf(produit.id) !== -1) res.push(nom);
+  });
+  return res;
 }
 
 // ── CARTE DE FIDÉLITÉ : NUMÉRO ET CODE-BARRES (Code 128) ────

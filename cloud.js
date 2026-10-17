@@ -154,6 +154,27 @@ var PharmaCloud = (function () {
     d.joursSpeciaux = tableau(r.jours_speciaux);
   }
 
+  // Rayons : ordre (colonne position) et contenu (table rayon_produits), ajoutés par 05-rayons.sql.
+  // Sans cette mise à jour, l'ordre est celui de création et chaque produit n'est que dans son rayon principal.
+  function rayonsVersLocal(lignesCategories, liens) {
+    var cats = tableau(lignesCategories).slice().sort(function (a, b) {
+      return (entier(a.position) - entier(b.position)) || (entier(a.id) - entier(b.id));
+    });
+    var noms = {}, ids = {};
+    cats.forEach(function (c) { noms[c.id] = texte(c.nom); ids[texte(c.nom)] = c.id; });
+    var contenu = {};
+    tableau(liens).slice().sort(function (a, b) { return entier(a.position) - entier(b.position); }).forEach(function (l) {
+      var n = noms[l.categorie_id];
+      if (n === undefined) return;
+      (contenu[n] = contenu[n] || []).push(l.produit_id);
+    });
+    return { categories: cats.map(function (c) { return texte(c.nom); }), contenu: contenu, ids: ids };
+  }
+  // Lu à part : la table n'existe pas tant que 05-rayons.sql n'a pas été exécuté (null dans ce cas)
+  function lireLiensRayons() {
+    return executer(sb.from('rayon_produits').select('categorie_id,produit_id,position')).then(null, function () { return null; });
+  }
+
   // Données vides de la même forme que DATA : réglages de data.js en attendant la base,
   // mais aucun produit, commande ou client (rien d'inventé ne doit s'afficher).
   var LISTES = ['categories', 'produits', 'promos', 'conseils', 'codesPromo', 'alertes', 'notifications',
@@ -183,7 +204,7 @@ var PharmaCloud = (function () {
     try {
       localStorage.setItem(CLE_CACHE, JSON.stringify({ v: VERSION_CACHE, t: Date.now(), d: {
         parametres: d.parametres, horaires: d.horaires, joursSpeciaux: d.joursSpeciaux,
-        categories: d.categories, photosRayons: d.photosRayons, produits: d.produits, promos: d.promos, conseils: d.conseils
+        categories: d.categories, photosRayons: d.photosRayons, contenuRayons: d.contenuRayons, produits: d.produits, promos: d.promos, conseils: d.conseils
       } }));
     } catch (e) { /* stockage plein ou bloqué : sans conséquence */ }
   }
@@ -193,7 +214,7 @@ var PharmaCloud = (function () {
     var d = squelette();
     var c = lireCache();
     if (c) {
-      ['horaires', 'joursSpeciaux', 'categories', 'photosRayons', 'produits', 'promos', 'conseils'].forEach(function (k) {
+      ['horaires', 'joursSpeciaux', 'categories', 'photosRayons', 'contenuRayons', 'produits', 'promos', 'conseils'].forEach(function (k) {
         if (c[k] !== undefined) d[k] = c[k];
       });
       if (c.parametres && typeof c.parametres === 'object') {
@@ -212,11 +233,14 @@ var PharmaCloud = (function () {
       executer(sb.from('categories').select('*').order('id')),
       executer(sb.from('produits').select('*').order('id')),
       executer(sb.from('promos').select('*').order('id')),
-      executer(sb.from('conseils').select('*').order('id'))
+      executer(sb.from('conseils').select('*').order('id')),
+      lireLiensRayons()
     ]).then(function (r) {
       var d = squelette();
       if (r[0]) appliquerReglagesPublics(d, r[0]);
-      d.categories = tableau(r[1]).map(function (c) { return texte(c.nom); });
+      var rayons = rayonsVersLocal(r[1], r[5]);
+      d.categories = rayons.categories;
+      d.contenuRayons = rayons.contenu;
       d.photosRayons = photosRayonsVersLocal(r[1]);
       d.produits = tableau(r[2]).filter(function (p) { return p.actif !== false; }).map(produitVersLocal);
       d.promos = tableau(r[3]).map(promoVersLocal);
@@ -290,7 +314,8 @@ var PharmaCloud = (function () {
     executer: executer,
     // conversions réutilisées par l'administration et l'espace client
     conv: { produit: produitVersLocal, promo: promoVersLocal, conseil: conseilVersLocal, reglagesPublics: appliquerReglagesPublics,
-            photosRayons: photosRayonsVersLocal },
+            photosRayons: photosRayonsVersLocal, rayons: rayonsVersLocal },
+    lireLiensRayons: lireLiensRayons,
     squelette: squelette
   };
 })();

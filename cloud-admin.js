@@ -52,6 +52,11 @@ var PharmaAdminCloud = (function () {
   function arrondi(n) { return Math.round(nombre(n) * 100) / 100; }
   function notifier(msg, type) { if (typeof toast === 'function') toast(msg, type); }
 
+  // Rayons : numéro de chaque rayon dans la base (nom → id) et mise à jour 05-rayons.sql faite ou non
+  var categoriesIds = {};
+  var etatRayons = { table: true, position: true };
+  var MSG_MAJ_RAYONS = 'l\'ordre et le contenu des rayons n\'ont pas été enregistrés : exécutez le fichier 05-rayons.sql dans Supabase (SQL Editor)';
+
   // Les données en mémoire gardent le lien avec leur ligne en base (identifiant d'origine),
   // sans ajouter de champ visible : un élément sans lien est un ajout à enregistrer.
   var idsBase = new WeakMap();
@@ -205,7 +210,8 @@ var PharmaAdminCloud = (function () {
       sb.from('email_log').select('*').order('created_at', { ascending: false }).limit(300),
       sb.from('profiles').select('id,role,actif,acces,email,prenom,nom').order('created_at')
     ];
-    return Promise.all(q.map(function (r) { return executer(r); })).then(function (r) {
+    var liensRayons = PharmaCloud.lireLiensRayons();
+    return Promise.all(q.map(function (r) { return executer(r); }).concat([liensRayons])).then(function (r) {
       var d = PharmaCloud.squelette();
       var prive = r[1];
       if (r[0]) conv.reglagesPublics(d, r[0]);
@@ -218,7 +224,13 @@ var PharmaAdminCloud = (function () {
         d.parametres.rapportEmail = texte(prive.rapport_email);
         if (prive.rapport_contenu && typeof prive.rapport_contenu === 'object') d.parametres.rapportContenu = prive.rapport_contenu;
       }
-      d.categories = tableau(r[2]).map(function (c) { return texte(c.nom); });
+      var rayons = conv.rayons(r[2], r[15]);
+      d.categories = rayons.categories;
+      d.contenuRayons = rayons.contenu;
+      categoriesIds = rayons.ids;
+      // Base installée avant le 17 octobre (05-rayons.sql pas encore exécuté) : ordre et contenu non enregistrables
+      etatRayons.table = r[15] !== null;
+      etatRayons.position = !tableau(r[2]).length || tableau(r[2])[0].position !== undefined;
       d.photosRayons = conv.photosRayons(r[2]);
       d.produits = tableau(r[3]).map(conv.produit);
       d.promos = tableau(r[4]).map(conv.promo);
@@ -266,7 +278,8 @@ var PharmaAdminCloud = (function () {
   var instantane = null;
   var profilsConnus = [];
   function prendreInstantane(d) {
-    instantane = { tables: {}, categories: d.categories.slice(), photosRayons: clone(objet(d.photosRayons)),
+    instantane = { tables: {}, categories: d.categories.slice(), ordre: d.categories.slice(), contenu: clone(objet(d.contenuRayons)),
+                   photosRayons: clone(objet(d.photosRayons)),
                    public: clone(reglagesPublicsVersBase(d)), prive: clone(reglagesPrivesVersBase(d)), employes: {} };
     TABLES.forEach(function (def) {
       var m = new Map();
@@ -278,6 +291,31 @@ var PharmaAdminCloud = (function () {
       instantane.tables[def.cle] = m;
     });
     (d.employes || []).forEach(function (e) { instantane.employes[e.uid] = { role: roleVersBase(e), acces: texte(e.acces), nom: texte(e.nom) }; });
+  }
+
+  // Contenu des rayons sous forme de lignes « rayon|produit » → position (rayons et produits existants seulement)
+  function lignesRayons(contenu, d) {
+    var res = {}, c = objet(contenu);
+    var existants = {};
+    (d.produits || []).forEach(function (p) { existants[p.id] = true; });
+    (d.categories || []).forEach(function (nom) {
+      tableau(c[nom]).forEach(function (id, i) { if (existants[id] && res[nom + '|' + id] === undefined) res[nom + '|' + id] = i; });
+    });
+    return res;
+  }
+  // Renommer un rayon : fait directement par la base, qui met à jour les produits du rayon (et les codes promo
+  // qui portent sur lui) ; sa photo, son ordre et son contenu restent attachés à lui.
+  function attendreFinSync() {
+    return new Promise(function (ok) { (function attendre() { if (!sync.enCours && !sync.aRefaire) ok(); else setTimeout(attendre, 150); })(); });
+  }
+  function renommerRayon(ancien, nouveau) {
+    if (!connecte) return Promise.reject(new Error('connexion requise'));
+    return attendreFinSync().then(function () {
+      return executer(sb.from('categories').update({ nom: nouveau }).eq('nom', ancien).select());
+    }).then(function (res) {
+      verifierLigne(res, 'Renommer le rayon');
+      return executer(sb.from('codes_promo').update({ scope: nouveau }).eq('scope', ancien).select()).then(null, function () {});
+    }).then(function () { return recharger({ force: true }); });
   }
 
   // ── ENREGISTREMENT DES MODIFICATIONS ────────────────────
@@ -305,10 +343,35 @@ var PharmaAdminCloud = (function () {
     d.categories.forEach(function (nom) {
       if (avantCat.indexOf(nom) === -1 && texte(nom).trim()) {
         etape(function () {
-          return executer(sb.from('categories').insert({ nom: texte(nom).trim() }).select()).then(function () { avantCat.push(nom); });
+          var ligne = { nom: texte(nom).trim() };
+          if (etatRayons.position) ligne.position = d.categories.indexOf(nom);
+          return executer(sb.from('categories').insert(ligne).select()).then(function (res) {
+            if (Array.isArray(res) && res[0]) categoriesIds[nom] = res[0].id;
+            avantCat.push(nom);
+          });
         });
       }
     });
+    // 1 ter. Ordre des rayons (glisser-déposer dans la page Rayons). Les nouveaux rayons sont déjà
+    // enregistrés à leur place (étape 1).
+    var ordreAvant = instantane.ordre;
+    var communs = d.categories.filter(function (n) { return ordreAvant.indexOf(n) !== -1; });
+    var communsAvant = ordreAvant.filter(function (n) { return d.categories.indexOf(n) !== -1; });
+    if (!etatRayons.position) {
+      if (!egal(communs, communsAvant)) etape(function () { return Promise.reject(new Error(MSG_MAJ_RAYONS)); });
+    } else {
+      d.categories.forEach(function (nom, i) {
+        if (ordreAvant.indexOf(nom) === i || instantane.categories.indexOf(nom) === -1) return;
+        etape(function () {
+          return executer(sb.from('categories').update({ position: i }).eq('nom', nom).select()).then(function (res) {
+            verifierLigne(res, 'Ordre du rayon ' + nom);
+          }, function (err) {
+            if (err && (err.code === 'PGRST204' || err.code === '42703')) throw new Error(MSG_MAJ_RAYONS);
+            throw err;
+          });
+        });
+      });
+    }
     // 1 bis. Photos des rayons (page d'accueil)
     var avantPhotos = instantane.photosRayons;
     d.categories.forEach(function (nom) {
@@ -336,8 +399,15 @@ var PharmaAdminCloud = (function () {
             return executer(sb.from(def.table).insert(envoi).select()).then(function (res) {
               var cree = verifierLigne(res, 'Ajout');
               var nid = cree[def.id];
+              var ancienId = obj.id;
               idsBase.set(obj, nid);
               if (def.id === 'id') obj.id = nid;
+              // Produit ajouté à un rayon avant son premier enregistrement : son numéro définitif remplace l'ancien
+              if (def.cle === 'produits' && ancienId !== nid) {
+                Object.keys(objet(d.contenuRayons)).forEach(function (c) {
+                  if (Array.isArray(d.contenuRayons[c])) d.contenuRayons[c] = d.contenuRayons[c].map(function (x) { return x === ancienId ? nid : x; });
+                });
+              }
               snap.set(nid, ligne);
             }, erreurColonnePhoto(def.cle === 'produits' && !!ligne.photo));
           });
@@ -378,6 +448,34 @@ var PharmaAdminCloud = (function () {
         });
       }
     });
+    // 3 bis. Contenu des rayons : ajouts, retraits et ordre des produits (calculés au moment de l'envoi,
+    // après l'enregistrement des nouveaux produits et des nouveaux rayons)
+    if (!egal(lignesRayons(d.contenuRayons, d), lignesRayons(instantane.contenu, d))) {
+      etape(function () {
+        if (!etatRayons.table) return Promise.reject(new Error(MSG_MAJ_RAYONS));
+        var voulu = lignesRayons(d.contenuRayons, d), avant = lignesRayons(instantane.contenu, d);
+        var suite = Promise.resolve();
+        Object.keys(avant).forEach(function (k) {
+          if (voulu[k] !== undefined) return;
+          var cle = k.split('|'), cid = categoriesIds[cle[0]];
+          if (cid === undefined) return;   // rayon supprimé : son contenu est parti avec lui
+          suite = suite.then(function () { return executer(sb.from('rayon_produits').delete().eq('categorie_id', cid).eq('produit_id', Number(cle[1])).select()); });
+        });
+        var lignes = [];
+        Object.keys(voulu).forEach(function (k) {
+          if (avant[k] === voulu[k]) return;
+          var cle = k.split('|'), cid = categoriesIds[cle[0]];
+          if (cid !== undefined) lignes.push({ categorie_id: cid, produit_id: Number(cle[1]), position: voulu[k] });
+        });
+        if (lignes.length) suite = suite.then(function () {
+          return executer(sb.from('rayon_produits').upsert(lignes, { onConflict: 'categorie_id,produit_id' }).select());
+        });
+        return suite.then(function () { instantane.contenu = clone(objet(d.contenuRayons)); }, function (err) {
+          if (err && (err.code === 'PGRST205' || err.code === '42P01')) throw new Error(MSG_MAJ_RAYONS);
+          throw err;
+        });
+      });
+    }
     // 4. Réglages (une seule ligne chacun ; réservé à l'administrateur)
     [['settings_public', reglagesPublicsVersBase, 'public'], ['settings_private', reglagesPrivesVersBase, 'prive']].forEach(function (r) {
       var ligne = clone(r[1](d)), avant = instantane[r[2]], changes = {}, n = 0;
@@ -449,7 +547,8 @@ var PharmaAdminCloud = (function () {
     // Exécution dans l'ordre ; une erreur n'empêche pas les étapes suivantes
     return etapes.reduce(function (chaine, fn) {
       return chaine.then(function () {
-        return fn().then(null, function (e) { erreurs.push((e && e.message) || 'erreur inconnue'); });
+        // Promise.resolve().then(fn) : une erreur levée directement par une étape est traitée comme un refus
+        return Promise.resolve().then(fn).then(null, function (e) { erreurs.push((e && e.message) || 'erreur inconnue'); });
       });
     }, Promise.resolve()).then(function () { return erreurs; });
   }
@@ -528,6 +627,9 @@ var PharmaAdminCloud = (function () {
     if (typeof appliquerCouleur === 'function') appliquerCouleur();
     if (typeof renderNotifCloche === 'function') renderNotifCloche(nouveau);
     if (typeof updateNavBadges === 'function') updateNavBadges();
+    // Pas de nouvel affichage pendant un glisser-déposer, ni pendant une saisie dans la page Rayons
+    var saisie = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && document.activeElement.closest('#page-rayons');
+    if (document.body.classList.contains('glisser-actif') || saisie) return;
     if (typeof currentPage === 'string' && PAGES_FORMULAIRE.indexOf(currentPage) === -1 && typeof renderPage === 'function') {
       // Les pages avec filtres gardent la recherche et le filtre en cours
       if (currentPage === 'commandes' && typeof filtrerCommandes === 'function') filtrerCommandes();
@@ -927,6 +1029,7 @@ var PharmaAdminCloud = (function () {
     supprimer: supprimer,
     validerRetrait: validerRetrait,
     envoyerPhoto: envoyerPhoto,
+    renommerRayon: renommerRayon,
     deconnecter: deconnecter,
     estConnecte: function () { return connecte; },
     // pour les tests

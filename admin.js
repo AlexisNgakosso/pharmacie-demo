@@ -87,6 +87,7 @@ function searchMatch(text, query) {
 var PAGE_META = {
   dashboard:     { title:'Tableau de bord',        cta:null },
   produits:      { title:'Produits',               cta:{ label:'Nouveau produit', fn:'openModal("m-produit")' } },
+  rayons:        { title:'Rayons',                 cta:{ label:'Nouveau rayon', fn:'nouveauRayon()' } },
   promos:        { title:'Promotions',             cta:{ label:'Nouvelle promo', fn:'nouvellePromo()' } },
   'codes-promo': { title:'Codes Promo & Fidélité', cta:{ label:'Générer un code', fn:'regenCode()' } },
   conseils:      { title:'Conseils & Raccourcis',  cta:{ label:'Nouveau conseil', fn:'openModal("m-conseil");document.getElementById("cs-id").value=""' } },
@@ -153,6 +154,7 @@ function renderPage(id) {
   switch(id) {
     case 'dashboard':   renderDashboard(); break;
     case 'produits':    renderProduits(); break;
+    case 'rayons':      renderRayonsAdmin(); break;
     case 'promos':      renderPromos(); break;
     case 'clients':     renderClients(); break;
     case 'commandes':   renderCommandes(); break;
@@ -265,7 +267,6 @@ function renderProduits(filtre, cat) {
   setHTML('tbody-produits', html);
   // Mettre à jour les catégories du filtre
   renderCatOptions('filter-cat-produits');
-  renderPhotosRayons();
 }
 
 // Alimente un <select> de catégories.
@@ -343,6 +344,10 @@ function saveProduit() {
 function deleteProduit(id, nom) {
   confirmer('Supprimer le produit "'+escHtml(nom)+'" ?', function() {
     DATA.produits = DATA.produits.filter(function(p){ return p.id !== id; });
+    // Le produit sort aussi des rayons où il avait été ajouté
+    Object.keys(DATA.contenuRayons || {}).forEach(function(c) {
+      if (Array.isArray(DATA.contenuRayons[c])) DATA.contenuRayons[c] = DATA.contenuRayons[c].filter(function(x) { return x !== id; });
+    });
     renderProduits();
     toast(nom+' supprimé');
     persist();
@@ -481,44 +486,12 @@ function verifierAffichagePhoto(conteneur, signaler) {
   }, { once: true });
 }
 
-// Encadré « Photos des rayons » de la page Produits
+// Photos des rayons : gérées dans la page Rayons (une photo par rayon, affichée sur l'accueil)
 var photoRayons = { envoi: {} };
-function renderPhotosRayons() {
-  var grille = document.getElementById('rayons-photos-grille');
-  if (!grille) return;
-  var cats = DATA.categories || [];
-  if (!cats.length) { grille.innerHTML = '<div class="photo-etat" style="padding:4px 2px">Aucun rayon : ajoutez d\'abord un produit avec sa catégorie.</div>'; return; }
-  var compte = {};
-  (DATA.produits || []).forEach(function(p) { if (p.cat) compte[p.cat] = (compte[p.cat] || 0) + 1; });
-  grille.innerHTML = cats.map(function(c, i) {
-    var u = pharmaPhotoRayon(DATA, c), n = compte[c] || 0;
-    var enCours = photoRayons.envoi[c];
-    return '<div class="rayon-tuile" data-index="' + i + '">'
-      + '<div class="photo-apercu' + (enCours ? ' charge' : '') + '" aria-hidden="true"></div>'
-      + '<div style="min-width:0"><div class="rayon-tuile-nom">' + escHtml(c) + '</div>'
-      + '<div class="rayon-tuile-sous">' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'Aucun produit : rayon masqué sur l\'accueil') + '</div>'
-      + '<div class="photo-actions">'
-      + '<label class="btn btn-ghost photo-choisir"><input type="file" class="vh-input" accept="image/*" aria-label="' + escHtml((u ? 'Changer la photo du rayon ' : 'Ajouter une photo au rayon ') + c) + '"' + (enCours ? ' disabled' : '') + '><span>' + (enCours ? 'Envoi…' : (u ? 'Changer' : 'Ajouter une photo')) + '</span></label>'
-      + (u && !enCours ? '<button type="button" class="btn btn-ghost" data-retirer aria-label="' + escHtml('Retirer la photo du rayon ' + c) + '">Retirer</button>' : '')
-      + '<div class="photo-etat" role="status" aria-live="polite"></div>'
-      + '</div></div></div>';
-  }).join('');
-  grille.querySelectorAll('.rayon-tuile').forEach(function(tuile) {
-    var cat = cats[parseInt(tuile.getAttribute('data-index'), 10)];
-    var apercu = tuile.querySelector('.photo-apercu');
-    afficherApercuPhoto(apercu, pharmaPhotoRayon(DATA, cat));
-    var etat = tuile.querySelector('.photo-etat');
-    var signaler = function(msg, erreur) { etat.textContent = msg; etat.classList.toggle('erreur', !!erreur); };
-    if (photoRayons.envoi[cat] === undefined) verifierAffichagePhoto(apercu, signaler);
-    var fichier = tuile.querySelector('input[type=file]');
-    fichier.addEventListener('change', function() { if (fichier.files && fichier.files[0]) choisirPhotoRayon(cat, fichier.files[0]); });
-    var retirer = tuile.querySelector('[data-retirer]');
-    if (retirer) retirer.addEventListener('click', function() { enregistrerPhotoRayon(cat, ''); });
-  });
-}
+function renderPhotosRayons() { if (typeof renderRayonsAdmin === 'function') renderRayonsAdmin(); }
 function etatTuileRayon(cat, msg, erreur) {
   var i = (DATA.categories || []).indexOf(cat);
-  var el = document.querySelector('#rayons-photos-grille .rayon-tuile[data-index="' + i + '"] .photo-etat');
+  var el = document.querySelector('#liste-rayons .rayon-ligne[data-index="' + i + '"] .photo-etat');
   if (!el) return;
   el.textContent = msg; el.classList.toggle('erreur', !!erreur);
 }
@@ -569,6 +542,290 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('pharma-edition-fermee', function(ev) {
   if (ev.detail === 'm-produit') reinitialiserPhotoProduit();
 });
+
+// ── RAYONS : ordre, nom, photo et produits ──────────────────
+// L'ordre des rayons est celui du site (accueil, menu, filtres du catalogue). Chaque rayon a sa page sur
+// le site. Un produit est toujours dans son rayon principal (fenêtre du produit) et peut être ajouté à
+// d'autres rayons ici. L'ordre des produits d'un rayon est celui de sa page.
+var rayonOuvert = null;
+var rechercheAjoutRayon = '';
+var SVG_POIGNEE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+var SVG_PHOTO_PETIT = '<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+var SVG_CHEVRON = '<svg class="chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+
+function nomRayonValide(nom, ancien) {
+  var n = String(nom == null ? '' : nom).trim().replace(/\s+/g, ' ');
+  if (!n) return { erreur: 'Indiquez le nom du rayon' };
+  if (n.length > 60) return { erreur: 'Le nom du rayon fait 60 caractères au plus' };
+  if ((DATA.categories || []).some(function(c) { return c !== ancien && c.toLowerCase() === n.toLowerCase(); })) return { erreur: 'Un rayon porte déjà ce nom' };
+  return { nom: n };
+}
+
+function renderRayonsAdmin() {
+  var ul = document.getElementById('liste-rayons');
+  if (!ul) return;
+  var cats = DATA.categories || [];
+  if (rayonOuvert && cats.indexOf(rayonOuvert) === -1) rayonOuvert = null;
+  if (!cats.length) { ul.innerHTML = '<li class="rayons-aide">Aucun rayon pour l\'instant : créez-en un avec « Nouveau rayon ».</li>'; return; }
+  ul.innerHTML = cats.map(function(c, i) {
+    var n = pharmaProduitsDuRayon(DATA, c).length;
+    var ouvert = c === rayonOuvert, enCours = !!photoRayons.envoi[c];
+    return '<li class="rayon-ligne' + (ouvert ? ' ouvert' : '') + '" data-index="' + i + '">'
+      + '<div class="rayon-tete">'
+      + '<button type="button" class="poignee" aria-label="' + escHtml('Déplacer le rayon ' + c + ' : glisser, ou flèches haut et bas') + '">' + SVG_POIGNEE + '</button>'
+      + '<div class="photo-apercu' + (enCours ? ' charge' : '') + '" aria-hidden="true"></div>'
+      + '<button type="button" class="rayon-ouvrir" aria-expanded="' + ouvert + '"><strong>' + escHtml(c) + '</strong><span>' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'Aucun produit : masqué sur le site') + '</span></button>'
+      + '<div class="rayon-actions">'
+      + '<label class="btn btn-ghost photo-choisir" title="Photo du rayon"><input type="file" class="vh-input" accept="image/*" aria-label="' + escHtml('Photo du rayon ' + c) + '"' + (enCours ? ' disabled' : '') + '>' + SVG_PHOTO_PETIT + '<span>' + (enCours ? 'Envoi…' : 'Photo') + '</span></label>'
+      + '<button type="button" class="btn btn-ghost" data-action="renommer" aria-label="' + escHtml('Renommer le rayon ' + c) + '">' + svgEdit() + '<span>Renommer</span></button>'
+      + '<button type="button" class="btn btn-ghost" data-action="supprimer" style="color:var(--rouge)" aria-label="' + escHtml('Supprimer le rayon ' + c) + '">' + svgTrash() + '</button>'
+      + SVG_CHEVRON + '</div></div>'
+      + '<div class="photo-etat" role="status" aria-live="polite" style="padding:0 14px 0 50px"></div>'
+      + (ouvert ? detailRayonHTML(c) : '')
+      + '</li>';
+  }).join('');
+  ul.querySelectorAll('.rayon-ligne').forEach(function(li) {
+    var c = cats[parseInt(li.getAttribute('data-index'), 10)];
+    afficherApercuPhoto(li.querySelector('.photo-apercu'), pharmaPhotoRayon(DATA, c));
+    li.querySelector('.rayon-ouvrir').addEventListener('click', function() {
+      rayonOuvert = rayonOuvert === c ? null : c;
+      rechercheAjoutRayon = '';
+      renderRayonsAdmin();
+    });
+    var fichier = li.querySelector('input[type=file]');
+    fichier.addEventListener('change', function() { if (fichier.files && fichier.files[0]) choisirPhotoRayon(c, fichier.files[0]); });
+    li.querySelector('[data-action="renommer"]').addEventListener('click', function() { editerNomRayon(li, c); });
+    li.querySelector('[data-action="supprimer"]').addEventListener('click', function() { supprimerRayon(c); });
+    if (c === rayonOuvert) brancherDetailRayon(li, c);
+  });
+  rendreReordonnable(ul, '.rayon-ligne', function(de, vers) {
+    var avaitFocus = !!(document.activeElement && document.activeElement.classList.contains('poignee'));
+    var c = DATA.categories.splice(de, 1)[0];
+    DATA.categories.splice(vers, 0, c);
+    persist();
+    renderRayonsAdmin();
+    var p = document.querySelector('#liste-rayons .rayon-ligne[data-index="' + vers + '"] .rayon-tete .poignee');
+    if (p && avaitFocus) p.focus();
+  });
+}
+
+function detailRayonHTML(c) {
+  var produits = pharmaProduitsDuRayon(DATA, c);
+  var html = '<div class="rayon-detail"><h4>Produits du rayon, dans l\'ordre de sa page</h4>';
+  if (!produits.length) html += '<p class="rayons-aide">Aucun produit pour l\'instant. Ajoutez-en ci-dessous.</p>';
+  html += '<ul class="liste-produits-rayon">' + produits.map(function(p) {
+    var principal = p.cat === c;
+    return '<li class="produit-rayon" data-id="' + nombre(p.id) + '">'
+      + '<button type="button" class="poignee" aria-label="' + escHtml('Déplacer ' + p.nom + ' : glisser, ou flèches haut et bas') + '">' + SVG_POIGNEE + '</button>'
+      + '<span class="nom">' + escHtml(p.nom) + '</span>'
+      + (principal ? '<span class="badge-principal" title="Rayon choisi dans la fenêtre du produit">Rayon principal</span>'
+                   : '<button type="button" class="btn btn-ghost" data-retirer aria-label="' + escHtml('Retirer ' + p.nom + ' du rayon') + '">Retirer</button>')
+      + '</li>';
+  }).join('') + '</ul>';
+  if (pharmaPhotoRayon(DATA, c)) html += '<button type="button" class="btn btn-ghost" data-action="retirer-photo" style="margin-top:10px">Retirer la photo du rayon</button>';
+  html += '<div class="ajout-produits"><label for="ajout-rayon-recherche">Ajouter des produits</label>'
+    + '<input class="inp" id="ajout-rayon-recherche" type="search" placeholder="Rechercher un produit à ajouter..." autocomplete="off" value="' + escHtml(rechercheAjoutRayon) + '">'
+    + '<ul class="resultats-ajout" id="ajout-rayon-resultats"></ul></div></div>';
+  return html;
+}
+function resultatsAjoutRayon(c) {
+  var dans = pharmaProduitsDuRayon(DATA, c).map(function(p) { return p.id; });
+  var liste = (DATA.produits || []).filter(function(p) { return dans.indexOf(p.id) === -1 && searchMatch(p.nom + ' ' + p.ref + ' ' + p.cat, rechercheAjoutRayon); });
+  if (!liste.length) return '<li class="vide">' + (rechercheAjoutRayon ? 'Aucun produit trouvé' : 'Tous les produits sont déjà dans ce rayon') + '</li>';
+  return liste.slice(0, 30).map(function(p) {
+    return '<li data-id="' + nombre(p.id) + '"><span>' + escHtml(p.nom) + (p.cat ? ' <span style="color:var(--texte-3)">· ' + escHtml(p.cat) + '</span>' : '') + '</span>'
+      + '<button type="button" class="btn btn-ghost" aria-label="' + escHtml('Ajouter ' + p.nom + ' au rayon') + '">Ajouter</button></li>';
+  }).join('') + (liste.length > 30 ? '<li class="vide">… précisez la recherche pour voir les autres produits</li>' : '');
+}
+function brancherDetailRayon(li, c) {
+  var liste = li.querySelector('.liste-produits-rayon');
+  liste.querySelectorAll('[data-retirer]').forEach(function(b) {
+    b.addEventListener('click', function() { retirerDuRayon(c, nombre(b.closest('.produit-rayon').getAttribute('data-id'))); });
+  });
+  rendreReordonnable(liste, '.produit-rayon', function(de, vers) {
+    var avaitFocus = !!(document.activeElement && document.activeElement.classList.contains('poignee'));
+    var ids = pharmaProduitsDuRayon(DATA, c).map(function(p) { return p.id; });
+    var id = ids.splice(de, 1)[0];
+    ids.splice(vers, 0, id);
+    enregistrerContenuRayon(c, ids);
+    var p = document.querySelector('#liste-rayons .rayon-ligne.ouvert .produit-rayon:nth-child(' + (vers + 1) + ') .poignee');
+    if (p && avaitFocus) p.focus();
+  });
+  var retirerPhoto = li.querySelector('[data-action="retirer-photo"]');
+  if (retirerPhoto) retirerPhoto.addEventListener('click', function() { enregistrerPhotoRayon(c, ''); });
+  var champ = li.querySelector('#ajout-rayon-recherche');
+  var res = li.querySelector('#ajout-rayon-resultats');
+  function remplir() {
+    res.innerHTML = resultatsAjoutRayon(c);
+    res.querySelectorAll('li[data-id] button').forEach(function(b) {
+      b.addEventListener('click', function() { ajouterAuRayon(c, nombre(b.closest('li').getAttribute('data-id'))); });
+    });
+  }
+  champ.addEventListener('input', function() { rechercheAjoutRayon = champ.value; remplir(); });
+  remplir();
+}
+function enregistrerContenuRayon(c, ids) {
+  if (!DATA.contenuRayons || typeof DATA.contenuRayons !== 'object') DATA.contenuRayons = {};
+  DATA.contenuRayons[c] = ids;
+  persist();
+  renderRayonsAdmin();
+}
+function ajouterAuRayon(c, id) {
+  var ids = pharmaProduitsDuRayon(DATA, c).map(function(p) { return p.id; });
+  if (ids.indexOf(id) !== -1) return;
+  ids.push(id);
+  var p = DATA.produits.find(function(x) { return x.id === id; });
+  enregistrerContenuRayon(c, ids);
+  var champ = document.getElementById('ajout-rayon-recherche');
+  if (champ) champ.focus();
+  toast((p ? p.nom : 'Produit') + ' ajouté au rayon ' + c);
+}
+function retirerDuRayon(c, id) {
+  var p = DATA.produits.find(function(x) { return x.id === id; });
+  if (p && p.cat === c) { toast('C\'est le rayon principal de ce produit : changez-le dans la fenêtre du produit', 'error'); return; }
+  enregistrerContenuRayon(c, pharmaProduitsDuRayon(DATA, c).map(function(x) { return x.id; }).filter(function(x) { return x !== id; }));
+  toast((p ? p.nom : 'Produit') + ' retiré du rayon ' + c);
+}
+
+function nouveauRayon() {
+  openModal('m-rayon');
+  setTimeout(function() { var f = document.getElementById('ray-nom'); if (f) f.focus(); }, 80);
+}
+function creerRayon() {
+  var v = nomRayonValide(getVal('ray-nom'));
+  if (v.erreur) { toast(v.erreur, 'error'); return; }
+  DATA.categories.push(v.nom);
+  rayonOuvert = v.nom;
+  rechercheAjoutRayon = '';
+  closeModal('m-rayon');
+  persist();
+  if (currentPage === 'rayons') renderRayonsAdmin();
+  toast('Rayon ' + v.nom + ' créé : ajoutez-lui des produits');
+}
+
+// Renommer : les produits, la photo, l'ordre et les codes promo du rayon suivent le nouveau nom
+function editerNomRayon(li, c) {
+  var tete = li.querySelector('.rayon-ouvrir');
+  var bloc = document.createElement('form');
+  bloc.className = 'rayon-renommer';
+  bloc.innerHTML = '<input class="inp" maxlength="60" aria-label="' + escHtml('Nouveau nom du rayon ' + c) + '" value="' + escHtml(c) + '">'
+    + '<button type="submit" class="btn btn-primary">Enregistrer</button><button type="button" class="btn btn-ghost">Annuler</button>';
+  tete.replaceWith(bloc);
+  li.querySelector('.rayon-actions').style.display = 'none';
+  var champ = bloc.querySelector('input');
+  champ.focus(); champ.select();
+  bloc.querySelector('button[type=button]').addEventListener('click', renderRayonsAdmin);
+  champ.addEventListener('keydown', function(e) { if (e.key === 'Escape') renderRayonsAdmin(); });
+  bloc.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var v = nomRayonValide(champ.value, c);
+    if (v.erreur) { toast(v.erreur, 'error'); return; }
+    if (v.nom === c) { renderRayonsAdmin(); return; }
+    renommerRayon(c, v.nom);
+  });
+}
+function renommerRayon(ancien, nouveau) {
+  if (ADMIN_CLOUD) {
+    // Avec la base : renommé directement par la base, qui met à jour les produits en même temps
+    PharmaAdminCloud.renommerRayon(ancien, nouveau).then(function() {
+      if (rayonOuvert === ancien) rayonOuvert = nouveau;
+      renderRayonsAdmin();
+      toast('Rayon renommé : ' + nouveau);
+    }, function(e) { toast('Rayon non renommé : ' + ((e && e.message) || 'erreur inconnue'), 'error'); renderRayonsAdmin(); });
+    return;
+  }
+  DATA.categories = DATA.categories.map(function(c) { return c === ancien ? nouveau : c; });
+  DATA.produits.forEach(function(p) { if (p.cat === ancien) p.cat = nouveau; });
+  (DATA.codesPromo || []).forEach(function(k) { if (k.scope === ancien) k.scope = nouveau; });
+  ['photosRayons', 'contenuRayons'].forEach(function(cle) {
+    var o = DATA[cle];
+    if (o && Object.prototype.hasOwnProperty.call(o, ancien)) { o[nouveau] = o[ancien]; delete o[ancien]; }
+  });
+  if (rayonOuvert === ancien) rayonOuvert = nouveau;
+  persist();
+  renderRayonsAdmin();
+  toast('Rayon renommé : ' + nouveau);
+}
+function supprimerRayon(c) {
+  var principaux = DATA.produits.filter(function(p) { return p.cat === c; });
+  if (principaux.length) {
+    toast('Le rayon ' + c + ' est le rayon principal de ' + principaux.length + ' produit' + (principaux.length > 1 ? 's' : '') + ' : choisissez-leur d\'abord un autre rayon (fenêtre du produit)', 'error');
+    return;
+  }
+  var codes = (DATA.codesPromo || []).filter(function(k) { return k.scope === c; }).length;
+  confirmer('Supprimer le rayon « ' + escHtml(c) + ' » ?' + (codes ? '<br><span style="font-size:0.78rem;color:var(--texte-2)">' + codes + ' code' + (codes > 1 ? 's' : '') + ' promo porte' + (codes > 1 ? 'nt' : '') + ' sur ce rayon : il' + (codes > 1 ? 's' : '') + ' ne s\'appliquer' + (codes > 1 ? 'ont' : 'a') + ' plus à aucun produit.</span>' : ''), function() {
+    DATA.categories = DATA.categories.filter(function(x) { return x !== c; });
+    if (DATA.photosRayons) delete DATA.photosRayons[c];
+    if (DATA.contenuRayons) delete DATA.contenuRayons[c];
+    if (rayonOuvert === c) rayonOuvert = null;
+    persist();
+    renderRayonsAdmin();
+    toast('Rayon ' + c + ' supprimé');
+  });
+}
+
+// Glisser-déposer par la poignée, au doigt comme à la souris (l'élément suit le doigt et prend sa place
+// au passage), et au clavier : flèches haut et bas sur la poignée.
+function rendreReordonnable(liste, selecteur, surDeplacement) {
+  var elements = Array.prototype.filter.call(liste.children, function(el) { return el.matches(selecteur); });
+  elements.forEach(function(el, index) {
+    var poignee = el.querySelector('.poignee');
+    if (!poignee || poignee.closest(selecteur) !== el) return;
+    poignee.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowUp' && index > 0) { e.preventDefault(); surDeplacement(index, index - 1); }
+      else if (e.key === 'ArrowDown' && index < elements.length - 1) { e.preventDefault(); surDeplacement(index, index + 1); }
+    });
+    poignee.addEventListener('pointerdown', function(e) { glisser(e, liste, el, selecteur, surDeplacement, poignee); });
+  });
+}
+function glisser(e, liste, el, selecteur, surDeplacement, poignee) {
+  if (e.button !== undefined && e.button !== 0) return;
+  e.preventDefault();
+  var freres = function() { return Array.prototype.filter.call(liste.children, function(x) { return x.matches(selecteur); }); };
+  var depart = freres().indexOf(el);
+  var pageY0 = e.clientY + window.scrollY, haut0 = el.offsetTop, dernierY = e.clientY;
+  var defilement = null;
+  try { poignee.setPointerCapture(e.pointerId); } catch (err) {}
+  el.classList.add('en-glisser');
+  document.body.classList.add('glisser-actif');
+  function placer(clientY) {
+    dernierY = clientY;
+    var dy = clientY + window.scrollY - pageY0;
+    el.style.transform = 'translateY(' + (dy - (el.offsetTop - haut0)) + 'px)';
+    var r = el.getBoundingClientRect(), centre = r.top + r.height / 2;
+    var suivant = el.nextElementSibling, precedent = el.previousElementSibling;
+    if (suivant && suivant.matches(selecteur)) {
+      var rs = suivant.getBoundingClientRect();
+      if (centre > rs.top + rs.height / 2) { liste.insertBefore(suivant, el); placer(clientY); return; }
+    }
+    if (precedent && precedent.matches(selecteur)) {
+      var rp = precedent.getBoundingClientRect();
+      if (centre < rp.top + rp.height / 2) { liste.insertBefore(el, precedent); placer(clientY); return; }
+    }
+  }
+  // Près du haut ou du bas de l'écran, la page défile toute seule (longue liste sur téléphone)
+  function auBord() {
+    var v = dernierY < 70 ? -10 : (dernierY > window.innerHeight - 70 ? 10 : 0);
+    if (v) { window.scrollBy(0, v); placer(dernierY); }
+    defilement = requestAnimationFrame(auBord);
+  }
+  defilement = requestAnimationFrame(auBord);
+  function bouge(ev) { placer(ev.clientY); }
+  function fin() {
+    cancelAnimationFrame(defilement);
+    poignee.removeEventListener('pointermove', bouge);
+    poignee.removeEventListener('pointerup', fin);
+    poignee.removeEventListener('pointercancel', fin);
+    el.classList.remove('en-glisser');
+    el.style.transform = '';
+    document.body.classList.remove('glisser-actif');
+    var arrivee = freres().indexOf(el);
+    if (arrivee !== depart && arrivee !== -1) surDeplacement(depart, arrivee);
+  }
+  poignee.addEventListener('pointermove', bouge);
+  poignee.addEventListener('pointerup', fin);
+  poignee.addEventListener('pointercancel', fin);
+}
 
 // ── CONSEILS PERSONNALISÉS ───────────────────────────────────
 function renderConseils() {
@@ -2254,7 +2511,8 @@ function openModal(id) {
 var MODALES_EDITION = {
   'm-produit': { id: 'p-id', form: 'form-produit', titre: 'm-produit-title', titreAjout: 'Ajouter un produit' },
   'm-client':  { id: 'cl-id', form: 'form-client' },
-  'm-employe': { id: 'emp-id', form: 'form-employe' }
+  'm-employe': { id: 'emp-id', form: 'form-employe' },
+  'm-rayon':   { id: '', form: 'form-rayon' }
 };
 function oublierEdition(modalId) {
   var m = MODALES_EDITION[modalId];

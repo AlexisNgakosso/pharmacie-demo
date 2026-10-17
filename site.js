@@ -87,7 +87,8 @@ var CATALOGUE = [];
 // Reconstruit PROMOS/CATALOGUE à partir de DATA (à appeler après tout rechargement de DATA)
 function buildCatalogueData() {
   CATALOGUE = DATA.produits.map(function(p) {
-    return { id:'prod-'+p.id, produitId:p.id, cat:p.cat, nom:p.nom, prix:p.prix, icon:iconForCat(p.cat), stock:p.stock, photo:pharmaPhotoValide(p.photo) };
+    return { id:'prod-'+p.id, produitId:p.id, cat:p.cat, nom:p.nom, prix:p.prix, icon:iconForCat(p.cat), stock:p.stock, photo:pharmaPhotoValide(p.photo),
+             rayons:pharmaRayonsDuProduit(DATA, p) };
   });
   // Une promo n'est affichée que si elle est active ET dans sa période de validité.
   // Sans ce contrôle, une promo oubliée resterait visible indéfiniment sur le site.
@@ -233,7 +234,8 @@ function applyPharmacyConfig() {
   appliquerCouleurTheme();
   var nomPharma = cfg.nom || 'Pharmacie Démo';
   var villeTxt = PharmaTextes.villeAffichee(cfg.adresse);
-  document.title = nomPharma + ' — Parapharmacie & Click and Collect' + (villeTxt ? ' à ' + villeTxt : '');
+  titreSite = nomPharma + ' — Parapharmacie & Click and Collect' + (villeTxt ? ' à ' + villeTxt : '');
+  if (!document.body || !document.body.classList.contains('vue-rayon')) document.title = titreSite;
   document.querySelectorAll('#brand-name-header, #brand-name-footer, #brand-name-copyright').forEach(function(el) {
     el.textContent = nomPharma;
   });
@@ -900,37 +902,128 @@ function rearmerUne() {
   if (nb) nb.textContent = '0';
 }
 
-// Chapitre « Nos rayons » : les catégories qui ont des produits, dans l'ordre de l'admin
+// Chapitre « Nos rayons » : les rayons qui ont des produits, dans l'ordre de l'admin ; chacun mène à sa page
 var rayonsObserver = null;
 function renderRayons() {
   var liste = document.getElementById('rayons-liste');
   var sec = document.getElementById('rayons');
   if (!liste || !sec) return;
-  var compte = {};
-  CATALOGUE.forEach(function(p) { if (p.cat) compte[p.cat] = (compte[p.cat] || 0) + 1; });
-  var ordre = (DATA.categories || []).concat(Object.keys(compte));
-  var cats = ordre.filter(function(c, i) { return c && c !== 'Tous' && compte[c] && ordre.indexOf(c) === i; }).slice(0, 8);
+  var cats = rayonsAvecProduits().slice(0, 20);
   sec.hidden = cats.length < 2;
+  document.querySelectorAll('[data-si-rayons]').forEach(function(el) { el.style.display = cats.length < 2 ? 'none' : ''; });
   liste.classList.toggle('statique', !recitAnime);
   liste.innerHTML = cats.map(function(c) {
-    var n = compte[c];
+    var n = produitsCatalogueDuRayon(c).length;
     var photo = pharmaPhotoRayon(DATA, c);
-    return '<li><button type="button" class="rayon' + (photo ? ' a-photo' : '') + '" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Voir le rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
+    return '<li><a class="rayon' + (photo ? ' a-photo' : '') + '" href="' + escHtml(lienRayon(c)) + '" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
       + '<span class="rayon-mot">' + escHtml(c) + '</span><span class="rayon-nb" aria-hidden="true">' + n + '</span>'
       + (photo ? '<span class="rayon-photo" aria-hidden="true"><img src="' + escHtml(photo) + '" alt="" loading="lazy" decoding="async" data-photo></span>' : '')
-      + '</button></li>';
+      + '</a></li>';
   }).join('');
   liste.querySelectorAll('.rayon-photo img').forEach(function(img) {
     suivrePhoto(img, function(i, cadre) { var b = cadre.parentNode; cadre.remove(); if (b) b.classList.remove('a-photo'); });
   });
-  liste.querySelectorAll('.rayon').forEach(function(b) {
-    b.addEventListener('click', function() {
-      filterCat(b.getAttribute('data-cat'));
-      var cat = document.getElementById('catalogue');
-      if (cat) cat.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-    });
-    if (rayonsObserver) rayonsObserver.observe(b);
+  if (rayonsObserver) liste.querySelectorAll('.rayon').forEach(function(b) { rayonsObserver.observe(b); });
+  // Menu du téléphone : un lien par rayon
+  var mm = document.getElementById('mm-rayons');
+  if (mm) mm.innerHTML = cats.length < 2 ? '' : cats.map(function(c) { return '<a href="' + escHtml(lienRayon(c)) + '">' + escHtml(c) + '</a>'; }).join('');
+}
+
+// ════ PAGE D'UN RAYON (site.html?rayon=solaire) ════
+// Même page que l'accueil : l'adresse désigne un rayon, l'accueil s'efface et la page du rayon s'affiche.
+// L'adresse se partage ; le bouton « retour » du navigateur ramène à l'accueil.
+var titreSite = '';
+function lienRayon(nom) { return 'site.html?rayon=' + encodeURIComponent(pharmaSlugRayon(nom)); }
+function slugAdresse() {
+  var m = /[?&]rayon=([^&#]*)/.exec(location.search);
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]).toLowerCase(); } catch (e) { return ''; }
+}
+function afficherVue(versHaut, ancre) {
+  var page = document.getElementById('page-rayon');
+  if (!page) return;
+  var slug = slugAdresse();
+  document.body.classList.toggle('vue-rayon', !!slug);
+  page.hidden = !slug;
+  if (slug) {
+    renderPageRayon();
+    if (versHaut) window.scrollTo(0, 0);
+  } else {
+    if (titreSite) document.title = titreSite;
+    var cible = ancre && ancre.length > 1 ? document.getElementById(ancre.slice(1)) : null;
+    if (cible) cible.scrollIntoView();
+  }
+}
+function renderPageRayon() {
+  var slug = slugAdresse();
+  if (!slug) return;
+  var titre = document.getElementById('pr-titre'), sous = document.getElementById('pr-sous');
+  var grille = document.getElementById('pr-grille'), photo = document.getElementById('pr-photo');
+  var autres = document.getElementById('pr-autres'), blocAutres = document.getElementById('pr-autres-bloc');
+  if (!titre || !grille) return;
+  var nomPharma = ((DATA.parametres || {}).nom) || '';
+  var listeAutres = function(sauf) {
+    var cats = rayonsAvecProduits().filter(function(c) { return c !== sauf; });
+    blocAutres.hidden = !cats.length;
+    autres.innerHTML = cats.map(function(c) { return '<li><a href="' + escHtml(lienRayon(c)) + '">' + escHtml(c) + '</a></li>'; }).join('');
+  };
+  // Catalogue encore attendu (base de données) : squelette, ou message si le réseau manque
+  if (EN_LIGNE && CATALOGUE.length === 0 && ETAT_CLOUD !== 'pret') {
+    titre.innerHTML = ETAT_CLOUD === 'chargement' ? '<span class="skel-bar" style="width:5.5em;height:0.8em;border-radius:0.2em" aria-hidden="true"></span>' : '';
+    sous.textContent = '';
+    photo.hidden = true;
+    grille.innerHTML = messageCatalogueCloud();
+    blocAutres.hidden = true;
+    return;
+  }
+  var nom = pharmaRayonDepuisSlug(DATA, slug);
+  if (!nom) {
+    titre.textContent = 'Rayon introuvable';
+    sous.textContent = 'Ce rayon n\'existe plus ou a changé de nom. Choisissez un autre rayon ci-dessous.';
+    photo.hidden = true;
+    grille.innerHTML = '';
+    listeAutres(null);
+    document.title = 'Rayon introuvable' + (nomPharma ? ' — ' + nomPharma : '');
+    return;
+  }
+  var produits = produitsCatalogueDuRayon(nom);
+  titre.textContent = nom;
+  sous.textContent = produits.length ? produits.length + ' produit' + (produits.length > 1 ? 's' : '') + ', à réserver en ligne et à retirer en pharmacie' : '';
+  var u = pharmaPhotoRayon(DATA, nom), img = photo.querySelector('img');
+  photo.hidden = !u;
+  if (u && img.getAttribute('src') !== u) { photo.classList.remove('photo-prete'); img.src = u; suivrePhoto(img, function() { photo.hidden = true; }); }
+  grille.innerHTML = produits.length ? produits.map(carteProduitHTML).join('')
+    : '<p class="pr-vide">Aucun produit dans ce rayon pour le moment.<br><a href="site.html#catalogue">Voir tout le catalogue</a></p>';
+  suivrePhotos(grille);
+  observeReveals();
+  initTilt();
+  listeAutres(nom);
+  document.title = nom + (nomPharma ? ' — ' + nomPharma : '');
+}
+// Liens vers un rayon, et liens de l'accueil (#catalogue…) depuis la page d'un rayon : sans recharger la page
+function initNavigationRayons() {
+  document.addEventListener('click', function(e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (/^site\.html\?rayon=[^#&]+$/.test(href)) {
+      e.preventDefault();
+      history.pushState({ rayon: true }, '', href);
+      afficherVue(true);
+      if (typeof closeMobileMenu === 'function') closeMobileMenu();
+      return;
+    }
+    if (document.body.classList.contains('vue-rayon') && /^(site\.html)?#[\w-]+$/.test(href)) {
+      e.preventDefault();
+      var ancre = href.replace(/^site\.html/, '');
+      history.pushState({}, '', location.pathname + ancre);
+      afficherVue(false, ancre);
+      if (typeof closeMobileMenu === 'function') closeMobileMenu();
+    }
   });
+  window.addEventListener('popstate', function() { afficherVue(false); });
+  afficherVue(false);
 }
 
 // Chapitre « Fidélité » : palier et réduction de l'admin, jauge qui se remplit à l'arrivée
@@ -1157,40 +1250,54 @@ function renderPromos() {
 
 // ── RENDER CATALOGUE ──
 var currentCat = 'Tous';
+// Carte d'un produit (catalogue et pages de rayon)
+function carteProduitHTML(p) {
+  var rupture = p.stock !== undefined && p.stock <= 0;
+  var html = '<div class="promo-card reveal" data-tilt>';
+  html += '<div class="promo-img'+(pharmaPhotoValide(p.photo)?' avec-photo':'')+'">'+visuelCarte(p);
+  if (rupture) html += '<span class="promo-discount" style="background:var(--texte-3)">Rupture de stock</span>';
+  html += '</div>';
+  html += '<div class="promo-content">';
+  html += '<div class="promo-cat">'+escHtml(p.cat)+'</div>';
+  html += '<div class="promo-name">'+escHtml(p.nom)+'</div>';
+  html += '<div class="promo-prices"><span class="price-now">'+nombre(p.prix).toFixed(2).replace('.',',')+'€</span></div>';
+  if (rupture) {
+    html += '<button class="promo-add" disabled style="opacity:0.5;cursor:not-allowed">Indisponible</button>';
+  } else {
+    html += '<button class="promo-add" onclick="addToCart(\''+escAttr(p.id)+'\',\''+escAttr(p.nom)+'\','+nombre(p.prix)+',\''+escAttr(p.icon)+'\',\''+escAttr(p.cat)+'\')"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter au panier</button>';
+  }
+  return html + '</div></div>';
+}
+
+// Produits d'un rayon tels qu'affichés (catalogue du site), dans l'ordre choisi dans l'admin
+function produitsCatalogueDuRayon(nom) {
+  return pharmaProduitsDuRayon(DATA, nom).map(function(p) {
+    return CATALOGUE.find(function(x) { return x.produitId === p.id; });
+  }).filter(Boolean);
+}
+// Rayons qui ont au moins un produit, dans l'ordre de l'admin
+function rayonsAvecProduits() {
+  return (DATA.categories || []).filter(function(c) { return produitsCatalogueDuRayon(c).length > 0; });
+}
+
 function renderCatalogue() {
   var grid = document.getElementById('catalogue-grid');
   var filters = document.getElementById('cat-filters');
   if (!grid) return;
-  var cats = ['Tous'].concat(CATALOGUE.map(function(p){return p.cat;}).filter(function(v,i,a){return a.indexOf(v)===i;}));
+  var cats = ['Tous'].concat(rayonsAvecProduits());
+  if (cats.indexOf(currentCat) === -1) currentCat = 'Tous';
   if (filters) {
     filters.innerHTML = cats.map(function(c){
       return '<button class="cat-filter-btn" onclick="filterCat(\''+escAttr(c)+'\')" style="padding:8px 18px;border-radius:30px;border:1.5px solid '+(c===currentCat?'var(--vert)':'var(--bord)')+';background:'+(c===currentCat?'var(--vert)':'transparent')+';color:'+(c===currentCat?'#fff':'var(--texte-2)')+';font-weight:600;font-size:0.85rem;cursor:pointer;font-family:inherit;transition:all 0.2s">'+escHtml(c)+'</button>';
     }).join('');
   }
-  var list = currentCat === 'Tous' ? CATALOGUE : CATALOGUE.filter(function(p){return p.cat===currentCat;});
-  var html = '';
+  // Filtre d'un rayon : ses produits (rayon principal ou ajoutés), dans l'ordre choisi dans l'admin
+  var list = currentCat === 'Tous' ? CATALOGUE : produitsCatalogueDuRayon(currentCat);
   if (EN_LIGNE && CATALOGUE.length === 0 && ETAT_CLOUD !== 'pret') {
     grid.innerHTML = messageCatalogueCloud();
     return;
   }
-  list.forEach(function(p) {
-    var rupture = p.stock !== undefined && p.stock <= 0;
-    html += '<div class="promo-card reveal" data-tilt>';
-    html += '<div class="promo-img'+(pharmaPhotoValide(p.photo)?' avec-photo':'')+'">'+visuelCarte(p);
-    if (rupture) html += '<span class="promo-discount" style="background:var(--texte-3)">Rupture de stock</span>';
-    html += '</div>';
-    html += '<div class="promo-content">';
-    html += '<div class="promo-cat">'+escHtml(p.cat)+'</div>';
-    html += '<div class="promo-name">'+escHtml(p.nom)+'</div>';
-    html += '<div class="promo-prices"><span class="price-now">'+nombre(p.prix).toFixed(2).replace('.',',')+'€</span></div>';
-    if (rupture) {
-      html += '<button class="promo-add" disabled style="opacity:0.5;cursor:not-allowed">Indisponible</button>';
-    } else {
-      html += '<button class="promo-add" onclick="addToCart(\''+escAttr(p.id)+'\',\''+escAttr(p.nom)+'\','+nombre(p.prix)+',\''+escAttr(p.icon)+'\',\''+escAttr(p.cat)+'\')"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter au panier</button>';
-    }
-    html += '</div></div>';
-  });
-  grid.innerHTML = html;
+  grid.innerHTML = list.map(carteProduitHTML).join('');
   suivrePhotos(grid);
   observeReveals();
   initTilt();
@@ -1717,6 +1824,7 @@ function afficherSquelette() {
   if (carte) carte.innerHTML = '<span class="skel-bar" style="width:54px;height:22px;border-radius:12px"></span>'
     + '<span class="skel-bar" style="width:80%;height:14px;margin-top:12px"></span><span class="skel-bar" style="width:46%;height:18px;margin-top:9px"></span>';
   renderCatalogue();
+  renderPageRayon();
 }
 function preparerSquelette() {
   clearTimeout(squelette.minuteur);
@@ -1887,6 +1995,7 @@ function chargerDonneesCloud() {
     renderAnnonces();
     renderRecit();
     renderCatalogue();
+    renderPageRayon();
     afficherEtatReseau(CATALOGUE.length ? 'coupe-cache' : 'coupe');
     planifierNouvelEssai();
     return false;
@@ -1902,6 +2011,7 @@ function rafraichirAffichageCloud() {
   renderAnnonces();
   renderRecit();
   renderCatalogue();
+  renderPageRayon();
   renderConseilsSite();
   renderFaq();
   if (!flipCardsLancees) { flipCardsLancees = true; initFlipCards(); }
@@ -2401,6 +2511,7 @@ window.addEventListener('DOMContentLoaded', function() {
   initRecit();
   renderPromos();
   renderCatalogue();
+  initNavigationRayons();
   renderFaq();
   loadCart();
   updateCart();
