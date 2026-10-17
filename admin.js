@@ -1344,8 +1344,10 @@ function saveLegal() {
 // ── CLIENTS ─────────────────────────────────────────────────
 function renderClients(filtre, type) {
   var html = '';
+  // Carte de fidélité scannée dans la recherche (« FID-000123 ») : le client est retrouvé par son numéro
+  var idCarte = pharmaIdDepuisCarte(filtre);
   var list = DATA.clients.filter(function(c) {
-    var ms = !filtre || searchMatch(c.nom+' '+c.email+' '+c.tel, filtre);
+    var ms = idCarte !== null ? c.id === idCarte : (!filtre || searchMatch(c.nom+' '+c.email+' '+c.tel, filtre));
     var mt = !type || type==='Tous' || c.type===type;
     return ms && mt;
   });

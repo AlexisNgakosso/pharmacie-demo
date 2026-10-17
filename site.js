@@ -2391,6 +2391,8 @@ function closeAccount() { document.getElementById('account-modal').classList.rem
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', function() {
+  var cbHaut = document.getElementById('hero-code-barres');
+  if (cbHaut) cbHaut.innerHTML = pharmaCodeBarres('FIDELITE', 40);
   applyPharmacyConfig();
   initTheme();
   initAmbient();

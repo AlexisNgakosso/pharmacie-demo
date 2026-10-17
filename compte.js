@@ -58,7 +58,16 @@ function initFidelite() {
   var nomEl = document.getElementById('fid-nom');
   if (nomEl) nomEl.textContent = clientNom;
   var numEl = document.getElementById('fid-numero');
-  if (numEl) numEl.textContent = 'N° fidélité · ' + getClientInitials(clientNom) + '-' + new Date().getFullYear() + '-' + String(client ? client.id : 0).padStart(4, '0');
+  var numero = pharmaNumeroFidelite(client);
+  if (numEl) numEl.textContent = client ? 'Carte n° ' + numero : 'Votre carte apparaîtra après votre premier achat';
+  // Code-barres (Code 128) lu par la douchette du comptoir ; le numéro est écrit dessous pour une saisie à la main
+  var cb = document.getElementById('fid-code-barres');
+  if (cb) {
+    cb.style.display = client ? '' : 'none';
+    cb.innerHTML = client ? pharmaCodeBarres(numero, 60) + '<div class="code-barres-num">' + numero + '</div>' : '';
+    pharmaAjusterCodeBarres(cb);
+    if (!cb.__ajuste) { cb.__ajuste = true; window.addEventListener('resize', function() { pharmaAjusterCodeBarres(cb); }); }
+  }
   var compteurEl = document.getElementById('fid-compteur');
   if (compteurEl) compteurEl.textContent = prog.courant + ' / ' + seuil + ' achats';
 
@@ -323,6 +332,7 @@ function showTab(id, el) {
   cible.classList.add('active');
   document.querySelectorAll('.menu-item').forEach(function(m){ m.classList.remove('active'); });
   if (el) el.classList.add('active');
+  if (id === 'fidelite') pharmaAjusterCodeBarres(document.getElementById('fid-code-barres'));
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 

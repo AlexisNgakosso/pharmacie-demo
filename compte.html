@@ -93,8 +93,10 @@ header{background:var(--bg-card);border-bottom:1px solid var(--bord);padding:12p
 /* QR CARD */
 .qr-card{background:linear-gradient(135deg,var(--vert),#0F4A2E);border-radius:20px;padding:30px;text-align:center;color:#fff;position:relative;overflow:hidden}
 .qr-card::before{content:'';position:absolute;top:-40%;right:-15%;width:280px;height:280px;background:radial-gradient(circle,rgba(95,227,161,0.25),transparent 70%);border-radius:50%}
-.qr-box{width:160px;height:160px;background:#fff;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;padding:14px;position:relative;z-index:1}
-.qr-box svg{width:100%;height:100%;color:var(--vert)}
+/* Code-barres de la carte : noir sur blanc, marges blanches incluses (lecture à la douchette) */
+.code-barres{max-width:300px;background:#fff;border-radius:16px;margin:0 auto 16px;padding:16px 14px 10px;position:relative;z-index:1}
+.code-barres-svg{display:block;width:100%;height:76px}
+.code-barres-num{margin-top:7px;font-weight:700;font-size:0.9rem;letter-spacing:0.14em;color:#16241C;font-variant-numeric:tabular-nums}
 .qr-name{font-weight:700;font-size:1.1rem;position:relative;z-index:1}
 .qr-sub{font-size:0.8rem;color:rgba(255,255,255,0.75);position:relative;z-index:1}
 .wallet-btns{display:flex;gap:10px;justify-content:center;margin-top:18px;position:relative;z-index:1;flex-wrap:wrap}
@@ -221,7 +223,7 @@ html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(52,74,62,0.6),r
     </div>
     <nav class="menu">
       <div class="menu-item active" onclick="showTab('profil',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Mon profil</div>
-      <div class="menu-item" onclick="showTab('fidelite',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Carte fidélité</div>
+      <div class="menu-item" onclick="showTab('fidelite',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="4" y1="5" x2="4" y2="19"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="11" y1="5" x2="11" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/><line x1="17.5" y1="5" x2="17.5" y2="19"/><line x1="20" y1="5" x2="20" y2="19"/></svg>Carte fidélité</div>
       <div class="menu-item" onclick="showTab('commandes',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mes commandes</div>
       <div class="menu-item" onclick="showTab('notifs',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications</div>
       <div class="menu-item" onclick="showTab('parametres',this)"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Paramètres</div>
@@ -266,11 +268,11 @@ html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(52,74,62,0.6),r
     <div class="page-tab" id="tab-fidelite">
       <div class="content-card">
         <h2 class="ct-title">Ma carte de fidélité</h2>
-        <p class="ct-sub">Suivez votre progression. Votre carte avec QR code personnel arrive bientôt : en attendant, indiquez votre nom ou votre numéro de commande au comptoir.</p>
+        <p class="ct-sub">Présentez ce code-barres au comptoir : l'équipe retrouve votre carte en le scannant. Suivez aussi votre progression vers la prochaine réduction.</p>
         <div class="qr-card">
-          <div class="qr-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M17 21h4v-4M21 17h.01"/></svg></div>
-          <div class="qr-name" id="fid-nom">Marie Dupont</div>
-          <div class="qr-sub" id="fid-numero">N° fidélité · MD-2025-0147</div>
+          <div class="code-barres" id="fid-code-barres"></div>
+          <div class="qr-name" id="fid-nom"></div>
+          <div class="qr-sub" id="fid-numero"></div>
           <div class="wallet-btns">
             <button class="wallet-btn" onclick="pharmaToast('Apple Wallet : bientôt disponible')"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>Apple Wallet</button>
             <button class="wallet-btn" onclick="pharmaToast('Google Wallet : bientôt disponible')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Google Wallet</button>
