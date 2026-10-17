@@ -181,9 +181,7 @@ function applyPharmacyConfig() {
   var cfg = DATA.parametres || {};
   // Couleur principale personnalisable depuis l'admin (revente à d'autres pharmacies).
   // Appliquée uniquement en thème clair : le thème sombre a sa propre palette.
-  if (cfg.couleurPrimaire && document.documentElement.getAttribute('data-theme') !== 'dark') {
-    document.documentElement.style.setProperty('--vert', cfg.couleurPrimaire);
-  }
+  appliquerCouleurTheme();
   var nomPharma = cfg.nom || 'Pharmacie Démo';
   var villeTxt = PharmaTextes.villeAffichee(cfg.adresse);
   document.title = nomPharma + ' — Parapharmacie & Click and Collect' + (villeTxt ? ' à ' + villeTxt : '');
@@ -530,8 +528,18 @@ function initTheme() {
     });
   }
 }
+// Couleur principale choisie dans l'admin : appliquée en thème clair seulement. En passant au
+// thème sombre, elle est retirée (sinon le vert foncé restait affiché sur fond sombre, peu lisible).
+function appliquerCouleurTheme() {
+  var cfg = (typeof DATA !== 'undefined' && DATA && DATA.parametres) || {};
+  var racine = document.documentElement;
+  if (cfg.couleurPrimaire && racine.getAttribute('data-theme') !== 'dark') racine.style.setProperty('--vert', cfg.couleurPrimaire);
+  else racine.style.removeProperty('--vert');
+}
+
 function setTheme(theme, memoriser) {
   document.documentElement.setAttribute('data-theme', theme);
+  appliquerCouleurTheme();
   // memoriser === false : application temporaire (aucun choix explicite du visiteur),
   // pour que le site continue de suivre le réglage système et l'heure.
   if (memoriser !== false) {
@@ -683,49 +691,7 @@ function initAmbient() {
   start();
 }
 
-// ── CARROUSEL ──
-// Les annonces « promo » et « jour spécial » sont remplies depuis l'admin (renderAnnonces).
-// Une annonce sans contenu est masquée : le carrousel ne compte que les annonces visibles.
-var sliderCurrent = 0;
-var sliderTotal = 0;
-var sliderAuto;
-
-function sliderGo(n) {
-  if (!sliderTotal) return;
-  sliderCurrent = (n + sliderTotal) % sliderTotal;
-  var track = document.getElementById('slider-track');
-  if (track) track.style.transform = 'translateX(-'+sliderCurrent*100+'%)';
-  document.querySelectorAll('.slider-dot').forEach(function(d,i){ d.classList.toggle('active', i===sliderCurrent); });
-}
-function sliderNext() { sliderGo(sliderCurrent+1); resetSliderAuto(); }
-function sliderPrev() { sliderGo(sliderCurrent-1); resetSliderAuto(); }
-function resetSliderAuto() {
-  clearInterval(sliderAuto);
-  if (sliderTotal > 1) sliderAuto = setInterval(function(){ sliderGo(sliderCurrent+1); }, 5000);
-}
-
-// Recompte les annonces visibles, refait les points, et masque flèches et points s'il n'y en a qu'une.
-// Rappelée à chaque mise à jour des annonces (chargement de la base, par exemple).
-function initSlider() {
-  var track = document.getElementById('slider-track');
-  var dots = document.getElementById('slider-dots');
-  if (!track || !dots) return;
-  sliderTotal = Array.prototype.filter.call(track.children, function(s) { return s.style.display !== 'none'; }).length;
-  dots.innerHTML = '';
-  for (var i=0; i<sliderTotal; i++) {
-    var d = document.createElement('div');
-    d.className = 'slider-dot';
-    d.setAttribute('data-i', i);
-    d.addEventListener('click', function(){ sliderGo(parseInt(this.getAttribute('data-i'), 10)); resetSliderAuto(); });
-    dots.appendChild(d);
-  }
-  var nav = document.getElementById('slider-nav');
-  if (nav) nav.style.display = sliderTotal > 1 ? 'flex' : 'none';
-  sliderGo(Math.min(sliderCurrent, Math.max(0, sliderTotal - 1)));
-  resetSliderAuto();
-}
-
-// ── ANNONCES DE L'ACCUEIL (promo et jour spécial saisis dans l'admin) ──
+// ── ANNONCES DE L'ACCUEIL (promo et jours spéciaux saisis dans l'admin) ──
 var JOURS_SEMAINE = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 
 // La promo mise en avant : la plus forte réduction, puis celle qui se termine le plus tôt
@@ -759,21 +725,21 @@ function quandJourSpecial(iso) {
   return 'le ' + (isNaN(d.getTime()) ? '' : JOURS_SEMAINE[d.getDay()] + ' ') + formatDateFr(iso);
 }
 
+function heureValide(h) { return /^\d{1,2}:\d{2}$/.test(String(h || '')); }
+
 function texteJourSpecial(j) {
   var iso = String(j.date).slice(0, 10);
-  var heureOk = function(h) { return /^\d{1,2}:\d{2}$/.test(String(h || '')); };
-  var heures = (heureOk(j.debut) && heureOk(j.fin)) ? ' · ' + formatHeure(j.debut) + '–' + formatHeure(j.fin) : '';
+  var heures = (heureValide(j.debut) && heureValide(j.fin)) ? ' · ' + formatHeure(j.debut) + '–' + formatHeure(j.fin) : '';
   if (j.type === 'Fermeture') return 'Fermeture exceptionnelle ' + quandJourSpecial(iso);
   if (j.type === 'Garde') return 'Pharmacie de garde ' + quandJourSpecial(iso) + heures;
   return String(j.type || 'Horaires modifiés') + ' ' + quandJourSpecial(iso) + heures;
 }
 
+// Carte « promo » et chiffre « Jusqu'à -X % » du haut de page
 function renderAnnonces() {
   var promo = promoALaUne();
   var prix = function(v) { return nombre(v).toFixed(2).replace('.', ',') + '€'; };
   var pct = promo ? Math.round(nombre(promo.pct)) : 0;
-
-  // Carte de l'accueil : la promo à la une, sinon le principe du click & collect
   var carte = document.getElementById('hero-promo');
   if (carte) {
     carte.innerHTML = promo
@@ -782,35 +748,249 @@ function renderAnnonces() {
         + (nombre(promo.prixNormal) > nombre(promo.prixPromo) ? '<span class="price-old">' + prix(promo.prixNormal) + '</span>' : '') + '</div></div>'
       : '<div style="margin-top:4px"><div class="fc-title">Réservez en ligne</div><div class="fc-sub">Réglez sur place, au retrait</div></div>';
   }
-
-  // Chiffre « Jusqu'à -X % » : la plus forte réduction en cours, masqué s'il n'y a pas de promo
   var stat = document.getElementById('hero-stat-promo');
   var statNum = document.getElementById('hero-stat-promo-num');
   if (stat && statNum) {
     stat.style.display = pct > 0 ? '' : 'none';
     statNum.textContent = pct > 0 ? '-' + pct + '%' : '';
   }
+}
 
-  // Annonce promo du carrousel
-  var annoncePromo = document.getElementById('annonce-promo');
-  if (annoncePromo) {
-    annoncePromo.style.display = promo ? '' : 'none';
-    var titre = document.getElementById('annonce-promo-titre');
-    var sous = document.getElementById('annonce-promo-sous');
-    if (promo && titre) titre.innerHTML = 'Promo — ' + escHtml(promo.nom) + ' à <span style="color:var(--vert)">-' + pct + '%</span>';
-    if (promo && sous) sous.textContent = (promo.fin ? 'Offre valable jusqu\'au ' + promo.fin + ' · ' : '') + 'Click & Collect';
+// ════ RÉCIT DE L'ACCUEIL ════
+// Chapitres remplis avec les données de l'admin : la promo du moment, les rayons, la fidélité
+// et l'état d'ouverture du jour. Un chapitre sans contenu est masqué.
+var recitAnime = !prefersReducedMotion() && !!window.IntersectionObserver;
+var unePromo = null, uneCompteFait = false, fidRemplie = false;
+
+function renderRecit() {
+  renderUne();
+  renderRayons();
+  renderFideliteRecit();
+  renderAujourdhui();
+}
+
+// Chapitre « La promo du moment »
+function renderUne() {
+  var p = promoALaUne();
+  unePromo = p;
+  document.querySelectorAll('[data-si-promo]').forEach(function(el) { el.style.display = p ? '' : 'none'; });
+  var grille = document.getElementById('promos');
+  if (grille) grille.style.display = PROMOS.length ? '' : 'none';
+  var sec = document.getElementById('a-la-une');
+  if (!sec) return;
+  sec.hidden = !p;
+  if (!p) return;
+  var pct = Math.round(nombre(p.pct));
+  var prix = function(v) { return nombre(v).toFixed(2).replace('.', ',') + ' €'; };
+  var nb = document.getElementById('une-pct');
+  nb.setAttribute('data-cible', pct);
+  if (!recitAnime || uneCompteFait) nb.textContent = pct;
+  document.getElementById('une-reduction').textContent = 'Réduction de ' + pct + ' %';
+  document.getElementById('une-nom').textContent = p.nom;
+  document.getElementById('une-prix').textContent = prix(p.prixPromo);
+  document.getElementById('une-ancien').textContent = nombre(p.prixNormal) > nombre(p.prixPromo) ? prix(p.prixNormal) : '';
+  document.getElementById('une-fin').textContent = p.fin ? 'Jusqu\'au ' + p.fin : '';
+}
+
+// Le chiffre de la réduction défile de 0 à sa valeur, une seule fois, quand le chapitre arrive
+function compterUne() {
+  var nb = document.getElementById('une-pct');
+  var cible = parseInt(nb && nb.getAttribute('data-cible'), 10);
+  if (!nb || !(cible > 0) || uneCompteFait) return;
+  uneCompteFait = true;
+  var debut = null, duree = 900;
+  function pas(t) {
+    if (debut === null) debut = t;
+    var x = Math.min(1, (t - debut) / duree);
+    nb.textContent = Math.round(cible * (1 - Math.pow(1 - x, 3)));
+    if (x < 1) requestAnimationFrame(pas);
   }
+  nb.textContent = '0';
+  requestAnimationFrame(pas);
+}
 
-  // Annonce du prochain jour spécial (page Horaires de l'admin)
-  var annonceGarde = document.getElementById('annonce-garde');
-  if (annonceGarde) {
-    var jour = prochainJourSpecial();
-    annonceGarde.style.display = jour ? '' : 'none';
-    var titreGarde = document.getElementById('annonce-garde-titre');
-    if (jour && titreGarde) titreGarde.textContent = texteJourSpecial(jour);
+// Chapitre « Nos rayons » : les catégories qui ont des produits, dans l'ordre de l'admin
+var rayonsObserver = null;
+function renderRayons() {
+  var liste = document.getElementById('rayons-liste');
+  var sec = document.getElementById('rayons');
+  if (!liste || !sec) return;
+  var compte = {};
+  CATALOGUE.forEach(function(p) { if (p.cat) compte[p.cat] = (compte[p.cat] || 0) + 1; });
+  var ordre = (DATA.categories || []).concat(Object.keys(compte));
+  var cats = ordre.filter(function(c, i) { return c && c !== 'Tous' && compte[c] && ordre.indexOf(c) === i; }).slice(0, 8);
+  sec.hidden = cats.length < 2;
+  liste.classList.toggle('statique', !recitAnime);
+  liste.innerHTML = cats.map(function(c) {
+    var n = compte[c];
+    return '<li><button type="button" class="rayon" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Voir le rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
+      + '<span class="rayon-mot">' + escHtml(c) + '</span><span class="rayon-nb" aria-hidden="true">' + n + '</span></button></li>';
+  }).join('');
+  liste.querySelectorAll('.rayon').forEach(function(b) {
+    b.addEventListener('click', function() {
+      filterCat(b.getAttribute('data-cat'));
+      var cat = document.getElementById('catalogue');
+      if (cat) cat.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    });
+    if (rayonsObserver) rayonsObserver.observe(b);
+  });
+}
+
+// Chapitre « Fidélité » : palier et réduction de l'admin, jauge qui se remplit à l'arrivée
+function renderFideliteRecit() {
+  var cfg = DATA.parametres || {};
+  var seuil = parseInt(cfg.fideliteSeuil, 10) || 5;
+  var reduction = parseInt(cfg.fideliteReduction, 10) || 10;
+  var titre = document.getElementById('fid-titre');
+  if (titre) titre.textContent = seuil + ' achats, -' + reduction + ' %';
+  var jauge = document.getElementById('fid-jauge');
+  if (!jauge) return;
+  var n = Math.min(Math.max(seuil, 1), 12);
+  if (jauge.children.length !== n) {
+    var html = '';
+    for (var i = 0; i < n; i++) html += '<span class="fid-seg' + ((!recitAnime || fidRemplie) ? ' plein' : '') + '"></span>';
+    jauge.innerHTML = html;
   }
+}
+function remplirFidelite() {
+  if (fidRemplie) return;
+  fidRemplie = true;
+  document.querySelectorAll('#fid-jauge .fid-seg').forEach(function(seg, i) {
+    setTimeout(function() { seg.classList.add('plein'); }, 140 * i);
+  });
+}
 
-  initSlider();
+// Chapitre « Aujourd'hui » : ouvert ou fermé, d'après les horaires et les jours spéciaux de l'admin
+function minutesDe(h) { var p = String(h).split(':'); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); }
+function horairesDu(d) {
+  var iso = pharmaDateLocale(d);
+  var special = (DATA.joursSpeciaux || []).find(function(j) { return j && String(j.date || '').slice(0, 10) === iso; }) || null;
+  if (special && special.type === 'Fermeture') return { ouvert: false, special: special };
+  if (special && heureValide(special.debut) && heureValide(special.fin)) return { ouvert: true, debut: special.debut, fin: special.fin, special: special };
+  var h = (DATA.horaires || {})[JOURS_ORDRE[(d.getDay() + 6) % 7]];
+  if (h && h.ouvert && heureValide(h.debut) && heureValide(h.fin)) return { ouvert: true, debut: h.debut, fin: h.fin, special: special };
+  return { ouvert: false, special: special };
+}
+function etatOuverture(maintenant) {
+  maintenant = maintenant || new Date();
+  var jour = horairesDu(maintenant);
+  var m = maintenant.getHours() * 60 + maintenant.getMinutes();
+  var etat = { ouvert: false, titre: '', suite: '', special: jour.special };
+  if (jour.ouvert && m >= minutesDe(jour.debut) && m < minutesDe(jour.fin)) {
+    etat.ouvert = true;
+    etat.titre = 'Ouvert jusqu\'à ' + formatHeure(jour.fin);
+    return etat;
+  }
+  if (jour.ouvert && m < minutesDe(jour.debut)) {
+    etat.titre = 'Ouvre aujourd\'hui à ' + formatHeure(jour.debut);
+    return etat;
+  }
+  etat.titre = (jour.special && jour.special.type === 'Fermeture') ? 'Fermé aujourd\'hui' : 'Fermé';
+  for (var k = 1; k <= 7; k++) {
+    var d = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + k);
+    var h = horairesDu(d);
+    if (h.ouvert) {
+      etat.suite = 'Ouvre ' + (k === 1 ? 'demain' : JOURS_SEMAINE[d.getDay()]) + ' à ' + formatHeure(h.debut);
+      break;
+    }
+  }
+  return etat;
+}
+function renderAujourdhui() {
+  var titre = document.getElementById('auj-titre');
+  if (!titre) return;
+  var cfg = DATA.parametres || {};
+  var etat = etatOuverture();
+  titre.textContent = etat.titre;
+  var pastille = document.querySelector('#auj-etat .auj-pastille');
+  if (pastille) pastille.classList.toggle('ferme', !etat.ouvert);
+  var suite = document.getElementById('auj-suite');
+  if (suite) suite.textContent = etat.suite || ((etat.special && etat.special.type === 'Garde') ? 'Pharmacie de garde aujourd\'hui' : '');
+  // Prochain jour spécial (à partir de demain : celui du jour est déjà pris en compte ci-dessus)
+  var special = document.getElementById('auj-special');
+  if (special) {
+    var j = prochainJourSpecial();
+    var aVenir = j && String(j.date).slice(0, 10) !== pharmaDateLocale() ? j : null;
+    special.hidden = !aVenir;
+    special.textContent = aVenir ? texteJourSpecial(aVenir) : '';
+  }
+  var adresse = document.getElementById('auj-adresse');
+  if (adresse) adresse.textContent = cfg.adresse || '';
+  var tel = document.getElementById('auj-tel');
+  if (tel) {
+    tel.style.display = cfg.tel ? '' : 'none';
+    tel.textContent = cfg.tel || '';
+    tel.href = 'tel:' + String(cfg.tel || '').replace(/[^\d+]/g, '');
+  }
+  var iti = document.getElementById('auj-itineraire');
+  if (iti) {
+    iti.style.display = cfg.adresse ? '' : 'none';
+    iti.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((cfg.nom ? cfg.nom + ', ' : '') + (cfg.adresse || ''));
+  }
+}
+
+// Animations du récit, déclenchées par le navigateur à l'arrivée de chaque chapitre
+// (aucun calcul pendant le défilement), et coupées si le téléphone demande moins d'animations.
+function initRecit() {
+  var ajouter = document.getElementById('une-ajouter');
+  if (ajouter) ajouter.addEventListener('click', function() {
+    var p = unePromo;
+    if (p) addToCart(p.id, p.nom, nombre(p.prixPromo), p.icon, p.cat);
+  });
+  initRaccourci();
+  setInterval(renderAujourdhui, 60000);
+  if (!recitAnime) return;
+  // Promo : le chiffre défile quand le chapitre est bien visible
+  var une = document.getElementById('a-la-une');
+  if (une) new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) compterUne(); });
+  }, { threshold: 0.35 }).observe(une);
+  // Étapes : le grand chiffre suit l'étape qui passe au milieu de l'écran
+  var chiffres = document.querySelectorAll('.etape-chiffre');
+  var etapes = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (!e.isIntersecting) return;
+      var i = parseInt(e.target.getAttribute('data-etape'), 10);
+      chiffres.forEach(function(c, k) { c.classList.toggle('actif', k === i); });
+    });
+  }, { rootMargin: '-45% 0px -45% 0px' });
+  document.querySelectorAll('.etape[data-etape]').forEach(function(el) { etapes.observe(el); });
+  // Rayons : le mot se remplit quand il traverse le milieu de l'écran
+  rayonsObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { e.target.classList.toggle('actif', e.isIntersecting); });
+  }, { rootMargin: '-42% 0px -42% 0px' });
+  document.querySelectorAll('#rayons-liste .rayon').forEach(function(b) { rayonsObserver.observe(b); });
+  // Fidélité : la jauge se remplit segment par segment
+  var fid = document.getElementById('fid-jauge');
+  if (fid) new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) remplirFidelite(); });
+  }, { threshold: 0.6 }).observe(fid);
+}
+
+// Raccourci « Catalogue » : visible pendant le récit, masqué en haut de page, sur le catalogue
+// lui-même et tant que le bandeau des cookies est ouvert
+function initRaccourci() {
+  var lien = document.getElementById('raccourci-catalogue');
+  var hero = document.getElementById('accueil');
+  var cat = document.getElementById('catalogue');
+  if (!lien || !hero || !cat || !window.IntersectionObserver) return;
+  var heroVu = true, catVu = false;
+  function maj() {
+    var cookies = document.getElementById('cookie-bar');
+    var cookiesOuverts = cookies && cookies.classList.contains('show');
+    var visible = !heroVu && !catVu && !cookiesOuverts;
+    lien.classList.toggle('visible', visible);
+    lien.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    lien.tabIndex = visible ? 0 : -1;
+  }
+  new IntersectionObserver(function(e) { heroVu = e[0].isIntersecting; maj(); }).observe(hero);
+  new IntersectionObserver(function(e) { catVu = e[0].isIntersecting; maj(); }, { rootMargin: '-20% 0px -20% 0px' }).observe(cat);
+  lien.addEventListener('click', function(ev) {
+    ev.preventDefault();
+    cat.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  });
+  var cookies = document.getElementById('cookie-bar');
+  if (cookies && window.MutationObserver) new MutationObserver(maj).observe(cookies, { attributes: true, attributeFilter: ['class'] });
 }
 
 
@@ -1436,6 +1616,7 @@ function rafraichirAffichageCloud() {
   buildCatalogueData();
   renderPromos();
   renderAnnonces();
+  renderRecit();
   renderCatalogue();
   renderConseilsSite();
   renderFaq();
@@ -1673,12 +1854,12 @@ function fermerConfirmation() {
 
 // ── APPARITION AU DÉFILEMENT ──
 // Titres et textes (« .reveal ») : apparition en fondu, une seule fois.
-// Cartes (promotions, catalogue, « Pourquoi nous choisir », étapes, services) : effet « volet ».
+// Cartes (promotions, catalogue, « Pourquoi nous choisir ») : effet « volet ».
 // La carte se déplie quand elle arrive à l'écran et se replie quand elle en sort complètement,
 // pour rejouer l'effet au passage suivant. Les cartes qui arrivent ensemble se déplient l'une
 // après l'autre, de gauche à droite. Aucun calcul pendant le défilement : c'est le navigateur
 // qui signale l'entrée et la sortie (IntersectionObserver).
-var CARTES_VOLET = '.promo-card, .feature, .step, .service-card, .banner-card';
+var CARTES_VOLET = '.promo-card, .feature';
 var revealObserver, voletEntree, voletSortie;
 function observeReveals() {
   var cartes = document.querySelectorAll(CARTES_VOLET);
@@ -1918,6 +2099,8 @@ window.addEventListener('DOMContentLoaded', function() {
   initTheme();
   initAmbient();
   renderAnnonces();
+  renderRecit();
+  initRecit();
   renderPromos();
   renderCatalogue();
   renderFaq();

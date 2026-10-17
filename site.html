@@ -45,7 +45,7 @@
   "priceRange": "€€"
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   --vert:#1B6B45; --vert-vif:#2ECC7A; --vert-clair:#5FE3A1;
@@ -181,22 +181,8 @@ section{position:relative;z-index:1}
 .feature p{font-size:0.92rem;color:var(--texte-2)}
 
 /* ── COMMENT ÇA MARCHE ── */
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;counter-reset:step;perspective:1200px}
-.step{position:relative;padding:28px 22px;background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);transition:transform 0.4s}
-.step:hover{transform:translateY(-5px)}
-.step-num{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:700;color:var(--vert);opacity:0.25;line-height:1}
-.step h3{font-size:1.1rem;margin:10px 0 8px}
-.step p{font-size:0.86rem;color:var(--texte-2)}
 
 /* ── CTA FIDÉLITÉ ── */
-.fidelite{background:linear-gradient(135deg,var(--vert),#0F4A2E);border-radius:28px;padding:60px 50px;position:relative;overflow:hidden;color:#fff}
-.fidelite::before{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(95,227,161,0.3),transparent 70%);border-radius:50%}
-.fidelite-wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.3fr 0.7fr;gap:40px;align-items:center}
-.fidelite h2{font-size:2.4rem;color:#fff;margin-bottom:16px}
-.fidelite p{color:rgba(255,255,255,0.85);font-size:1.05rem;margin-bottom:26px;max-width:420px}
-.fidelite-card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r);padding:24px;text-align:center}
-.qr-placeholder{width:130px;height:130px;background:#fff;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;padding:12px}
-.qr-placeholder svg{width:100%;height:100%;color:var(--vert)}
 .btn-white{background:#fff;color:var(--vert);padding:14px 28px;border-radius:13px;font-weight:700;border:none;cursor:pointer;font-family:inherit;font-size:0.95rem;transition:all 0.25s}
 .btn-white:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.2)}
 
@@ -325,15 +311,6 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 .hero{padding-top:170px}
 
 /* ── CARROUSEL PROMOS ── */
-.slider-wrap{position:relative;overflow:hidden;margin-bottom:14px}
-.slider-track{display:flex;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1)}
-.slider-slide{min-width:100%;padding:0 4px}
-.slider-dots{display:flex;justify-content:center;gap:7px;margin-top:16px}
-.slider-dot{width:8px;height:8px;border-radius:50%;background:var(--bord);cursor:pointer;transition:all 0.3s}
-.slider-dot.active{background:var(--vert);width:22px;border-radius:4px}
-.slider-arrows{display:flex;gap:8px;justify-content:center;margin-top:12px}
-.slider-arrow{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--bord);background:var(--bg-card);cursor:pointer;color:var(--texte-2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
-.slider-arrow:hover{border-color:var(--vert);color:var(--vert)}
 
 /* ── ANIMATION BOUTON PANIER ── */
 .promo-add{position:relative;overflow:hidden}
@@ -345,40 +322,15 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 .promo-add:hover .cart-ic{transform:scale(1.25) rotate(-12deg)}
 
 /* ── CARTES SERVICES (effet hover Aprium) ── */
-.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.service-card{border-radius:var(--r);overflow:hidden;position:relative;height:280px;cursor:pointer;box-shadow:var(--shadow)}
-.service-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform 0.5s cubic-bezier(0.22,1,0.36,1)}
-.service-card:hover .service-bg{transform:scale(1.04)}
-.service-overlay{position:absolute;bottom:0;left:0;right:0;padding:24px;transform:translateY(0);transition:all 0.4s cubic-bezier(0.22,1,0.36,1)}
-.service-overlay-inner{background:var(--vert);border-radius:12px;padding:18px 20px;transform:translateY(8px);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1)}
-.service-card:hover .service-overlay-inner{transform:translateY(0)}
-.service-title{color:#fff;font-weight:800;font-size:1.05rem;text-transform:uppercase;letter-spacing:0.5px}
-.service-sub{color:rgba(255,255,255,0.8);font-size:0.8rem;margin-top:4px;max-height:0;overflow:hidden;transition:max-height 0.4s}
-.service-card:hover .service-sub{max-height:60px}
 
 /* ── BANNERS SVG ── */
-.banner-section{padding:70px 0}
-.banner-card{border-radius:24px;overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:220px;margin-bottom:22px;box-shadow:var(--shadow)}
-.banner-card.reverse{direction:rtl}
-.banner-card.reverse > *{direction:ltr}
-.banner-illus{display:flex;align-items:center;justify-content:center;padding:30px;position:relative;overflow:hidden}
-.banner-illus svg{width:180px;height:180px;position:relative;z-index:1}
-.banner-content{display:flex;flex-direction:column;justify-content:center;padding:36px 40px}
-.banner-content h3{font-size:1.6rem;margin-bottom:10px}
-.banner-content p{font-size:0.95rem;margin-bottom:20px;opacity:0.85}
-.banner-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.25s;width:fit-content}
 @media(max-width:700px){
-  .banner-card{grid-template-columns:1fr}
-  .banner-illus{display:none}
-  .services-grid{grid-template-columns:1fr}
 }
 @media(max-width:900px){
   .hero-wrap{grid-template-columns:1fr;gap:20px}
   .hero-visual{order:-1;margin-bottom:10px}
   .hero{padding-top:140px;padding-bottom:30px;min-height:auto}
   .features{grid-template-columns:1fr}
-  .steps{grid-template-columns:1fr 1fr}
-  .fidelite-wrap{grid-template-columns:1fr}
   .footer-grid{grid-template-columns:1fr 1fr}
   .nav-links{display:none}
   .burger-m{display:flex}
@@ -388,7 +340,6 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   .hero{padding-top:120px;padding-bottom:20px}
 }
 @media(max-width:560px){
-  .steps{grid-template-columns:1fr}
   .footer-grid{grid-template-columns:1fr}
   .hero-stats{gap:20px}
   .cart-drawer{width:100%}
@@ -441,6 +392,92 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 .mobile-menu.open{transform:translateX(0)}
 .mobile-menu a{padding:16px 0;font-size:1.2rem;font-weight:600;border-bottom:1px solid var(--bord)}
 .mobile-menu-close{position:absolute;top:24px;right:24px;width:40px;height:40px;border:none;background:var(--bg);border-radius:50%;cursor:pointer;color:var(--texte)}
+
+/* ════ RÉCIT DE L'ACCUEIL ════
+   Chapitres pleine largeur : une idée par écran, de très grands chiffres et mots en Fraunces,
+   des aplats vert nuit / menthe / or. Toutes les données viennent de l'admin (site.js). */
+:root{--nuit:#0F3B27;--nuit-texte:#F1F7F3;--nuit-doux:rgba(241,247,243,0.76);--menthe:#E4F2EA;--or-plein:#E6B24E;--or-texte:#2A1B00}
+html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.chapitre{position:relative;padding:clamp(76px,13vh,150px) 0;overflow:hidden;overflow:clip}
+/* « Comment ça marche » : rien ne déborde, et le grand chiffre doit pouvoir rester en place (position sticky) */
+#comment{overflow:visible}
+.chap-nuit{background:var(--nuit);color:var(--nuit-texte)}
+.chap-menthe{background:var(--menthe)}
+.chap-or{background:var(--or-plein);color:var(--or-texte)}
+#comment{background:var(--bg-card)}
+.chap-label{font-size:0.98rem;font-weight:700;margin-bottom:10px;opacity:0.8}
+.chap-geant{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-weight:600;line-height:0.84;letter-spacing:-0.045em;font-size:clamp(6rem,24vw,19.5rem);font-variant-numeric:lining-nums tabular-nums}
+.chap-actions{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin-top:30px}
+.btn-clair{background:#FFFFFF;color:#0F3B27}
+.btn-clair:hover{transform:translateY(-2px)}
+.btn-sombre{background:var(--or-texte);color:#FFF6DC}
+.btn-sombre:hover{transform:translateY(-2px)}
+.lien-clair{color:var(--nuit-texte);font-weight:700;text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1.5px}
+.btn-clair:focus-visible,.btn-sombre:focus-visible,.lien-clair:focus-visible{outline:3px solid var(--vert-clair);outline-offset:3px}
+/* La promo du moment */
+.une{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px 64px;align-items:end}
+.une .chap-geant{color:var(--vert-clair);white-space:nowrap}
+.une .chap-geant::before{content:'-'}
+.une-signe{font-size:0.42em;vertical-align:1.05em;margin-left:0.06em;letter-spacing:0}
+.une-nom{font-family:'Fraunces',serif;font-size:clamp(1.7rem,3.2vw,2.7rem);font-weight:600;line-height:1.1;letter-spacing:-0.015em;margin-bottom:16px;color:var(--nuit-texte)}
+.une-prix{display:flex;align-items:baseline;gap:14px;font-size:1.6rem;font-weight:800}
+.une-prix s{font-weight:500;font-size:1.05rem;opacity:0.62}
+.une-fin{color:var(--nuit-doux);margin-top:6px;font-weight:600}
+/* Comment ça marche : le chiffre reste en place pendant que les étapes défilent */
+.etapes{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:40px;margin-top:20px}
+.etapes-num{position:sticky;top:calc(var(--bandeau-h,0px) + 110px);align-self:start;height:min(62vh,540px);display:flex;flex-direction:column;justify-content:center}
+.etapes-chiffres{position:relative;height:0.84em;color:var(--vert)}
+.etape-chiffre{position:absolute;left:0;top:0;opacity:0;transform:translateY(0.18em);transition:opacity 0.4s ease,transform 0.65s cubic-bezier(0.34,1.4,0.64,1)}
+.etape-chiffre.actif{opacity:1;transform:none}
+.etapes-sur{font-weight:700;color:var(--texte-3);margin-top:18px}
+.etapes-liste{list-style:none}
+.etape{min-height:60vh;display:flex;flex-direction:column;justify-content:center;border-top:1px solid var(--bord);padding:40px 0}
+.etape:last-child{border-bottom:1px solid var(--bord)}
+.etape h3{font-family:'Fraunces',serif;font-size:clamp(2rem,4.2vw,3.3rem);font-weight:600;letter-spacing:-0.02em;line-height:1.05;margin-bottom:14px}
+.etape p{font-size:1.12rem;color:var(--texte-2);max-width:36ch}
+.etape-mobile{display:none}
+/* Les rayons : grands mots au trait qui se remplissent en passant au centre de l'écran */
+.rayons-liste{list-style:none;margin-top:30px;border-top:1px solid color-mix(in srgb,var(--vert) 22%,transparent)}
+.rayon{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:0.22em;width:100%;padding:0.08em 0 0.12em;cursor:pointer;border-bottom:1px solid color-mix(in srgb,var(--vert) 22%,transparent);font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-variation-settings:'opsz' 144;font-size:clamp(3rem,10.5vw,8.8rem);line-height:1.04;letter-spacing:-0.03em;text-transform:lowercase;color:transparent;-webkit-text-stroke:1.5px var(--vert);transition:color 0.45s ease}
+.rayon.actif,.rayon:hover,.rayon:focus-visible{color:var(--vert)}
+.rayon:focus-visible{outline:3px solid var(--vert-vif);outline-offset:4px}
+.rayon-nb{font-family:'Manrope',sans-serif;font-style:normal;font-size:clamp(0.85rem,1.5vw,1.1rem);font-weight:800;letter-spacing:0;-webkit-text-stroke:0;color:var(--vert);align-self:flex-start;margin-top:0.9em}
+.rayons-liste.statique .rayon{color:var(--vert)}
+/* Fidélité */
+.fid-geant{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-weight:600;font-size:clamp(3.4rem,12vw,10.5rem);line-height:0.92;letter-spacing:-0.04em;color:var(--or-texte);white-space:nowrap}
+.fid-jauge{display:flex;gap:10px;margin:34px 0 24px;max-width:660px}
+.fid-seg{flex:1;height:18px;border-radius:9px;background:rgba(42,27,0,0.15);position:relative;overflow:hidden}
+.fid-seg::after{content:'';position:absolute;inset:0;border-radius:inherit;background:var(--or-texte);transform:scaleX(0);transform-origin:left;transition:transform 0.5s cubic-bezier(0.34,1.4,0.64,1)}
+.fid-seg.plein::after{transform:none}
+.fid-texte{font-size:1.12rem;max-width:46ch;font-weight:500}
+/* Aujourd'hui à la pharmacie */
+.auj-etat{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-weight:600;font-size:clamp(2.7rem,8.4vw,6.8rem);line-height:0.98;letter-spacing:-0.03em;margin:4px 0 16px}
+.auj-pastille{display:inline-block;width:0.3em;height:0.3em;border-radius:50%;background:var(--vert-clair);margin-right:0.28em;vertical-align:0.17em}
+.auj-pastille.ferme{background:#F2937F}
+.auj-suite{font-size:1.2rem;color:var(--nuit-doux);font-weight:600}
+.auj-special{display:inline-block;margin-top:20px;padding:10px 16px;border:1px solid rgba(241,247,243,0.28);border-radius:12px;font-weight:700}
+.auj-infos{display:flex;flex-wrap:wrap;gap:12px 30px;margin-top:38px;font-weight:600;color:var(--nuit-doux)}
+.auj-infos a{color:var(--nuit-texte);text-decoration:underline;text-underline-offset:5px}
+/* Raccourci vers le catalogue */
+.raccourci{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:90;display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:var(--vert);color:#FFFFFF;font-weight:700;font-size:0.92rem;text-decoration:none;box-shadow:0 10px 30px rgba(15,59,39,0.35);transform:translateY(160%);opacity:0;pointer-events:none;transition:transform 0.45s cubic-bezier(0.34,1.4,0.64,1),opacity 0.3s}
+.raccourci.visible{transform:none;opacity:1;pointer-events:auto}
+.raccourci:focus-visible{outline:3px solid var(--vert-clair);outline-offset:3px}
+html[data-theme="dark"] .raccourci{color:#0B2619}
+@media(max-width:820px){
+  .une{grid-template-columns:1fr;gap:18px}
+  .etapes{grid-template-columns:1fr;gap:0}
+  .etapes-num{display:none}
+  .etape{min-height:0;padding:30px 0}
+  .etape-mobile{display:block;font-family:'Fraunces',serif;font-size:4.6rem;line-height:0.9;color:var(--vert);font-weight:600;margin-bottom:10px}
+  .une .chap-geant{font-size:clamp(6.5rem,36vw,11rem)}
+  .rayon{-webkit-text-stroke-width:1px;font-size:clamp(3rem,15vw,5.5rem)}
+  .fid-geant{white-space:normal;font-size:clamp(3.2rem,15vw,6rem)}
+  .fid-jauge{gap:7px}
+}
+@media(prefers-reduced-motion:reduce){
+  .etape-chiffre,.fid-seg::after,.raccourci,.rayon{transition:none}
+}
 </style>
 </head>
 <body>
@@ -460,7 +497,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
     </a>
     <nav class="nav-links">
       <a href="#accueil">Accueil</a>
-      <a href="#promos">Promotions</a>
+      <a href="#promos" data-si-promo>Promotions</a>
       <a href="#catalogue">Catalogue</a>
       <a href="#fidelite">Fidélité</a>
       <a href="#faq">FAQ</a>
@@ -478,7 +515,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 <div class="mobile-menu" id="mobile-menu">
   <button class="mobile-menu-close" id="mobile-menu-close" aria-label="Fermer le menu"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <a href="#accueil" class="mm-link">Accueil</a>
-  <a href="#promos" class="mm-link">Promotions</a>
+  <a href="#promos" class="mm-link" data-si-promo>Promotions</a>
   <a href="#catalogue" class="mm-link">Catalogue</a>
   <a href="#fidelite" class="mm-link">Fidélité</a>
   <a href="#faq" class="mm-link">FAQ</a>
@@ -493,7 +530,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
       <h1 class="reveal reveal-d1">Votre parapharmacie, <span class="accent">prête à emporter</span></h1>
       <p class="reveal reveal-d2">Commandez vos produits en ligne, profitez des promotions du moment et récupérez votre commande <span data-pharma="a-la-nom">à la Pharmacie Démo</span> quand vous voulez. Simple, rapide, sans attente.</p>
       <div class="hero-cta reveal reveal-d3">
-        <button class="btn-lg btn-primary" onclick="document.getElementById('promos').scrollIntoView()"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>Voir les promos</button>
+        <button class="btn-lg btn-primary" data-si-promo onclick="document.getElementById('promos').scrollIntoView()"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>Voir les promos</button>
         <button class="btn-lg btn-outline" onclick="document.getElementById('catalogue').scrollIntoView()">Parcourir le catalogue</button>
       </div>
       <div class="hero-stats reveal reveal-d3">
@@ -543,20 +580,22 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   </div>
 </section>
 
-<!-- CARROUSEL ANNONCES : la promo et le jour spécial sont remplis par site.js depuis l'admin, et masqués s'il n'y en a pas -->
-<section style="background:var(--bg-card);padding:0;position:relative;z-index:1;border-bottom:1px solid var(--bord)">
-  <div class="container" style="padding-top:18px;padding-bottom:18px">
-    <div class="slider-wrap">
-      <div class="slider-track" id="slider-track">
-        <div class="slider-slide" id="annonce-promo" style="display:none"><div style="background:linear-gradient(135deg,rgba(27,107,69,0.08),rgba(46,204,122,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--vert);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem" id="annonce-promo-titre"></div><div style="font-size:0.8rem;color:var(--texte-3)" id="annonce-promo-sous"></div></div><button class="btn-lg btn-primary" style="margin-left:auto;padding:10px 20px;font-size:0.82rem" onclick="document.getElementById('promos').scrollIntoView()">Voir l'offre</button></div></div>
-        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(217,164,65,0.1),rgba(240,198,116,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--or);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Programme fidélité — <span id="fid-resume-slider">5 achats = -10% offert</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Créez votre compte et suivez vos achats</div></div><button class="btn-lg" style="margin-left:auto;padding:10px 20px;font-size:0.82rem;background:var(--or);color:#3A2A05;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="document.getElementById('fidelite').scrollIntoView()">Rejoindre</button></div></div>
-        <div class="slider-slide" id="annonce-garde" style="display:none"><div style="background:linear-gradient(135deg,rgba(74,144,217,0.08),rgba(95,227,161,0.05));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:#4A90D9;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div style="font-weight:700;font-size:0.95rem" id="annonce-garde-titre"></div><div style="font-size:0.8rem;color:var(--texte-3)"><span data-pharma="adresse-courte">1 rue de l’Exemple, Paris</span></div></div></div></div>
-      </div>
+<!-- RÉCIT : LA PROMO DU MOMENT (remplie par site.js, masquée s'il n'y a pas de promo active) -->
+<section class="chapitre chap-nuit" id="a-la-une" aria-labelledby="une-nom" hidden>
+  <div class="container une">
+    <div class="une-chiffre">
+      <p class="chap-label">La promo du moment</p>
+      <p class="chap-geant" aria-hidden="true"><span id="une-pct">0</span><span class="une-signe">%</span></p>
     </div>
-    <div id="slider-nav" style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px">
-      <button class="slider-arrow" aria-label="Annonce précédente" onclick="sliderPrev()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div class="slider-dots" id="slider-dots"></div>
-      <button class="slider-arrow" aria-label="Annonce suivante" onclick="sliderNext()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <div class="une-detail">
+      <p class="vh" id="une-reduction"></p>
+      <h2 class="une-nom" id="une-nom"></h2>
+      <p class="une-prix"><strong id="une-prix"></strong><s id="une-ancien"></s></p>
+      <p class="une-fin" id="une-fin"></p>
+      <div class="chap-actions">
+        <button type="button" class="btn-lg btn-clair" id="une-ajouter">Ajouter au panier</button>
+        <a class="lien-clair" href="#promos">Voir toutes les promos</a>
+      </div>
     </div>
   </div>
 </section>
@@ -573,8 +612,27 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   </div>
 </section>
 
+<!-- RÉCIT : COMMENT ÇA MARCHE (le grand chiffre reste en place pendant que les étapes défilent) -->
+<section class="chapitre" id="comment" aria-labelledby="comment-titre">
+  <div class="container">
+    <h2 class="section-title" id="comment-titre">Comment ça marche</h2>
+    <p class="section-sub">Trois étapes, et rien à payer en ligne.</p>
+    <div class="etapes">
+      <div class="etapes-num" aria-hidden="true">
+        <p class="chap-geant etapes-chiffres"><span class="etape-chiffre actif">1</span><span class="etape-chiffre">2</span><span class="etape-chiffre">3</span></p>
+        <p class="etapes-sur">sur 3</p>
+      </div>
+      <ol class="etapes-liste">
+        <li class="etape" data-etape="0"><span class="etape-mobile" aria-hidden="true">1</span><h3>Vous choisissez</h3><p>Ajoutez vos produits au panier et validez votre commande, avec ou sans compte.</p></li>
+        <li class="etape" data-etape="1"><span class="etape-mobile" aria-hidden="true">2</span><h3>On prépare</h3><p>L'équipe prépare votre commande et vous prévient par email dès qu'elle est prête.</p></li>
+        <li class="etape" data-etape="2"><span class="etape-mobile" aria-hidden="true">3</span><h3>Vous retirez</h3><p>Présentez votre code de retrait <span data-pharma="a-la-nom">à la Pharmacie Démo</span> et réglez sur place.</p></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
 <!-- FEATURES -->
-<section class="section-pad" style="background:var(--bg-card)">
+<section class="section-pad">
   <div class="container">
     <div class="section-head center reveal">
       <span class="eyebrow">Pourquoi nous choisir</span>
@@ -588,145 +646,12 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   </div>
 </section>
 
-<!-- COMMENT ÇA MARCHE -->
-<section class="section-pad">
+<!-- RÉCIT : LES RAYONS (catégories de l'admin ; un clic filtre le catalogue) -->
+<section class="chapitre chap-menthe" id="rayons" aria-labelledby="rayons-titre" hidden>
   <div class="container">
-    <div class="section-head center reveal">
-      <span class="eyebrow">En 4 étapes</span>
-      <h2 class="section-title">Comment ça marche</h2>
-    </div>
-    <div class="steps">
-      <div class="step reveal"><div class="step-num">01</div><h3>Choisissez</h3><p>Parcourez le catalogue et ajoutez vos produits au panier.</p></div>
-      <div class="step reveal reveal-d1"><div class="step-num">02</div><h3>Commandez</h3><p>Validez votre commande en quelques clics, avec ou sans compte.</p></div>
-      <div class="step reveal reveal-d2"><div class="step-num">03</div><h3>On prépare</h3><p>On vous notifie dès que votre commande est prête à récupérer.</p></div>
-      <div class="step reveal reveal-d3"><div class="step-num">04</div><h3>Récupérez</h3><p>Donnez votre numéro de commande et votre code de retrait en pharmacie, puis réglez sur place.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- SERVICES SANTÉ -->
-<section class="section-pad" style="background:var(--bg-card)">
-  <div class="container">
-    <div class="section-head center reveal">
-      <span class="eyebrow">Ce qu'on vous propose</span>
-      <h2 class="section-title">Nos <span style="color:var(--vert)">Services</span> Santé</h2>
-    </div>
-    <div class="services-grid">
-      <div class="service-card reveal" onclick="document.getElementById('catalogue').scrollIntoView()">
-        <div class="service-bg" style="background:linear-gradient(135deg,#E8F5EE,#C8EADA)">
-          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-            <circle cx="100" cy="100" r="60" fill="rgba(27,107,69,0.08)"/>
-            <rect x="80" y="60" width="40" height="80" rx="8" fill="rgba(27,107,69,0.15)" stroke="#1B6B45" stroke-width="2"/>
-            <rect x="92" y="48" width="16" height="30" rx="4" fill="#1B6B45"/>
-            <circle cx="130" cy="140" r="10" fill="#1B6B45"/>
-            <circle cx="70" cy="140" r="10" fill="#1B6B45"/>
-            <path d="M70 140 L130 140" stroke="#1B6B45" stroke-width="3"/>
-            <rect x="85" y="75" width="30" height="4" rx="2" fill="white"/>
-            <rect x="85" y="85" width="20" height="4" rx="2" fill="white"/>
-            <rect x="85" y="95" width="25" height="4" rx="2" fill="white"/>
-          </svg>
-        </div>
-        <div class="service-overlay">
-          <div class="service-overlay-inner">
-            <div class="service-title">Click & Collect</div>
-            <div class="service-sub">Commandez en ligne et récupérez en pharmacie sans attente</div>
-          </div>
-        </div>
-      </div>
-      <div class="service-card reveal reveal-d1" onclick="document.getElementById('fidelite').scrollIntoView()">
-        <div class="service-bg" style="background:linear-gradient(135deg,#FDF3E3,#FAE8C0)">
-          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-            <rect x="50" y="70" width="100" height="70" rx="12" fill="rgba(217,164,65,0.2)" stroke="#D9A441" stroke-width="2"/>
-            <rect x="50" y="90" width="100" height="3" fill="#D9A441" opacity="0.4"/>
-            <rect x="62" y="104" width="30" height="5" rx="2" fill="#D9A441"/>
-            <rect x="62" y="114" width="20" height="4" rx="2" fill="rgba(217,164,65,0.5)"/>
-            <rect x="130" y="100" width="8" height="24" rx="2" fill="#D9A441"/>
-            <circle cx="100" cy="52" r="18" fill="#D9A441"/>
-            <path d="M93 52l5 5 9-9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="service-overlay">
-          <div class="service-overlay-inner" style="background:#D9A441">
-            <div class="service-title">Programme Fidélité</div>
-            <div class="service-sub">Cumulez vos achats et débloquez des réductions exclusives</div>
-          </div>
-        </div>
-      </div>
-      <div class="service-card reveal reveal-d2" onclick="openAccount()">
-        <div class="service-bg" style="background:linear-gradient(135deg,#EAF0FA,#D0DEF5)">
-          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-            <circle cx="100" cy="75" r="28" fill="rgba(74,144,217,0.2)" stroke="#4A90D9" stroke-width="2"/>
-            <path d="M100 55 L100 75 L118 75" stroke="#4A90D9" stroke-width="3" stroke-linecap="round"/>
-            <path d="M55 140 C55 118 72 108 100 108 C128 108 145 118 145 140" fill="rgba(74,144,217,0.15)" stroke="#4A90D9" stroke-width="2"/>
-            <circle cx="156" cy="68" r="14" fill="#4A90D9"/>
-            <path d="M150 68l4 4 7-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="service-overlay">
-          <div class="service-overlay-inner" style="background:#4A90D9">
-            <div class="service-title">Mon Espace Client</div>
-            <div class="service-sub">Suivez vos commandes et gérez votre profil</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- BANNERS SVG -->
-<section class="banner-section">
-  <div class="container">
-    <div class="banner-card reveal" style="background:linear-gradient(135deg,#1B6B45,#0F4A2E)">
-      <div class="banner-illus" style="background:rgba(255,255,255,0.05)">
-        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-          <!-- Pharmacie stylisée -->
-          <rect x="40" y="90" width="120" height="80" rx="6" fill="rgba(255,255,255,0.15)"/>
-          <rect x="60" y="50" width="80" height="50" rx="4" fill="rgba(255,255,255,0.1)"/>
-          <rect x="85" y="120" width="30" height="50" rx="4" fill="rgba(255,255,255,0.2)"/>
-          <!-- Croix pharmacie -->
-          <rect x="92" y="60" width="16" height="30" rx="3" fill="#2ECC7A"/>
-          <rect x="82" y="70" width="36" height="10" rx="3" fill="#2ECC7A"/>
-          <!-- Personne -->
-          <circle cx="150" cy="95" r="12" fill="#5FE3A1"/>
-          <path d="M138 130 C138 116 162 116 162 130 L162 170 L138 170 Z" fill="#5FE3A1" opacity="0.7"/>
-          <!-- Sac -->
-          <rect x="155" y="115" width="18" height="20" rx="4" fill="rgba(255,255,255,0.4)"/>
-          <path d="M158 115 L158 111 Q163 107 168 111 L168 115" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
-          <!-- Étoiles -->
-          <circle cx="50" cy="55" r="3" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="170" cy="75" r="2" fill="rgba(255,255,255,0.2)"/>
-          <circle cx="35" cy="120" r="2" fill="rgba(255,255,255,0.2)"/>
-        </svg>
-      </div>
-      <div class="banner-content" style="color:#fff">
-        <h3 style="color:#fff">Commandez, on s'occupe du reste</h3>
-        <p>Votre commande préparée en 2h, prête à récupérer <span data-pharma="a-la-nom">à la Pharmacie Démo</span>. Pas de livraison, pas de frais cachés.</p>
-        <button class="banner-btn" style="background:#fff;color:var(--vert)" onclick="document.getElementById('catalogue').scrollIntoView()">Voir le catalogue <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
-      </div>
-    </div>
-    <div class="banner-card reverse reveal reveal-d1" style="background:linear-gradient(135deg,#FDF3E3,#FAE8C0)">
-      <div class="banner-illus" style="background:rgba(217,164,65,0.1)">
-        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-          <rect x="55" y="45" width="90" height="90" rx="12" fill="white" opacity="0.8"/>
-          <rect x="65" y="55" width="28" height="28" rx="4" fill="#D9A441"/>
-          <rect x="107" y="55" width="28" height="28" rx="4" fill="#D9A441"/>
-          <rect x="65" y="97" width="28" height="28" rx="4" fill="#D9A441"/>
-          <rect x="107" y="97" width="12" height="12" rx="2" fill="#D9A441"/>
-          <rect x="123" y="107" width="12" height="18" rx="2" fill="#D9A441"/>
-          <rect x="107" y="117" width="12" height="8" rx="2" fill="#D9A441"/>
-          <rect x="110" y="140" width="50" height="38" rx="8" fill="#D9A441" opacity="0.6" transform="rotate(-15 135 159)"/>
-          <rect x="114" y="144" width="42" height="28" rx="5" fill="rgba(255,255,255,0.8)" transform="rotate(-15 135 158)"/>
-          <circle cx="48" cy="160" r="6" fill="#D9A441"/>
-          <circle cx="64" cy="160" r="6" fill="#D9A441"/>
-          <circle cx="80" cy="160" r="6" fill="#D9A441" opacity="0.4"/>
-        </svg>
-      </div>
-      <div class="banner-content" style="color:#2C1A00">
-        <h3 style="color:#2C1A00">Votre carte fidélité, bientôt dans votre téléphone</h3>
-        <p style="color:#5C3D00;opacity:1">Bientôt : votre QR code personnel à ajouter à Apple Wallet ou Google Wallet. En attendant, créez votre compte pour suivre vos achats et vos réductions.</p>
-        <button class="banner-btn" style="background:#B07C00;color:#fff" onclick="document.getElementById('fidelite').scrollIntoView()">Créer ma carte <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
-      </div>
-    </div>
+    <h2 class="section-title" id="rayons-titre">Nos rayons</h2>
+    <p class="section-sub">Choisissez un rayon pour voir ses produits.</p>
+    <ul class="rayons-liste" id="rayons-liste"></ul>
   </div>
 </section>
 
@@ -743,22 +668,28 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   </div>
 </section>
 
-<!-- FIDÉLITÉ -->
-<section class="section-pad" id="fidelite">
+<!-- RÉCIT : FIDÉLITÉ (palier et réduction réglés dans l'admin) -->
+<section class="chapitre chap-or" id="fidelite" aria-labelledby="fid-titre">
   <div class="container">
-    <div class="fidelite reveal">
-      <div class="fidelite-wrap">
-        <div>
-          <h2>Votre carte de fidélité, dans votre poche</h2>
-          <p>Créez votre compte pour suivre vos achats et recevoir un code de réduction à chaque palier. Votre QR code personnel, à ajouter à votre wallet, arrive bientôt.</p>
-          <button class="btn-white" id="fidelite-btn">Créer mon compte fidélité</button>
-        </div>
-        <div class="fidelite-card">
-          <div class="qr-placeholder"><svg width="100" height="100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M17 21h4v-4M21 17h.01"/></svg></div>
-          <div style="font-weight:700;font-size:0.92rem;color:#fff">Marie Dupont</div>
-          <div style="font-size:0.72rem;color:rgba(255,255,255,0.7)" id="fid-resume-carte-qr">Membre · 5 achats</div>
-        </div>
-      </div>
+    <p class="chap-label">Programme fidélité</p>
+    <h2 class="fid-geant" id="fid-titre">5 achats, -10&nbsp;%</h2>
+    <div class="fid-jauge" id="fid-jauge" aria-hidden="true"></div>
+    <p class="fid-texte">Chaque achat compte. Une fois le palier atteint, votre code de réduction vous attend dans votre espace client.</p>
+    <div class="chap-actions"><button type="button" class="btn-lg btn-sombre" id="fidelite-btn">Créer mon compte fidélité</button></div>
+  </div>
+</section>
+
+<!-- RÉCIT : AUJOURD'HUI À LA PHARMACIE (horaires, jours spéciaux et coordonnées de l'admin) -->
+<section class="chapitre chap-nuit" id="aujourdhui" aria-labelledby="auj-etat">
+  <div class="container">
+    <p class="chap-label">Aujourd'hui</p>
+    <h2 class="auj-etat" id="auj-etat"><span class="auj-pastille" aria-hidden="true"></span><span id="auj-titre"></span></h2>
+    <p class="auj-suite" id="auj-suite"></p>
+    <p class="auj-special" id="auj-special" hidden></p>
+    <div class="auj-infos">
+      <span id="auj-adresse"></span>
+      <a id="auj-tel" href="#"></a>
+      <a id="auj-itineraire" href="#" target="_blank" rel="noopener">Itinéraire</a>
     </div>
   </div>
 </section>
@@ -783,7 +714,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
         <a href="#accueil" class="brand"><span class="brand-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><span id="brand-name-footer">Pharmacie Démo</span></a>
         <p><span id="footer-address-line">1 rue de l’Exemple, 75000 Paris</span>. Votre parapharmacie de proximité en click &amp; collect.</p>
       </div>
-      <div class="footer-col"><h4>Navigation</h4><a href="#accueil">Accueil</a><a href="#promos">Promotions</a><a href="#catalogue">Catalogue</a><a href="#fidelite">Fidélité</a><a href="#faq">FAQ</a></div>
+      <div class="footer-col"><h4>Navigation</h4><a href="#accueil">Accueil</a><a href="#promos" data-si-promo>Promotions</a><a href="#catalogue">Catalogue</a><a href="#fidelite">Fidélité</a><a href="#faq">FAQ</a></div>
       <div class="footer-col"><h4>Horaires</h4><div id="footer-horaires"></div></div>
       <div class="footer-col"><h4>Contact</h4><a href="tel:0100000000" id="footer-tel-link">01 00 00 00 00</a><a href="mailto:contact@pharmacie-demo.test" id="footer-email-link">Email</a><a style="cursor:default" id="footer-address-plain">1 rue de l’Exemple</a></div>
     </div>
@@ -793,6 +724,9 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
     </div>
   </div>
 </footer>
+
+<!-- RACCOURCI : retour au catalogue depuis n'importe quel chapitre -->
+<a href="#catalogue" class="raccourci" id="raccourci-catalogue" aria-hidden="true" tabindex="-1"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Catalogue</a>
 
 <!-- CART DRAWER -->
 <div class="cart-overlay" id="cart-overlay"></div>
