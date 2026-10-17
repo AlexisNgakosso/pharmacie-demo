@@ -163,6 +163,9 @@ section{position:relative;z-index:1}
 .promo-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
 .promo-img{height:170px;background:linear-gradient(135deg,rgba(46,204,122,0.12),rgba(217,164,65,0.12));position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .promo-img svg{width:64px;height:64px;opacity:0.5;color:var(--vert)}
+/* Photo ajoutée dans l'admin : le produit entier, sur fond blanc (comme la plupart des photos de produits) */
+.promo-img.avec-photo{background:#FFFFFF}
+.carte-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:14px;box-sizing:border-box}
 .promo-discount{position:absolute;top:12px;right:12px;background:var(--vert);color:#fff;font-weight:800;font-size:0.9rem;padding:5px 12px;border-radius:30px;box-shadow:0 4px 12px rgba(27,107,69,0.3)}
 .promo-timer{position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.68rem;font-weight:600;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
 .promo-content{padding:16px}
@@ -424,6 +427,8 @@ html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
 .une-prix{display:flex;align-items:baseline;gap:14px;font-size:1.6rem;font-weight:800}
 .une-prix s{font-weight:500;font-size:1.05rem;opacity:0.62}
 .une-fin{color:var(--nuit-doux);margin-top:6px;font-weight:600}
+.une-photo{width:clamp(130px,15vw,200px);aspect-ratio:1;margin:0 0 22px;background:#FFFFFF;border-radius:22px;padding:14px;box-sizing:border-box}
+.une-photo img{width:100%;height:100%;object-fit:contain;display:block}
 /* Comment ça marche : le chiffre reste en place pendant que les étapes défilent */
 .etapes{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:40px;margin-top:20px}
 .etapes-num{position:sticky;top:calc(var(--bandeau-h,0px) + 110px);align-self:start;height:min(62vh,540px);display:flex;flex-direction:column;justify-content:center}
@@ -444,6 +449,15 @@ html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
 .rayon:focus-visible{outline:3px solid var(--vert-vif);outline-offset:4px}
 .rayon-nb{font-family:'Manrope',sans-serif;font-style:normal;font-size:clamp(0.85rem,1.5vw,1.1rem);font-weight:800;letter-spacing:0;-webkit-text-stroke:0;color:var(--vert);align-self:flex-start;margin-top:0.9em}
 .rayons-liste.statique .rayon{color:var(--vert)}
+/* Photo du rayon : apparaît au bout de la ligne quand le mot se remplit */
+.rayon-photo{flex:none;align-self:center;margin-left:auto;width:0.82em;height:0.82em;border-radius:50%;overflow:hidden;background:#FFFFFF;opacity:0;transform:scale(0.6) rotate(-8deg);transition:opacity 0.4s ease,transform 0.55s cubic-bezier(0.34,1.4,0.64,1)}
+.rayon-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.rayon.actif .rayon-photo,.rayon:hover .rayon-photo,.rayon:focus-visible .rayon-photo,.rayons-liste.statique .rayon-photo{opacity:1;transform:none}
+/* Fenêtre du détail d'une promo */
+.pd-visuel{width:80px;height:80px;background:rgba(46,204,122,0.1);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--vert);position:relative;overflow:hidden}
+.pd-visuel svg{width:40px;height:40px}
+.pd-visuel.avec-photo{width:170px;height:170px;background:#FFFFFF;border:1px solid var(--bord)}
+.pd-visuel .carte-photo{padding:12px}
 /* Fidélité */
 .fid-geant{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-weight:600;font-size:clamp(3.4rem,12vw,10.5rem);line-height:0.92;letter-spacing:-0.04em;color:var(--or-texte);white-space:nowrap}
 .fid-jauge{display:flex;gap:10px;margin:34px 0 24px;max-width:660px}
@@ -472,11 +486,12 @@ html[data-theme="dark"] .raccourci{color:#0B2619}
   .etape-mobile{display:block;font-family:'Fraunces',serif;font-size:4.6rem;line-height:0.9;color:var(--vert);font-weight:600;margin-bottom:10px}
   .une .chap-geant{font-size:clamp(6.5rem,36vw,11rem)}
   .rayon{-webkit-text-stroke-width:1px;font-size:clamp(3rem,15vw,5.5rem)}
+  .une-photo{width:130px;border-radius:18px;margin-bottom:16px}
   .fid-geant{white-space:normal;font-size:clamp(3.2rem,15vw,6rem)}
   .fid-jauge{gap:7px}
 }
 @media(prefers-reduced-motion:reduce){
-  .etape-chiffre,.fid-seg::after,.raccourci,.rayon{transition:none}
+  .etape-chiffre,.fid-seg::after,.raccourci,.rayon,.rayon-photo{transition:none}
 }
 </style>
 </head>
@@ -589,6 +604,7 @@ html[data-theme="dark"] .raccourci{color:#0B2619}
     </div>
     <div class="une-detail">
       <p class="vh" id="une-reduction"></p>
+      <figure class="une-photo" id="une-photo" hidden><img id="une-img" alt="" decoding="async"></figure>
       <h2 class="une-nom" id="une-nom"></h2>
       <p class="une-prix"><strong id="une-prix"></strong><s id="une-ancien"></s></p>
       <p class="une-fin" id="une-fin"></p>
@@ -758,7 +774,7 @@ html[data-theme="dark"] .raccourci{color:#0B2619}
 <div class="modal-ov" id="promo-detail-modal">
   <div class="modal-box" style="position:relative;max-width:420px">
     <button class="modal-close" aria-label="Fermer" onclick="closePromoDetail()"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div id="pd-icon" style="width:80px;height:80px;background:rgba(46,204,122,0.1);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--vert)"></div>
+    <div id="pd-icon" class="pd-visuel"></div>
     <div style="text-align:center;margin-bottom:20px">
       <div id="pd-cat" style="font-size:0.72rem;color:var(--vert);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"></div>
       <h2 style="font-size:1.4rem;margin-bottom:10px" id="pd-nom"></h2>

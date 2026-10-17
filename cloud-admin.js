@@ -114,7 +114,7 @@ var PharmaAdminCloud = (function () {
   var TABLES = [
     { cle: 'produits', table: 'produits', id: 'id', versBase: function (p) {
         return { nom: texte(p.nom).trim(), ref: texte(p.ref), cat: texte(p.cat) || null, prix: arrondi(p.prix), stock: entier(p.stock),
-                 seuil: entier(p.seuil), description: texte(p.desc), actif: p.actif !== false };
+                 seuil: entier(p.seuil), description: texte(p.desc), actif: p.actif !== false, photo: pharmaPhotoValide(p.photo) };
       } },
     { cle: 'promos', table: 'promos', id: 'id', versBase: function (p) {
         // Produit dont le stock est consommé : celui qui porte le nom choisi dans la liste,
@@ -219,6 +219,7 @@ var PharmaAdminCloud = (function () {
         if (prive.rapport_contenu && typeof prive.rapport_contenu === 'object') d.parametres.rapportContenu = prive.rapport_contenu;
       }
       d.categories = tableau(r[2]).map(function (c) { return texte(c.nom); });
+      d.photosRayons = conv.photosRayons(r[2]);
       d.produits = tableau(r[3]).map(conv.produit);
       d.promos = tableau(r[4]).map(conv.promo);
       d.conseils = tableau(r[5]).map(conv.conseil);
@@ -265,7 +266,8 @@ var PharmaAdminCloud = (function () {
   var instantane = null;
   var profilsConnus = [];
   function prendreInstantane(d) {
-    instantane = { tables: {}, categories: d.categories.slice(), public: clone(reglagesPublicsVersBase(d)), prive: clone(reglagesPrivesVersBase(d)), employes: {} };
+    instantane = { tables: {}, categories: d.categories.slice(), photosRayons: clone(objet(d.photosRayons)),
+                   public: clone(reglagesPublicsVersBase(d)), prive: clone(reglagesPrivesVersBase(d)), employes: {} };
     TABLES.forEach(function (def) {
       var m = new Map();
       (d[def.cle] || []).forEach(function (obj) {
@@ -283,6 +285,15 @@ var PharmaAdminCloud = (function () {
     if (!Array.isArray(res) || res.length === 0) throw new Error(quoi + ' : modification refusée (droits insuffisants)');
     return res[0];
   }
+  // Base installée avant le 17 octobre : la colonne « photo » n'existe pas encore
+  // (PGRST204 : colonne inconnue de l'API ; 42703 : colonne inconnue de la base)
+  var MSG_MAJ_PHOTOS = 'la photo n\'a pas été enregistrée : exécutez le fichier 04-photos.sql dans Supabase (SQL Editor)';
+  function erreurColonnePhoto(avecPhoto) {
+    return function (err) {
+      if (avecPhoto && err && (err.code === 'PGRST204' || err.code === '42703')) throw new Error(MSG_MAJ_PHOTOS);
+      throw err;
+    };
+  }
   function synchroniser() {
     var erreurs = [];
     var etapes = [];
@@ -298,6 +309,18 @@ var PharmaAdminCloud = (function () {
         });
       }
     });
+    // 1 bis. Photos des rayons (page d'accueil)
+    var avantPhotos = instantane.photosRayons;
+    d.categories.forEach(function (nom) {
+      var voulu = pharmaPhotoRayon(d, nom), avant = texte(avantPhotos[nom]);
+      if (voulu === avant) return;
+      etape(function () {
+        return executer(sb.from('categories').update({ photo: voulu }).eq('nom', nom).select()).then(function (res) {
+          verifierLigne(res, 'Photo du rayon ' + nom);
+          if (voulu) avantPhotos[nom] = voulu; else delete avantPhotos[nom];
+        }, erreurColonnePhoto(true));
+      });
+    });
     // 2. Tables : ajouts, modifications, suppressions
     TABLES.forEach(function (def) {
       var snap = instantane.tables[def.cle];
@@ -306,14 +329,17 @@ var PharmaAdminCloud = (function () {
         var ligne;
         try { ligne = clone(def.versBase(obj)); } catch (e) { erreurs.push(e.message); return; }
         if (!idsBase.has(obj)) {
+          // Produit sans photo : la colonne n'est pas envoyée (base pas encore mise à jour : l'ajout fonctionne)
+          var envoi = ligne;
+          if (def.cle === 'produits' && !ligne.photo) { envoi = clone(ligne); delete envoi.photo; }
           etape(function () {
-            return executer(sb.from(def.table).insert(ligne).select()).then(function (res) {
+            return executer(sb.from(def.table).insert(envoi).select()).then(function (res) {
               var cree = verifierLigne(res, 'Ajout');
               var nid = cree[def.id];
               idsBase.set(obj, nid);
               if (def.id === 'id') obj.id = nid;
               snap.set(nid, ligne);
-            });
+            }, erreurColonnePhoto(def.cle === 'produits' && !!ligne.photo));
           });
           return;
         }
@@ -328,7 +354,7 @@ var PharmaAdminCloud = (function () {
             return executer(sb.from(def.table).update(changes).eq(def.id, dbid).select()).then(function (res) {
               verifierLigne(res, 'Modification');
               snap.set(dbid, ligne);
-            });
+            }, erreurColonnePhoto(def.cle === 'produits' && changes.photo !== undefined));
           });
         }
       });
@@ -554,6 +580,40 @@ var PharmaAdminCloud = (function () {
     if (resultat.ok && q && typeof q === 'object') q.envoyes = entier(q.envoyes) + 1;
     return executer(sb.from('email_log').insert(ligne).select()).then(null, function (e) {
       console.warn('Journal des emails non enregistré :', e && e.message);
+    });
+  }
+
+  // ── PHOTOS : envoi dans le bucket « photos » (Supabase Storage) ──
+  // Chaque envoi crée un nouveau fichier au nom unique : une photo remplacée ne réapparaît
+  // jamais à cause d'une ancienne copie gardée par le navigateur.
+  function erreurPhoto(e) {
+    var m = texte(e && e.message), code = texte(e && (e.statusCode || e.status));
+    if (/bucket not found/i.test(m)) return 'le dossier « photos » n\'existe pas encore dans Supabase. Créez-le : menu Storage, New bucket, nom « photos », option « Public bucket » activée (voir LISEZ-MOI-SUPABASE.md)';
+    if (/row-level security|unauthorized|not allowed/i.test(m) || code === '403') return 'Supabase refuse l\'envoi : exécutez le fichier 04-photos.sql dans Supabase (SQL Editor), puis réessayez';
+    if (/payload too large|maximum allowed size|exceeded/i.test(m) || code === '413') return 'la photo dépasse la taille autorisée par le dossier « photos » de Supabase';
+    if (e && e.delai) return 'l\'envoi a pris trop de temps. Vérifiez la connexion internet puis réessayez';
+    if (/fetch|network|load failed/i.test(m)) return 'connexion au serveur impossible. Vérifiez la connexion internet';
+    return m || 'erreur inconnue';
+  }
+  function envoyerPhoto(fichier, dossier) {
+    if (!connecte) return Promise.reject(new Error('connexion requise'));
+    var rep = dossier === 'rayons' ? 'rayons' : 'produits';
+    var nom = rep + '/' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '.jpg';
+    var depot = sb.storage.from('photos');
+    var envoi = depot.upload(nom, fichier, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+    var minuteur;
+    var delai = new Promise(function (ok, ko) {
+      minuteur = setTimeout(function () { var e = new Error('délai'); e.delai = true; ko(e); }, 45000);
+    });
+    return Promise.race([envoi, delai]).then(function (r) {
+      clearTimeout(minuteur);
+      if (r && r.error) throw r.error;
+      var url = texte(depot.getPublicUrl(nom).data.publicUrl);
+      if (!pharmaPhotoValide(url)) throw new Error('adresse de la photo inattendue (' + url.slice(0, 80) + ')');
+      return url;
+    }).then(null, function (e) {
+      clearTimeout(minuteur);
+      throw new Error(erreurPhoto(e));
     });
   }
 
@@ -866,6 +926,7 @@ var PharmaAdminCloud = (function () {
     annuler: annuler,
     supprimer: supprimer,
     validerRetrait: validerRetrait,
+    envoyerPhoto: envoyerPhoto,
     deconnecter: deconnecter,
     estConnecte: function () { return connecte; },
     // pour les tests

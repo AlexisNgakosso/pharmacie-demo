@@ -265,6 +265,7 @@ function renderProduits(filtre, cat) {
   setHTML('tbody-produits', html);
   // Mettre à jour les catégories du filtre
   renderCatOptions('filter-cat-produits');
+  renderPhotosRayons();
 }
 
 // Alimente un <select> de catégories.
@@ -292,6 +293,8 @@ function editProduit(id) {
   if (catSel) catSel.value = p.cat;
   document.getElementById('p-id').value = id;
   document.getElementById('m-produit-title').textContent = 'Modifier — ' + p.nom;
+  reinitialiserPhotoProduit();
+  majChampPhotoProduit(p.photo);
   openModal('m-produit');
 }
 
@@ -313,15 +316,24 @@ function saveProduit() {
   if (DATA.produits.some(function(x){ return x.id !== id && String(x.nom).trim().toLowerCase() === nom.toLowerCase(); })) {
     toast('Un produit porte déjà ce nom', 'error'); return;
   }
+  if (photoProduit.envoi) { toast('Patientez : la photo est en cours d\'envoi', 'error'); return; }
+  var photo = pharmaPhotoValide(getVal('p-photo'));
+  var cible = null, anciennePhoto = '';
   if (id) {
     var p = DATA.produits.find(function(x){ return x.id===id; });
-    if (p) { p.nom=nom; p.ref=getVal('p-ref'); p.cat=cat; p.prix=prix; p.stock=stockSaisi; p.seuil=seuilSaisi; p.desc=getVal('p-desc'); }
-    toast('Produit modifié avec succès');
+    if (p) { anciennePhoto = p.photo || ''; p.nom=nom; p.ref=getVal('p-ref'); p.cat=cat; p.prix=prix; p.stock=stockSaisi; p.seuil=seuilSaisi; p.desc=getVal('p-desc'); p.photo=photo; cible = p; }
   } else {
     var newId = DATA.produits.length ? Math.max.apply(null, DATA.produits.map(function(x){return x.id;})) + 1 : 1;
-    DATA.produits.push({ id:newId, nom:nom, ref:getVal('p-ref'), cat:cat, prix:prix, stock:stockSaisi, seuil:seuilSaisi, desc:getVal('p-desc') });
-    toast('Produit ajouté avec succès');
+    cible = { id:newId, nom:nom, ref:getVal('p-ref'), cat:cat, prix:prix, stock:stockSaisi, seuil:seuilSaisi, desc:getVal('p-desc'), photo:photo };
+    DATA.produits.push(cible);
   }
+  // Mode démonstration : mémoire du navigateur pleine, le produit est gardé sans la nouvelle photo
+  var sansPhoto = false;
+  if (!ADMIN_CLOUD && cible && photo && photo !== anciennePhoto && !PharmaStore.save(DATA)) {
+    cible.photo = anciennePhoto; sansPhoto = true;
+  }
+  if (sansPhoto) toast('Produit enregistré sans la photo : la mémoire de ce navigateur est pleine', 'error');
+  else toast(id ? 'Produit modifié avec succès' : 'Produit ajouté avec succès');
   closeModal('m-produit');
   renderProduits();
   resetForm('form-produit');
@@ -336,6 +348,227 @@ function deleteProduit(id, nom) {
     persist();
   });
 }
+
+// ── PHOTOS DES PRODUITS ET DES RAYONS ───────────────────────
+// La photo choisie (ou prise avec le téléphone) est réduite dans le navigateur avant l'envoi :
+// une photo de 4 Mo devient un fichier d'environ 100 Ko, affiché rapidement sur le site.
+//  * mode base de données : elle est envoyée dans le dossier « photos » de Supabase ;
+//  * mode démonstration : elle est gardée dans ce navigateur (place limitée).
+var PHOTO_LOCAL_TOTAL_MAX = 2500000;   // démonstration : il faut laisser de la place aux commandes
+var SVG_PHOTO = '<svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+function photoCloud() { return ADMIN_CLOUD; }
+
+function redimensionnerPhoto(fichier, cote, qualite) {
+  return new Promise(function(ok, ko) {
+    if (!fichier || !/^image\//.test(fichier.type || '')) { ko(new Error('Choisissez une image (photo JPEG, PNG ou WebP).')); return; }
+    if (fichier.size > 25 * 1024 * 1024) { ko(new Error('Image trop lourde (25 Mo au maximum).')); return; }
+    var adresse = URL.createObjectURL(fichier);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(adresse);
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) { ko(new Error('Image illisible.')); return; }
+      var r = Math.min(1, cote / Math.max(w, h));
+      var c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * r));
+      c.height = Math.max(1, Math.round(h * r));
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';               // fond blanc pour les images transparentes (PNG)
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      ok(c);
+    };
+    img.onerror = function() { URL.revokeObjectURL(adresse); ko(new Error('Format d\'image non reconnu : utilisez une photo JPEG, PNG ou WebP.')); };
+    img.src = adresse;
+  });
+}
+
+// Place occupée par les photos gardées dans le navigateur (mode démonstration)
+function poidsPhotosLocales(sauf) {
+  var total = 0;
+  (DATA.produits || []).forEach(function(p) { if (p.photo && p.photo !== sauf && /^data:/.test(p.photo)) total += p.photo.length; });
+  Object.keys(DATA.photosRayons || {}).forEach(function(k) { var v = DATA.photosRayons[k]; if (v && v !== sauf && /^data:/.test(v)) total += String(v).length; });
+  return total;
+}
+
+// Prépare la photo et renvoie son adresse (promesse). remplace : photo actuelle, qui libère sa place.
+function preparerPhoto(fichier, dossier, remplace) {
+  if (photoCloud()) {
+    return redimensionnerPhoto(fichier, 1000, 0.82).then(function(c) {
+      return new Promise(function(ok, ko) {
+        c.toBlob(function(b) { b ? ok(b) : ko(new Error('Conversion de la photo impossible.')); }, 'image/jpeg', 0.82);
+      });
+    }).then(function(b) { return b.arrayBuffer(); }).then(function(octets) {
+      return PharmaAdminCloud.envoyerPhoto(octets, dossier);
+    });
+  }
+  return redimensionnerPhoto(fichier, 640, 0.78).then(function(c) {
+    var url = c.toDataURL('image/jpeg', 0.78);
+    if (!pharmaPhotoValide(url)) url = c.toDataURL('image/jpeg', 0.55);
+    if (!pharmaPhotoValide(url)) throw new Error('Photo trop détaillée : essayez une autre image.');
+    if (poidsPhotosLocales(remplace) + url.length > PHOTO_LOCAL_TOTAL_MAX) {
+      throw new Error('Mode démonstration : la place réservée aux photos dans ce navigateur est pleine. Retirez une photo, ou reliez le site à la base de données.');
+    }
+    return url;
+  });
+}
+
+function afficherApercuPhoto(el, url, avecAlt) {
+  if (!el) return;
+  var u = pharmaPhotoValide(url);
+  el.innerHTML = '';
+  if (!u) { el.innerHTML = SVG_PHOTO; return; }
+  var img = document.createElement('img');
+  img.alt = avecAlt || '';
+  img.src = u;
+  el.appendChild(img);
+}
+
+// Champ « Photo du produit » de la fenêtre Produit
+var photoProduit = { jeton: 0, envoi: false };
+function etatPhotoProduit(msg, erreur) {
+  var el = document.getElementById('p-photo-etat');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('erreur', !!erreur);
+}
+function majChampPhotoProduit(url) {
+  var u = pharmaPhotoValide(url);
+  setVal('p-photo', u);
+  afficherApercuPhoto(document.getElementById('p-photo-apercu'), u);
+  var retirer = document.getElementById('p-photo-retirer');
+  if (retirer) retirer.hidden = !u;
+  var txt = document.getElementById('p-photo-choisir-txt');
+  if (txt) txt.textContent = u ? 'Changer la photo' : 'Ajouter une photo';
+}
+function reinitialiserPhotoProduit() {
+  photoProduit.jeton++;
+  photoProduit.envoi = false;
+  majChampPhotoProduit('');
+  etatPhotoProduit('Photo sur fond blanc de préférence. Elle est réduite automatiquement.');
+  var a = document.getElementById('p-photo-apercu');
+  if (a) a.classList.remove('charge');
+}
+function choisirPhotoProduit(fichier) {
+  if (!fichier) return;
+  var jeton = ++photoProduit.jeton;
+  var avant = getVal('p-photo');
+  photoProduit.envoi = true;
+  var apercu = document.getElementById('p-photo-apercu');
+  if (apercu) apercu.classList.add('charge');
+  etatPhotoProduit(photoCloud() ? 'Envoi de la photo…' : 'Préparation de la photo…');
+  preparerPhoto(fichier, 'produits', avant).then(function(url) {
+    if (jeton !== photoProduit.jeton) return;   // fenêtre fermée ou autre photo choisie entre-temps
+    photoProduit.envoi = false;
+    if (apercu) apercu.classList.remove('charge');
+    majChampPhotoProduit(url);
+    etatPhotoProduit('Photo prête : cliquez sur Sauvegarder pour l\'enregistrer.');
+    verifierAffichagePhoto(apercu, etatPhotoProduit);
+  }, function(e) {
+    if (jeton !== photoProduit.jeton) return;
+    photoProduit.envoi = false;
+    if (apercu) apercu.classList.remove('charge');
+    etatPhotoProduit('Photo non ajoutée : ' + ((e && e.message) || 'erreur inconnue'), true);
+  });
+}
+// Mode base de données : la photo envoyée doit pouvoir s'afficher (dossier « photos » public)
+function verifierAffichagePhoto(conteneur, signaler) {
+  var img = conteneur && conteneur.querySelector('img');
+  if (!img || !photoCloud()) return;
+  img.addEventListener('error', function() {
+    signaler('La photo est envoyée mais ne s\'affiche pas : dans Supabase, menu Storage, le dossier « photos » doit être public (Edit bucket, Public bucket).', true);
+  }, { once: true });
+}
+
+// Encadré « Photos des rayons » de la page Produits
+var photoRayons = { envoi: {} };
+function renderPhotosRayons() {
+  var grille = document.getElementById('rayons-photos-grille');
+  if (!grille) return;
+  var cats = DATA.categories || [];
+  if (!cats.length) { grille.innerHTML = '<div class="photo-etat" style="padding:4px 2px">Aucun rayon : ajoutez d\'abord un produit avec sa catégorie.</div>'; return; }
+  var compte = {};
+  (DATA.produits || []).forEach(function(p) { if (p.cat) compte[p.cat] = (compte[p.cat] || 0) + 1; });
+  grille.innerHTML = cats.map(function(c, i) {
+    var u = pharmaPhotoRayon(DATA, c), n = compte[c] || 0;
+    var enCours = photoRayons.envoi[c];
+    return '<div class="rayon-tuile" data-index="' + i + '">'
+      + '<div class="photo-apercu' + (enCours ? ' charge' : '') + '" aria-hidden="true"></div>'
+      + '<div style="min-width:0"><div class="rayon-tuile-nom">' + escHtml(c) + '</div>'
+      + '<div class="rayon-tuile-sous">' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'Aucun produit : rayon masqué sur l\'accueil') + '</div>'
+      + '<div class="photo-actions">'
+      + '<label class="btn btn-ghost photo-choisir"><input type="file" class="vh-input" accept="image/*" aria-label="' + escHtml((u ? 'Changer la photo du rayon ' : 'Ajouter une photo au rayon ') + c) + '"' + (enCours ? ' disabled' : '') + '><span>' + (enCours ? 'Envoi…' : (u ? 'Changer' : 'Ajouter une photo')) + '</span></label>'
+      + (u && !enCours ? '<button type="button" class="btn btn-ghost" data-retirer aria-label="' + escHtml('Retirer la photo du rayon ' + c) + '">Retirer</button>' : '')
+      + '<div class="photo-etat" role="status" aria-live="polite"></div>'
+      + '</div></div></div>';
+  }).join('');
+  grille.querySelectorAll('.rayon-tuile').forEach(function(tuile) {
+    var cat = cats[parseInt(tuile.getAttribute('data-index'), 10)];
+    var apercu = tuile.querySelector('.photo-apercu');
+    afficherApercuPhoto(apercu, pharmaPhotoRayon(DATA, cat));
+    var etat = tuile.querySelector('.photo-etat');
+    var signaler = function(msg, erreur) { etat.textContent = msg; etat.classList.toggle('erreur', !!erreur); };
+    if (photoRayons.envoi[cat] === undefined) verifierAffichagePhoto(apercu, signaler);
+    var fichier = tuile.querySelector('input[type=file]');
+    fichier.addEventListener('change', function() { if (fichier.files && fichier.files[0]) choisirPhotoRayon(cat, fichier.files[0]); });
+    var retirer = tuile.querySelector('[data-retirer]');
+    if (retirer) retirer.addEventListener('click', function() { enregistrerPhotoRayon(cat, ''); });
+  });
+}
+function etatTuileRayon(cat, msg, erreur) {
+  var i = (DATA.categories || []).indexOf(cat);
+  var el = document.querySelector('#rayons-photos-grille .rayon-tuile[data-index="' + i + '"] .photo-etat');
+  if (!el) return;
+  el.textContent = msg; el.classList.toggle('erreur', !!erreur);
+}
+function choisirPhotoRayon(cat, fichier) {
+  photoRayons.envoi[cat] = true;
+  renderPhotosRayons();
+  etatTuileRayon(cat, photoCloud() ? 'Envoi de la photo…' : 'Préparation de la photo…');
+  preparerPhoto(fichier, 'rayons', pharmaPhotoRayon(DATA, cat)).then(function(url) {
+    delete photoRayons.envoi[cat];
+    enregistrerPhotoRayon(cat, url);
+  }, function(e) {
+    delete photoRayons.envoi[cat];
+    renderPhotosRayons();
+    etatTuileRayon(cat, 'Photo non ajoutée : ' + ((e && e.message) || 'erreur inconnue'), true);
+  });
+}
+function enregistrerPhotoRayon(cat, url) {
+  if ((DATA.categories || []).indexOf(cat) === -1) { renderPhotosRayons(); return; }   // rayon supprimé entre-temps
+  if (!DATA.photosRayons || typeof DATA.photosRayons !== 'object') DATA.photosRayons = {};
+  var avant = DATA.photosRayons[cat];
+  if (url) DATA.photosRayons[cat] = url; else delete DATA.photosRayons[cat];
+  if (!photoCloud() && !PharmaStore.save(DATA)) {
+    if (avant) DATA.photosRayons[cat] = avant; else delete DATA.photosRayons[cat];
+    renderPhotosRayons();
+    etatTuileRayon(cat, 'Photo non enregistrée : la mémoire de ce navigateur est pleine.', true);
+    return;
+  }
+  persist();
+  renderPhotosRayons();
+  toast(url ? 'Photo du rayon ' + cat + ' enregistrée' : 'Photo du rayon ' + cat + ' retirée');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var f = document.getElementById('p-photo-fichier');
+  if (f) f.addEventListener('change', function() {
+    if (f.files && f.files[0]) choisirPhotoProduit(f.files[0]);
+    f.value = '';   // la même photo peut être choisie à nouveau
+  });
+  var r = document.getElementById('p-photo-retirer');
+  if (r) r.addEventListener('click', function() {
+    photoProduit.jeton++;
+    photoProduit.envoi = false;
+    majChampPhotoProduit('');
+    etatPhotoProduit('Photo retirée : cliquez sur Sauvegarder pour confirmer.');
+  });
+  reinitialiserPhotoProduit();
+});
+document.addEventListener('pharma-edition-fermee', function(ev) {
+  if (ev.detail === 'm-produit') reinitialiserPhotoProduit();
+});
 
 // ── CONSEILS PERSONNALISÉS ───────────────────────────────────
 function renderConseils() {

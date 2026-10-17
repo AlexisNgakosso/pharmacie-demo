@@ -165,11 +165,20 @@
           '<strong>Étiquette</strong> : créer une promotion sur ce produit (le produit est présélectionné).',
           '<strong>Corbeille</strong> : supprimer le produit du catalogue (les commandes passées restent intactes).'
         ])
+        + '<h4>Photos</h4>'
+        + liste([
+          '<strong>Photo d\'un produit</strong> : dans la fenêtre du produit, « Ajouter une photo », puis Sauvegarder. Sur téléphone, vous pouvez prendre la photo directement.',
+          '<strong>Photo d\'un rayon</strong> : encadré « Photos des rayons » sous la liste des produits. Elle apparaît sur la page d\'accueil, au bout de la ligne du rayon.',
+          'Les photos sont réduites automatiquement. Préférez un produit entier sur fond blanc, sans texte ajouté.',
+          'Sans photo, le site affiche l\'icône du rayon.'
+        ])
+        + note('Utilisez vos propres photos ou celles fournies par la marque pour la vente en ligne : une image trouvée sur internet n\'est pas libre de droits.')
         + note('Le site ne vend que de la parapharmacie : n\'ajoutez aucun médicament au catalogue.', 'alerte'),
       visite: [
         { page: 'produits', cible: '#topbar-cta', titre: 'Nouveau produit', texte: 'Le bouton vert ouvre le formulaire de création.' },
         { page: 'produits', cible: '#page-produits .toolbar', titre: 'Rechercher', texte: 'Par nom, référence ou catégorie, avec filtre par catégorie.' },
-        { page: 'produits', cible: '#page-produits .card', titre: 'Le catalogue', texte: 'Le stock et son état (disponible, faible, rupture). Crayon : modifier ; étiquette : créer une promo ; corbeille : supprimer.' }
+        { page: 'produits', cible: '#page-produits .card', titre: 'Le catalogue', texte: 'Le stock et son état (disponible, faible, rupture). Crayon : modifier ; étiquette : créer une promo ; corbeille : supprimer.' },
+        { page: 'produits', cible: '#photos-rayons', titre: 'Photos des rayons', texte: 'Une photo par rayon, affichée sur la page d\'accueil. Les photos des produits s\'ajoutent dans la fenêtre de chaque produit.' }
       ]
     },
     {

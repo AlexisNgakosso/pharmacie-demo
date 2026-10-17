@@ -114,7 +114,17 @@ var PharmaCloud = (function () {
   // ── CONVERSIONS base → forme DATA (data.js) ─────────────
   function produitVersLocal(r) {
     return { id: r.id, nom: texte(r.nom), ref: texte(r.ref), cat: texte(r.cat), prix: nombre(r.prix),
-             stock: entier(r.stock), seuil: entier(r.seuil), desc: texte(r.description), actif: r.actif !== false };
+             stock: entier(r.stock), seuil: entier(r.seuil), desc: texte(r.description), actif: r.actif !== false,
+             photo: pharmaPhotoValide(r.photo) };
+  }
+  // Photos des rayons : { nom du rayon: adresse } (colonne absente tant que 04-photos.sql n'a pas été exécuté)
+  function photosRayonsVersLocal(lignes) {
+    var photos = {};
+    tableau(lignes).forEach(function (c) {
+      var u = pharmaPhotoValide(c && c.photo);
+      if (u) photos[texte(c.nom)] = u;
+    });
+    return photos;
   }
   function promoVersLocal(r) {
     return { id: r.id, produit: texte(r.produit), produitId: r.produit_id == null ? null : r.produit_id,
@@ -173,7 +183,7 @@ var PharmaCloud = (function () {
     try {
       localStorage.setItem(CLE_CACHE, JSON.stringify({ v: VERSION_CACHE, t: Date.now(), d: {
         parametres: d.parametres, horaires: d.horaires, joursSpeciaux: d.joursSpeciaux,
-        categories: d.categories, produits: d.produits, promos: d.promos, conseils: d.conseils
+        categories: d.categories, photosRayons: d.photosRayons, produits: d.produits, promos: d.promos, conseils: d.conseils
       } }));
     } catch (e) { /* stockage plein ou bloqué : sans conséquence */ }
   }
@@ -183,7 +193,7 @@ var PharmaCloud = (function () {
     var d = squelette();
     var c = lireCache();
     if (c) {
-      ['horaires', 'joursSpeciaux', 'categories', 'produits', 'promos', 'conseils'].forEach(function (k) {
+      ['horaires', 'joursSpeciaux', 'categories', 'photosRayons', 'produits', 'promos', 'conseils'].forEach(function (k) {
         if (c[k] !== undefined) d[k] = c[k];
       });
       if (c.parametres && typeof c.parametres === 'object') {
@@ -199,7 +209,7 @@ var PharmaCloud = (function () {
     if (!actif) return Promise.reject(new Error('Base de données non disponible.'));
     return Promise.all([
       executer(sb.from('settings_public').select('*').eq('id', 1).maybeSingle()),
-      executer(sb.from('categories').select('nom').order('id')),
+      executer(sb.from('categories').select('*').order('id')),
       executer(sb.from('produits').select('*').order('id')),
       executer(sb.from('promos').select('*').order('id')),
       executer(sb.from('conseils').select('*').order('id'))
@@ -207,6 +217,7 @@ var PharmaCloud = (function () {
       var d = squelette();
       if (r[0]) appliquerReglagesPublics(d, r[0]);
       d.categories = tableau(r[1]).map(function (c) { return texte(c.nom); });
+      d.photosRayons = photosRayonsVersLocal(r[1]);
       d.produits = tableau(r[2]).filter(function (p) { return p.actif !== false; }).map(produitVersLocal);
       d.promos = tableau(r[3]).map(promoVersLocal);
       d.conseils = tableau(r[4]).filter(function (c) { return c.actif !== false; }).map(conseilVersLocal);
@@ -278,7 +289,8 @@ var PharmaCloud = (function () {
     erreurLisible: erreurLisible,
     executer: executer,
     // conversions réutilisées par l'administration et l'espace client
-    conv: { produit: produitVersLocal, promo: promoVersLocal, conseil: conseilVersLocal, reglagesPublics: appliquerReglagesPublics },
+    conv: { produit: produitVersLocal, promo: promoVersLocal, conseil: conseilVersLocal, reglagesPublics: appliquerReglagesPublics,
+            photosRayons: photosRayonsVersLocal },
     squelette: squelette
   };
 })();

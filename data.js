@@ -84,6 +84,9 @@ var PHARMA_SEED_DATA = {
     samedi:   { ouvert:true, debut:'09:00', fin:'21:00' },
     dimanche: { ouvert:true, debut:'09:00', fin:'20:00' }
   },
+  // Photos des rayons de la page d'accueil ({ 'Solaire': adresse de la photo }), ajoutées dans l'admin.
+  // Les photos des produits sont dans le champ « photo » de chaque produit.
+  photosRayons: {},
   joursSpeciaux: [
     { date:_pharmaDate(5), type:'Garde', debut:'08:00', fin:'20:00', msg:'Pharmacie de garde — Ouverts de 8h à 20h' },
     { date:_pharmaDate(40), type:'Fermeture', debut:'', fin:'', msg:'Fermés exceptionnellement ce jour' }
@@ -287,6 +290,28 @@ var PHARMA_EMAIL_RE = /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Z
 function pharmaEmailValide(e) {
   var s = String(e == null ? '' : e).trim();
   return s.length > 0 && s.length <= 200 && PHARMA_EMAIL_RE.test(s);
+}
+
+// ── PHOTOS DES PRODUITS ET DES RAYONS ──────────────────────
+// Une photo n'est affichée que si son adresse a l'une de ces deux formes :
+//  * une image du bucket « photos » d'un projet Supabase (mode base de données) ;
+//  * une image JPEG, PNG ou WebP gardée dans le navigateur (mode démonstration).
+// Toute autre valeur (adresse d'un autre site, javascript:, guillemets) est ignorée :
+// une adresse modifiée ne peut ni injecter de code ni charger une image d'ailleurs.
+var PHARMA_PHOTO_URL_RE = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/photos\/[A-Za-z0-9_-]+([.\/][A-Za-z0-9_-]+)*$/;
+var PHARMA_PHOTO_DATA_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+={0,2}$/;
+var PHARMA_PHOTO_DATA_MAX = 700000;   // environ 500 Ko d'image
+function pharmaPhotoValide(v) {
+  var s = (typeof v === 'string') ? v : '';
+  if (s.length <= 400 && PHARMA_PHOTO_URL_RE.test(s)) return s;
+  if (s.length <= PHARMA_PHOTO_DATA_MAX && PHARMA_PHOTO_DATA_RE.test(s)) return s;
+  return '';
+}
+// Photo d'un rayon (catégorie), ou '' s'il n'en a pas
+function pharmaPhotoRayon(data, cat) {
+  var photos = data && data.photosRayons;
+  if (!photos || typeof photos !== 'object' || !Object.prototype.hasOwnProperty.call(photos, cat)) return '';
+  return pharmaPhotoValide(photos[cat]);
 }
 
 // ── NOM ET ADRESSE DANS LES TEXTES DU SITE ─────────────────

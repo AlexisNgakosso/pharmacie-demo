@@ -76,7 +76,7 @@ var CATALOGUE = [];
 // Reconstruit PROMOS/CATALOGUE à partir de DATA (à appeler après tout rechargement de DATA)
 function buildCatalogueData() {
   CATALOGUE = DATA.produits.map(function(p) {
-    return { id:'prod-'+p.id, produitId:p.id, cat:p.cat, nom:p.nom, prix:p.prix, icon:iconForCat(p.cat), stock:p.stock };
+    return { id:'prod-'+p.id, produitId:p.id, cat:p.cat, nom:p.nom, prix:p.prix, icon:iconForCat(p.cat), stock:p.stock, photo:pharmaPhotoValide(p.photo) };
   });
   // Une promo n'est affichée que si elle est active ET dans sa période de validité.
   // Sans ce contrôle, une promo oubliée resterait visible indéfiniment sur le site.
@@ -89,12 +89,14 @@ function buildCatalogueData() {
     if (pr.fin && String(pr.fin).slice(0, 10) < auj) return false;        // terminée
     return true;
   }).map(function(pr) {
-    var produit = matchProduitPourPromo(pr.produit);
+    // Produit de la promo : celui qui lui est relié dans la base, sinon d'après son nom
+    var produit = (pr.produitId != null && DATA.produits.find(function(p) { return p.id === pr.produitId; })) || matchProduitPourPromo(pr.produit);
     var cat = produit ? produit.cat : 'Autres';
     return {
       id: 'promo-'+pr.id, promoId: pr.id, cat: cat, nom: pr.produit,
       prixPromo: pr.prixPromo, prixNormal: pr.prixNormal,
-      pct: Math.abs(pr.pct), fin: formatDateFr(pr.fin), finIso: String(pr.fin || '').slice(0, 10), icon: iconForCat(cat)
+      pct: Math.abs(pr.pct), fin: formatDateFr(pr.fin), finIso: String(pr.fin || '').slice(0, 10), icon: iconForCat(cat),
+      photo: produit ? pharmaPhotoValide(produit.photo) : ''
     };
   });
 }
@@ -116,6 +118,12 @@ var ICONS = {
   sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/></svg>',
   baby: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/><path d="M9 15a3 3 0 0 0 6 0"/></svg>'
 };
+
+// Visuel d'une carte : la photo ajoutée dans l'admin, sinon l'icône du rayon
+function visuelCarte(p) {
+  var u = pharmaPhotoValide(p && p.photo);
+  return u ? '<img class="carte-photo" src="' + escHtml(u) + '" alt="" loading="lazy" decoding="async">' : (ICONS[p && p.icon] || '');
+}
 
 var cart = [];
 var appliedPromo = null;
@@ -760,7 +768,11 @@ function renderAnnonces() {
 // Chapitres remplis avec les données de l'admin : la promo du moment, les rayons, la fidélité
 // et l'état d'ouverture du jour. Un chapitre sans contenu est masqué.
 var recitAnime = !prefersReducedMotion() && !!window.IntersectionObserver;
-var unePromo = null, uneCompteFait = false, fidRemplie = false;
+var unePromo = null, fidRemplie = false;
+// Chiffre de la promo : 'attente' (à 0, prêt à défiler), 'compte' (en train de défiler) ou 'fait'.
+// Durée du défilement : 1 seconde, en ralentissant vers la fin pour qu'on voie le chiffre arriver.
+var DUREE_COMPTE_UNE = 1000;
+var uneAnim = { etat: 'attente', raf: 0 };
 
 function renderRecit() {
   renderUne();
@@ -784,29 +796,45 @@ function renderUne() {
   var prix = function(v) { return nombre(v).toFixed(2).replace('.', ',') + ' €'; };
   var nb = document.getElementById('une-pct');
   nb.setAttribute('data-cible', pct);
-  if (!recitAnime || uneCompteFait) nb.textContent = pct;
+  if (!recitAnime || uneAnim.etat === 'fait') nb.textContent = pct;
   document.getElementById('une-reduction').textContent = 'Réduction de ' + pct + ' %';
   document.getElementById('une-nom').textContent = p.nom;
+  var fig = document.getElementById('une-photo'), img = document.getElementById('une-img');
+  if (fig && img) {
+    var u = pharmaPhotoValide(p.photo);
+    fig.hidden = !u;
+    if (u) { if (img.getAttribute('src') !== u) img.src = u; } else img.removeAttribute('src');
+  }
   document.getElementById('une-prix').textContent = prix(p.prixPromo);
   document.getElementById('une-ancien').textContent = nombre(p.prixNormal) > nombre(p.prixPromo) ? prix(p.prixNormal) : '';
   document.getElementById('une-fin').textContent = p.fin ? 'Jusqu\'au ' + p.fin : '';
 }
 
-// Le chiffre de la réduction défile de 0 à sa valeur, une seule fois, quand le chapitre arrive
+// Le chiffre de la réduction défile de 0 à sa valeur à chaque arrivée du chapitre à l'écran,
+// en descendant comme en remontant
 function compterUne() {
   var nb = document.getElementById('une-pct');
   var cible = parseInt(nb && nb.getAttribute('data-cible'), 10);
-  if (!nb || !(cible > 0) || uneCompteFait) return;
-  uneCompteFait = true;
-  var debut = null, duree = 900;
+  if (!nb || !(cible > 0) || uneAnim.etat !== 'attente') return;
+  uneAnim.etat = 'compte';
+  var debut = null, duree = DUREE_COMPTE_UNE;
   function pas(t) {
+    if (uneAnim.etat !== 'compte') return;
     if (debut === null) debut = t;
     var x = Math.min(1, (t - debut) / duree);
-    nb.textContent = Math.round(cible * (1 - Math.pow(1 - x, 3)));
-    if (x < 1) requestAnimationFrame(pas);
+    nb.textContent = Math.round(cible * (1 - Math.pow(1 - x, 2)));
+    if (x < 1) uneAnim.raf = requestAnimationFrame(pas);
+    else uneAnim.etat = 'fait';
   }
   nb.textContent = '0';
-  requestAnimationFrame(pas);
+  uneAnim.raf = requestAnimationFrame(pas);
+}
+// Le chiffre a quitté l'écran : il repart de 0, prêt à défiler au prochain passage
+function rearmerUne() {
+  cancelAnimationFrame(uneAnim.raf);
+  uneAnim.etat = 'attente';
+  var nb = document.getElementById('une-pct');
+  if (nb) nb.textContent = '0';
 }
 
 // Chapitre « Nos rayons » : les catégories qui ont des produits, dans l'ordre de l'admin
@@ -823,8 +851,11 @@ function renderRayons() {
   liste.classList.toggle('statique', !recitAnime);
   liste.innerHTML = cats.map(function(c) {
     var n = compte[c];
-    return '<li><button type="button" class="rayon" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Voir le rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
-      + '<span class="rayon-mot">' + escHtml(c) + '</span><span class="rayon-nb" aria-hidden="true">' + n + '</span></button></li>';
+    var photo = pharmaPhotoRayon(DATA, c);
+    return '<li><button type="button" class="rayon' + (photo ? ' a-photo' : '') + '" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Voir le rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
+      + '<span class="rayon-mot">' + escHtml(c) + '</span><span class="rayon-nb" aria-hidden="true">' + n + '</span>'
+      + (photo ? '<span class="rayon-photo" aria-hidden="true"><img src="' + escHtml(photo) + '" alt="" loading="lazy" decoding="async"></span>' : '')
+      + '</button></li>';
   }).join('');
   liste.querySelectorAll('.rayon').forEach(function(b) {
     b.addEventListener('click', function() {
@@ -940,11 +971,14 @@ function initRecit() {
   initRaccourci();
   setInterval(renderAujourdhui, 60000);
   if (!recitAnime) return;
-  // Promo : le chiffre défile quand le chapitre est bien visible
-  var une = document.getElementById('a-la-une');
-  if (une) new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) { if (e.isIntersecting) compterUne(); });
-  }, { threshold: 0.35 }).observe(une);
+  // Promo : le chiffre défile quand il est bien visible, et recommence après être sorti de l'écran
+  var chiffreUne = document.querySelector('#a-la-une .chap-geant');
+  if (chiffreUne) new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.intersectionRatio >= 0.5) compterUne();
+      else if (!e.isIntersecting) rearmerUne();
+    });
+  }, { threshold: [0, 0.5] }).observe(chiffreUne);
   // Étapes : le grand chiffre suit l'étape qui passe au milieu de l'écran
   var chiffres = document.querySelectorAll('.etape-chiffre');
   var etapes = new IntersectionObserver(function(entries) {
@@ -960,7 +994,7 @@ function initRecit() {
     entries.forEach(function(e) { e.target.classList.toggle('actif', e.isIntersecting); });
   }, { rootMargin: '-42% 0px -42% 0px' });
   document.querySelectorAll('#rayons-liste .rayon').forEach(function(b) { rayonsObserver.observe(b); });
-  // Fidélité : la jauge se remplit segment par segment
+  // Fidélité : la jauge se remplit segment par segment, une seule fois
   var fid = document.getElementById('fid-jauge');
   if (fid) new IntersectionObserver(function(entries) {
     entries.forEach(function(e) { if (e.isIntersecting) remplirFidelite(); });
@@ -1006,7 +1040,9 @@ function openPromoDetail(id) {
   document.getElementById('pd-prix-normal').textContent = nombre(p.prixNormal).toFixed(2).replace('.',',')+'€';
   document.getElementById('pd-badge').textContent = '-'+p.pct+'%';
   document.getElementById('pd-timer').textContent = 'Jusqu\'au '+p.fin;
-  document.getElementById('pd-icon').innerHTML = ICONS[p.icon]||'';
+  var visuel = document.getElementById('pd-icon');
+  visuel.innerHTML = visuelCarte(p);
+  visuel.classList.toggle('avec-photo', !!pharmaPhotoValide(p.photo));
   // Gestionnaire posé directement (et non par une chaîne de code) : aucune donnée ne peut s'y injecter
   var btnAjout = document.getElementById('pd-add');
   btnAjout.removeAttribute('onclick');
@@ -1024,7 +1060,7 @@ function renderPromos() {
   var html = '';
   PROMOS.forEach(function(p) {
     html += '<div class="promo-card reveal" data-tilt>';
-    html += '<div class="promo-img" onclick="openPromoDetail(\''+escAttr(p.id)+'\')" style="cursor:pointer" title="Voir la promo">'+(ICONS[p.icon]||'');
+    html += '<div class="promo-img'+(pharmaPhotoValide(p.photo)?' avec-photo':'')+'" onclick="openPromoDetail(\''+escAttr(p.id)+'\')" style="cursor:pointer" title="Voir la promo">'+visuelCarte(p);
     html += '<span class="promo-discount">-'+escHtml(p.pct)+'%</span>';
     html += '<span class="promo-timer">Jusqu\'au '+escHtml(p.fin)+'</span>';
     html += '<div style="position:absolute;inset:0;background:rgba(0,0,0,0);transition:background 0.25s;display:flex;align-items:center;justify-content:center;opacity:0;font-size:0.78rem;font-weight:700;color:#fff" class="promo-hover-overlay">Voir le détail →</div>';
@@ -1069,7 +1105,7 @@ function renderCatalogue() {
   list.forEach(function(p) {
     var rupture = p.stock !== undefined && p.stock <= 0;
     html += '<div class="promo-card reveal" data-tilt>';
-    html += '<div class="promo-img">'+(ICONS[p.icon]||'');
+    html += '<div class="promo-img'+(pharmaPhotoValide(p.photo)?' avec-photo':'')+'">'+visuelCarte(p);
     if (rupture) html += '<span class="promo-discount" style="background:var(--texte-3)">Rupture de stock</span>';
     html += '</div>';
     html += '<div class="promo-content">';
@@ -1860,7 +1896,7 @@ function fermerConfirmation() {
 // après l'autre, de gauche à droite. Aucun calcul pendant le défilement : c'est le navigateur
 // qui signale l'entrée et la sortie (IntersectionObserver).
 var CARTES_VOLET = '.promo-card, .feature';
-var revealObserver, voletEntree, voletSortie;
+var revealObserver, revealSortie, voletEntree, voletSortie;
 function observeReveals() {
   var cartes = document.querySelectorAll(CARTES_VOLET);
   cartes.forEach(function(c) { if (c.classList.contains('reveal')) c.classList.add('volet'); });
@@ -1869,11 +1905,13 @@ function observeReveals() {
     return;
   }
   if (!revealObserver) {
+    // Les blocs apparaissent à chaque arrivée à l'écran : sortis entièrement, ils se replient pour le passage suivant
     revealObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
-        if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); }
-      });
+      entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
+    revealSortie = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (!e.isIntersecting) e.target.classList.remove('visible'); });
+    }, { threshold: 0 });
     voletEntree = new IntersectionObserver(function(entries) {
       var entrees = entries.filter(function(e) { return e.isIntersecting && !e.target.classList.contains('volet-ouvert'); });
       entrees.sort(function(x, y) {
@@ -1893,7 +1931,7 @@ function observeReveals() {
       });
     }, { threshold: 0 });
   }
-  document.querySelectorAll('.reveal:not(.visible):not(.volet)').forEach(function(el) { revealObserver.observe(el); });
+  document.querySelectorAll('.reveal:not(.volet)').forEach(function(el) { revealObserver.observe(el); revealSortie.observe(el); });
   document.querySelectorAll('.reveal.volet').forEach(function(el) { voletEntree.observe(el); voletSortie.observe(el); });
 }
 
