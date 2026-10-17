@@ -2313,19 +2313,25 @@ function confirmer(msg, cb, options) {
 function confirmOk() { closeModal('m-confirm'); if (_confirmCb) _confirmCb(); _confirmCb=null; }
 
 // ── TOAST ────────────────────────────────────────────────────
+var SVG_TOAST_OK = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+var SVG_TOAST_ERREUR = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 function toast(msg, type) {
-  var el = document.createElement('div');
-  el.className = 'toast-item';
-  if (type==='error') el.style.borderLeftColor='var(--rouge)';
-  // Texte brut : un nom de client ou de produit affiché dans un message ne peut pas injecter de HTML
-  el.textContent = (type==='error'?'✕ ':'✓ ')+msg;
   var container = document.getElementById('toast');
-  if (container) container.appendChild(el);
+  if (!container) return;
+  var erreur = type === 'error';
+  var el = document.createElement('div');
+  el.className = 'toast-item verre' + (erreur ? ' erreur' : '');
+  el.innerHTML = erreur ? SVG_TOAST_ERREUR : SVG_TOAST_OK;
+  // Texte brut : un nom de client ou de produit affiché dans un message ne peut pas injecter de HTML
+  el.appendChild(document.createTextNode(String(msg == null ? '' : msg)));
+  // Trois messages au plus à l'écran : le plus ancien laisse sa place
+  while (container.children.length >= 3) container.removeChild(container.firstChild);
+  container.appendChild(el);
+  // Une erreur reste un peu plus longtemps : elle se lit en entier
   setTimeout(function(){
-    el.style.opacity='0'; el.style.transform='translateX(20px)';
-    el.style.transition='all 0.3s';
-    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 300);
-  }, 3200);
+    el.classList.add('sortie');
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 360);
+  }, erreur ? 4500 : 3200);
 }
 
 // ── COMPTEURS ANIMÉS ─────────────────────────────────────────

@@ -300,9 +300,27 @@ footer{background:var(--bg-card);border-top:1px solid var(--bord);padding:60px 0
 .checkbox-row input{margin-top:3px}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:8px;align-items:center}
-.toast{background:var(--texte);color:var(--bg-card);padding:12px 22px;border-radius:30px;font-size:0.88rem;font-weight:600;box-shadow:var(--shadow-lg);animation:toastUp 0.4s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:8px}
-@keyframes toastUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+/* ── VERRE LIQUIDE (messages de confirmation, bouton Catalogue) ──
+   Fond translucide flouté qui laisse deviner la page, reflet de lumière sur le bord haut.
+   La déformation du fond (réfraction) n'existe que dans Chrome : ici, flou + saturation + reflets,
+   rendus de la même façon sur iPhone, Android et ordinateur. */
+:root{--verre-fond:linear-gradient(145deg,rgba(255,255,255,0.84),rgba(236,246,240,0.62));--verre-bord:rgba(255,255,255,0.8);--verre-reflet:rgba(255,255,255,0.95);--verre-ombre:0 12px 32px rgba(12,46,29,0.16),0 2px 6px rgba(12,46,29,0.08);--verre-texte:#10261B;--verre-icone:#1B6B45}
+html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(52,74,62,0.6),rgba(18,28,23,0.5));--verre-bord:rgba(255,255,255,0.16);--verre-reflet:rgba(255,255,255,0.3);--verre-ombre:0 12px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);--verre-texte:#F0F7F2;--verre-icone:#5FE3A1}
+.verre{position:relative;isolation:isolate;background:var(--verre-fond);-webkit-backdrop-filter:blur(20px) saturate(185%);backdrop-filter:blur(20px) saturate(185%);border:1px solid var(--verre-bord);box-shadow:inset 0 1px 0 var(--verre-reflet),inset 0 -1px 1px rgba(255,255,255,0.06),var(--verre-ombre);color:var(--verre-texte)}
+.verre::before{content:'';position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(180deg,var(--verre-reflet) 0%,transparent 46%);opacity:0.4;pointer-events:none;z-index:-1}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.verre{background:var(--bg-card)}}
+/* Messages : centrés en bas de l'écran, à égale distance des deux bords, au-dessus de la barre de l'iPhone */
+#toast{position:fixed;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:500;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 16px;pointer-events:none}
+.toast{max-width:min(520px,100%);padding:12px 20px;border-radius:26px;font-size:0.9rem;font-weight:600;line-height:1.35;display:flex;align-items:center;justify-content:center;gap:9px;text-align:left;animation:goutteEntree 0.62s cubic-bezier(0.22,1,0.36,1) both}
+.toast svg{flex:none;color:var(--verre-icone)}
+.toast.sortie{animation:goutteSortie 0.34s ease-in forwards}
+/* Apparition en goutte : le message arrive écrasé, s'étire, puis se pose avec un petit rebond */
+@keyframes goutteEntree{0%{opacity:0;transform:translateY(16px) scale(0.55,0.4)}45%{opacity:1;transform:translateY(-3px) scale(1.06,0.94)}72%{transform:translateY(1px) scale(0.98,1.03)}100%{opacity:1;transform:none}}
+@keyframes goutteSortie{to{opacity:0;transform:translateY(8px) scale(0.86,0.8)}}
+@keyframes fonduEntree{from{opacity:0}to{opacity:1}}
+@keyframes fonduSortie{to{opacity:0}}
+@media(max-width:420px){.toast{font-size:0.84rem;padding:11px 16px}}
+@media(prefers-reduced-motion:reduce){.toast{animation:fonduEntree 0.2s both}.toast.sortie{animation:fonduSortie 0.2s forwards}}
 
 /* ── GARDE BANNER ── */
 .garde-bar{background:linear-gradient(90deg,var(--or),var(--or-clair));color:#3A2A05;text-align:center;padding:12px 20px;font-size:0.85rem;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:102;letter-spacing:0.2px;line-height:1.5}
@@ -474,10 +492,12 @@ html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
 .auj-infos{display:flex;flex-wrap:wrap;gap:12px 30px;margin-top:38px;font-weight:600;color:var(--nuit-doux)}
 .auj-infos a{color:var(--nuit-texte);text-decoration:underline;text-underline-offset:5px}
 /* Raccourci vers le catalogue */
-.raccourci{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:90;display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:var(--vert);color:#FFFFFF;font-weight:700;font-size:0.92rem;text-decoration:none;box-shadow:0 10px 30px rgba(15,59,39,0.35);transform:translateY(160%);opacity:0;pointer-events:none;transition:transform 0.45s cubic-bezier(0.34,1.4,0.64,1),opacity 0.3s}
+/* En verre liquide ; il s'efface en haut de page, sur le catalogue, au pied de page et pendant un message */
+.raccourci{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:90;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;font-weight:700;font-size:0.86rem;text-decoration:none;transform:translateY(160%) scale(0.9);opacity:0;pointer-events:none;transition:transform 0.5s cubic-bezier(0.34,1.4,0.64,1),opacity 0.3s}
+.raccourci svg{color:var(--verre-icone)}
 .raccourci.visible{transform:none;opacity:1;pointer-events:auto}
+body.avec-message .raccourci.visible{transform:translateY(160%) scale(0.9);opacity:0;pointer-events:none}
 .raccourci:focus-visible{outline:3px solid var(--vert-clair);outline-offset:3px}
-html[data-theme="dark"] .raccourci{color:#0B2619}
 @media(max-width:820px){
   .une{grid-template-columns:1fr;gap:18px}
   .etapes{grid-template-columns:1fr;gap:0}
@@ -498,7 +518,7 @@ html[data-theme="dark"] .raccourci{color:#0B2619}
 <body>
 
 <div class="ambient"><canvas id="ambient-canvas" aria-hidden="true"></canvas></div>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- GARDE BANNER -->
 <div class="garde-bar" id="garde-bar" style="display:none"></div>
@@ -742,7 +762,7 @@ html[data-theme="dark"] .raccourci{color:#0B2619}
 </footer>
 
 <!-- RACCOURCI : retour au catalogue depuis n'importe quel chapitre -->
-<a href="#catalogue" class="raccourci" id="raccourci-catalogue" aria-hidden="true" tabindex="-1"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Catalogue</a>
+<a href="#catalogue" class="raccourci verre" id="raccourci-catalogue" aria-hidden="true" tabindex="-1"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Catalogue</a>
 
 <!-- CART DRAWER -->
 <div class="cart-overlay" id="cart-overlay"></div>

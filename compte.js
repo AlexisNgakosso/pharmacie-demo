@@ -350,14 +350,24 @@ function confirmDelete() {
 
 // ── TOAST ──
 window.pharmaToast = function(msg) {
+  var c = document.getElementById('toast');
+  if (!c) return;
   var el = document.createElement('div');
-  el.className = 'toast';
-  el.innerHTML = '<svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--vert-vif)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+  el.className = 'toast verre';
+  el.innerHTML = '<svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
   // Le message est ajouté en texte brut : un nom de produit ne peut pas y injecter de HTML
   el.appendChild(document.createTextNode(String(msg == null ? '' : msg)));
-  var c = document.getElementById('toast');
-  if (c) c.appendChild(el);
-  setTimeout(function(){ el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='all 0.3s'; setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},300); }, 2800);
+  // Trois messages au plus à l'écran : le plus ancien laisse sa place
+  while (c.children.length >= 3) c.removeChild(c.firstChild);
+  c.appendChild(el);
+  document.body.classList.add('avec-message');
+  setTimeout(function() {
+    el.classList.add('sortie');
+    setTimeout(function() {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      if (!c.children.length) document.body.classList.remove('avec-message');
+    }, 360);
+  }, 2800);
 };
 
 // Étape de transition : le site client est relié à la base de données, pas encore l'espace client
