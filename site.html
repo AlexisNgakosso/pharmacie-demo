@@ -48,25 +48,32 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
+  /* Vert de la pharmacie (réglable dans l'admin) : logo, boutons, liens. Le reste du site est sur
+     un papier blanc légèrement kaki (comme l'écran en Night Shift), avec un grenat pour les promotions. */
   --vert:#1B6B45; --vert-vif:#2ECC7A; --vert-clair:#5FE3A1;
+  --grenat:#A8322D; --grenat-plein:#A8322D; --grenat-fond:#6E1F1B; --grenat-clair:#FFB4A6; --grenat-teinte:rgba(168,50,45,0.09);
   --or:#D9A441; --or-clair:#F0C674;
-  --creme:#FAF7F0; --blanc:#FFFFFF;
-  --texte:#16241C; --texte-2:#4A5C50; --texte-3:#8A988F;
-  --bord:#E6EBE6;
-  --bg:#F7FAF7; --bg-card:#FFFFFF;
-  --shadow-s:0 2px 8px rgba(20,40,28,0.06);
-  --shadow:0 8px 30px rgba(20,40,28,0.10);
-  --shadow-lg:0 20px 60px rgba(20,40,28,0.16);
+  --creme:#F1EBDD; --blanc:#FFFDF8;
+  --texte:#1F2119; --texte-2:#55534A; --texte-3:#716D60;
+  --bord:#E4DDCE;
+  --bg:#F5F1E6; --bg-card:#FBF9F3;
+  --tuile:#EEE7D7;
+  --shadow-s:0 2px 8px rgba(48,38,16,0.06);
+  --shadow:0 8px 30px rgba(48,38,16,0.10);
+  --shadow-lg:0 20px 60px rgba(48,38,16,0.16);
   --r:18px; --r-s:12px;
 }
 /* DARK MODE */
 html[data-theme="dark"] {
-  --vert:#2ECC7A; --vert-vif:#3FE08C; --vert-clair:#5FE3A1;
+  /* Sombre chaud, sans teinte verte */
+  --vert:#3CC07D; --vert-vif:#4AD38B; --vert-clair:#6FE0A6;
+  --grenat:#F08474; --grenat-plein:#B8443A; --grenat-fond:#4C1614; --grenat-clair:#FFB4A6; --grenat-teinte:rgba(240,132,116,0.12);
   --or:#F0C060; --or-clair:#F5D080;
-  --creme:#1A2620; --blanc:#1E2C24;
-  --texte:#F0F7F2; --texte-2:#C8D8CC; --texte-3:#90A898;
-  --bord:#2C3D34;
-  --bg:#121A16; --bg-card:#1A2620;
+  --creme:#201D17; --blanc:#26221B;
+  --texte:#F2EDE3; --texte-2:#CEC6B6; --texte-3:#9D9585;
+  --bord:#36312A;
+  --bg:#171510; --bg-card:#201D17;
+  --tuile:#2C2821;
   --shadow-s:0 2px 8px rgba(0,0,0,0.3);
   --shadow:0 8px 30px rgba(0,0,0,0.4);
   --shadow-lg:0 20px 60px rgba(0,0,0,0.5);
@@ -79,18 +86,21 @@ a{text-decoration:none;color:inherit}
 img{max-width:100%;display:block}
 
 /* ── AMBIENT BACKGROUND (molécules) ── */
-.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5}
+/* Hauteur de l'écran barre d'adresse repliée (100lvh) : le fond ne change pas de taille quand la barre
+   du téléphone se replie ou revient en début de défilement */
+.ambient{position:fixed;top:0;left:0;right:0;height:100vh;height:100lvh;z-index:0;pointer-events:none;opacity:0.5}
 .ambient canvas{width:100%;height:100%}
 
 /* ── HEADER ── */
-header.scrolled{background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0;backdrop-filter:blur(10px)}
-html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
+/* En-tête opaque : pas de flou d'arrière-plan, que le téléphone devrait recalculer à chaque image du défilement */
+header.scrolled{background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0}
+html[data-theme="dark"] header.scrolled{background:var(--bg-card)}
 .nav-wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:700;font-size:1.15rem;color:var(--texte)}
 .brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--vert),var(--vert-vif));border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(46,204,122,0.3)}
 .nav-links{display:flex;align-items:center;gap:6px}
 .nav-links a{padding:8px 16px;border-radius:10px;font-size:0.9rem;font-weight:600;color:var(--texte-2);transition:all 0.2s}
-.nav-links a:hover{color:var(--vert);background:rgba(46,204,122,0.08)}
+.nav-links a:hover{color:var(--vert);background:var(--tuile)}
 .nav-actions{display:flex;align-items:center;gap:10px}
 .theme-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--bord);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--texte-2);transition:all 0.25s}
 .theme-btn:hover{border-color:var(--vert);color:var(--vert);transform:rotate(20deg)}
@@ -104,7 +114,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 /* ── HERO ── */
 .hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;padding:120px 0 60px;overflow:hidden}
 .hero-wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:50px;align-items:center}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(46,204,122,0.1);color:var(--vert);padding:7px 16px;border-radius:30px;font-size:0.8rem;font-weight:700;margin-bottom:24px;border:1px solid rgba(46,204,122,0.2)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--tuile);color:var(--vert);padding:7px 16px;border-radius:30px;font-size:0.8rem;font-weight:700;margin-bottom:24px;border:1px solid rgba(46,204,122,0.2)}
 .hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--vert-vif);animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 .hero h1{font-size:clamp(2.6rem,5.5vw,4.4rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:22px}
@@ -117,7 +127,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 .btn-outline{background:transparent;color:var(--texte);border:1.5px solid var(--bord)}
 .btn-outline:hover{border-color:var(--vert);color:var(--vert);transform:translateY(-3px)}
 .hero-stats{display:flex;gap:34px;margin-top:48px}
-.hero-stat .num{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--vert)}
+.hero-stat .num{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--texte)}
 .hero-stat .lbl{font-size:0.8rem;color:var(--texte-3);font-weight:600}
 
 /* ── HERO VISUEL 3D ── */
@@ -131,15 +141,16 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 .fc-body{padding:14px 16px}
 .fc-title{font-weight:700;font-size:0.82rem}
 .fc-sub{font-size:0.7rem;color:var(--texte-3)}
-.promo-badge{background:var(--vert);color:#fff;font-size:0.7rem;font-weight:800;padding:3px 10px;border-radius:20px;display:inline-block}
-.price-now{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;color:var(--vert)}
+.promo-badge{background:var(--grenat-plein);color:#fff;font-size:0.7rem;font-weight:800;padding:3px 10px;border-radius:20px;display:inline-block}
+.price-now{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;color:var(--texte)}
+.price-now.prix-promo{color:var(--grenat)}
 .price-old{font-size:0.85rem;color:var(--texte-3);text-decoration:line-through}
 
 /* ── SECTIONS ── */
 section{position:relative;z-index:1}
 .container{max-width:1240px;margin:0 auto;padding:0 24px}
 .section-pad{padding:90px 0}
-.eyebrow{display:inline-block;color:var(--vert);font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
+.eyebrow{display:inline-block;color:var(--grenat);font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
 .section-title{font-size:clamp(2rem,4vw,3rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:16px}
 .section-sub{font-size:1.08rem;color:var(--texte-2);max-width:560px}
 .section-head{margin-bottom:48px}
@@ -161,15 +172,15 @@ section{position:relative;z-index:1}
 .promo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px;perspective:1200px}
 .promo-card{background:var(--bg-card);border-radius:var(--r);border:1px solid var(--bord);overflow:hidden;box-shadow:var(--shadow-s);transition:transform 0.4s cubic-bezier(0.22,1,0.36,1),box-shadow 0.4s;cursor:pointer;transform-style:preserve-3d}
 .promo-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
-.promo-img{height:170px;background:linear-gradient(135deg,rgba(46,204,122,0.12),rgba(217,164,65,0.12));position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.promo-img{height:170px;background:linear-gradient(135deg,var(--tuile),rgba(217,164,65,0.14));position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .promo-img svg{width:64px;height:64px;opacity:0.5;color:var(--vert)}
 /* Photo ajoutée dans l'admin : le produit entier, sur fond blanc (comme la plupart des photos de produits) */
 .promo-img.avec-photo{background:#FFFFFF}
 .carte-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:14px;box-sizing:border-box}
-.promo-discount{position:absolute;top:12px;right:12px;background:var(--vert);color:#fff;font-weight:800;font-size:0.9rem;padding:5px 12px;border-radius:30px;box-shadow:0 4px 12px rgba(27,107,69,0.3)}
+.promo-discount{position:absolute;top:12px;right:12px;background:var(--grenat-plein);color:#fff;font-weight:800;font-size:0.9rem;padding:5px 12px;border-radius:30px;box-shadow:0 4px 12px rgba(110,31,27,0.28)}
 .promo-timer{position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.68rem;font-weight:600;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
 .promo-content{padding:16px}
-.promo-cat{font-size:0.7rem;color:var(--vert);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.promo-cat{font-size:0.7rem;color:var(--texte-3);font-weight:700;text-transform:uppercase;letter-spacing:1px}
 .promo-name{font-weight:700;font-size:1rem;margin:5px 0 10px}
 .promo-prices{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
 .promo-add{width:100%;padding:11px;border-radius:11px;background:var(--vert);color:#fff;font-weight:700;font-size:0.85rem;border:none;cursor:pointer;font-family:inherit;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:7px}
@@ -179,7 +190,7 @@ section{position:relative;z-index:1}
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;perspective:1200px}
 .feature{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r);padding:30px 26px;transition:transform 0.4s,box-shadow 0.4s}
 .feature:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
-.feature-ic{width:56px;height:56px;border-radius:15px;background:rgba(46,204,122,0.1);display:flex;align-items:center;justify-content:center;color:var(--vert);margin-bottom:18px}
+.feature-ic{width:56px;height:56px;border-radius:15px;background:var(--tuile);display:flex;align-items:center;justify-content:center;color:var(--vert);margin-bottom:18px}
 .feature h3{font-size:1.25rem;margin-bottom:10px}
 .feature p{font-size:0.92rem;color:var(--texte-2)}
 
@@ -225,9 +236,9 @@ section{position:relative;z-index:1}
 .guest-hint{text-align:center;font-size:0.76rem;color:var(--texte-3);margin-top:9px}
 .compte-info{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--bord);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:0.82rem;line-height:1.55;color:var(--texte-2)}
 .compte-info svg{flex-shrink:0;color:var(--vert);margin-top:2px}
-.guest-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(46,204,122,0.11);color:var(--vert);border:1px solid rgba(46,204,122,0.28);border-radius:99px;padding:7px 13px;font-size:0.76rem;font-weight:700;margin-bottom:16px}
+.guest-badge{display:inline-flex;align-items:center;gap:7px;background:var(--tuile);color:var(--vert);border:1px solid var(--bord);border-radius:99px;padding:7px 13px;font-size:0.76rem;font-weight:700;margin-bottom:16px}
 /* CONFIRMATION DE COMMANDE */
-.conf-ok{width:56px;height:56px;border-radius:50%;background:rgba(46,204,122,0.14);color:var(--vert);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.conf-ok{width:56px;height:56px;border-radius:50%;background:var(--tuile);color:var(--vert);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
 .conf-box{text-align:center}
 .conf-box h2{margin-bottom:6px}
 .conf-num{font-size:0.82rem;color:var(--texte-2);margin-bottom:18px}
@@ -242,10 +253,10 @@ section{position:relative;z-index:1}
 /* ── FAQ ── */
 .faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .faq-item{background:var(--bg-card);border:1px solid var(--bord);border-radius:var(--r-s);overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s}
-.faq-item.open{border-color:rgba(46,204,122,0.35);box-shadow:var(--shadow-s)}
+.faq-item.open{border-color:color-mix(in srgb,var(--vert) 30%,var(--bord));box-shadow:var(--shadow-s)}
 .faq-question{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.96rem;font-weight:700;color:var(--texte);text-align:left;transition:color 0.2s}
 .faq-question:hover{color:var(--vert)}
-.faq-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(46,204,122,0.1);color:var(--vert);display:flex;align-items:center;justify-content:center;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1)}
+.faq-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--tuile);color:var(--vert);display:flex;align-items:center;justify-content:center;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1)}
 .faq-item.open .faq-icon{transform:rotate(180deg)}
 .faq-answer{max-height:0;overflow:hidden;transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1)}
 .faq-answer-inner{padding:0 22px 20px;color:var(--texte-2);font-size:0.88rem;line-height:1.65}
@@ -269,10 +280,10 @@ footer{background:var(--bg-card);border-top:1px solid var(--bord);padding:60px 0
 .cart-header h3{font-size:1.3rem}
 .cart-items{flex:1;overflow-y:auto;padding:16px 22px}
 .cart-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--bord)}
-.cart-item-img{width:56px;height:56px;border-radius:11px;background:rgba(46,204,122,0.1);display:flex;align-items:center;justify-content:center;color:var(--vert);flex-shrink:0}
+.cart-item-img{width:56px;height:56px;border-radius:11px;background:var(--tuile);display:flex;align-items:center;justify-content:center;color:var(--vert);flex-shrink:0}
 /* Vignettes d'article (panier, récapitulatif, confirmation, message d'ajout) : la photo du catalogue
    sur fond blanc, sinon l'icône du rayon */
-.vignette{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none;background:rgba(46,204,122,0.1);color:var(--vert)}
+.vignette{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none;background:var(--tuile);color:var(--vert)}
 .vignette>svg{width:46%;height:46%;opacity:0.75}
 .vignette.avec-photo{background:#FFFFFF;box-shadow:inset 0 0 0 1px var(--bord)}
 .vignette .carte-photo{padding:4px}
@@ -292,14 +303,14 @@ footer{background:var(--bg-card);border-top:1px solid var(--bord);padding:60px 0
 .recap-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-top:10px;font-size:0.8rem;color:var(--texte-2)}
 .recap-total strong{color:var(--texte);font-size:1.02rem;white-space:nowrap}
 .recap-remise{padding-top:8px}
-.recap-remise span:last-child{color:var(--vert);font-weight:700;white-space:nowrap}
+.recap-remise span:last-child{color:var(--grenat);font-weight:700;white-space:nowrap}
 .cart-item-name{font-weight:700;font-size:0.86rem}
-.cart-item-price{color:var(--vert);font-weight:700;font-size:0.9rem}
+.cart-item-price{color:var(--texte);font-weight:700;font-size:0.9rem}
 .cart-qty{display:flex;align-items:center;gap:8px;margin-top:6px}
 .cart-qty button{width:24px;height:24px;border-radius:6px;border:1px solid var(--bord);background:var(--bg);cursor:pointer;color:var(--texte);font-weight:700}
 .cart-footer{padding:22px;border-top:1px solid var(--bord)}
 .cart-total{display:flex;justify-content:space-between;margin-bottom:16px;font-size:1.1rem;font-weight:700}
-.cart-total .amount{color:var(--vert);font-family:'Fraunces',serif}
+.cart-total .amount{color:var(--texte);font-family:'Fraunces',serif}
 .cart-empty{text-align:center;padding:50px 20px;color:var(--texte-3)}
 
 /* ── MODAL ── */
@@ -326,8 +337,8 @@ footer{background:var(--bg-card);border-top:1px solid var(--bord);padding:60px 0
    Fond translucide flouté qui laisse deviner la page, reflet de lumière sur le bord haut.
    La déformation du fond (réfraction) n'existe que dans Chrome : ici, flou + saturation + reflets,
    rendus de la même façon sur iPhone, Android et ordinateur. */
-:root{--verre-fond:linear-gradient(145deg,rgba(255,255,255,0.84),rgba(236,246,240,0.62));--verre-bord:rgba(255,255,255,0.8);--verre-reflet:rgba(255,255,255,0.95);--verre-ombre:0 12px 32px rgba(12,46,29,0.16),0 2px 6px rgba(12,46,29,0.08);--verre-texte:#10261B;--verre-icone:#1B6B45}
-html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(52,74,62,0.6),rgba(18,28,23,0.5));--verre-bord:rgba(255,255,255,0.16);--verre-reflet:rgba(255,255,255,0.3);--verre-ombre:0 12px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);--verre-texte:#F0F7F2;--verre-icone:#5FE3A1}
+:root{--verre-fond:linear-gradient(145deg,rgba(255,253,247,0.86),rgba(242,236,222,0.64));--verre-bord:rgba(255,255,255,0.8);--verre-reflet:rgba(255,255,255,0.95);--verre-ombre:0 12px 32px rgba(48,38,16,0.16),0 2px 6px rgba(48,38,16,0.08);--verre-texte:#1F2119;--verre-icone:#1B6B45}
+html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(66,60,50,0.6),rgba(24,22,17,0.5));--verre-bord:rgba(255,255,255,0.16);--verre-reflet:rgba(255,255,255,0.3);--verre-ombre:0 12px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);--verre-texte:#F2EDE3;--verre-icone:#6FE0A6}
 .verre{position:relative;isolation:isolate;background:var(--verre-fond);-webkit-backdrop-filter:blur(20px) saturate(185%);backdrop-filter:blur(20px) saturate(185%);border:1px solid var(--verre-bord);box-shadow:inset 0 1px 0 var(--verre-reflet),inset 0 -1px 1px rgba(255,255,255,0.06),var(--verre-ombre);color:var(--verre-texte)}
 .verre::before{content:'';position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(180deg,var(--verre-reflet) 0%,transparent 46%);opacity:0.4;pointer-events:none;z-index:-1}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.verre{background:var(--bg-card)}}
@@ -357,8 +368,8 @@ html[data-theme="dark"] .toast-coche{box-shadow:0 0 0 2px rgba(20,30,25,0.9)}
 header{position:fixed;top:var(--bandeau-h,46px);left:0;right:0;z-index:100;padding:14px 0;transition:all 0.4s}
 /* Hauteur réelle du bandeau (sur 2 lignes sur téléphone) : le contenu descend d'autant */
 .hero{margin-top:calc(var(--bandeau-h,46px) - 46px)}
-header.scrolled{top:0;background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0;backdrop-filter:blur(10px)}
-html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
+header.scrolled{top:0;background:var(--bg-card);box-shadow:var(--shadow-s);padding:9px 0}
+html[data-theme="dark"] header.scrolled{background:var(--bg-card)}
 .hero{padding-top:170px}
 
 /* ── CARROUSEL PROMOS ── */
@@ -448,20 +459,22 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 /* ════ RÉCIT DE L'ACCUEIL ════
    Chapitres pleine largeur : une idée par écran, de très grands chiffres et mots en Fraunces,
    des aplats vert nuit / menthe / or. Toutes les données viennent de l'admin (site.js). */
-:root{--nuit:#0F3B27;--nuit-texte:#F1F7F3;--nuit-doux:rgba(241,247,243,0.76);--menthe:#E4F2EA;--or-plein:#E6B24E;--or-texte:#2A1B00}
-html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
+:root{--nuit:#1D2A22;--nuit-texte:#F7F1E8;--nuit-doux:rgba(247,241,232,0.78);--sable:#EAE1CC;--or-plein:#E6B24E;--or-texte:#2A1B00}
+html[data-theme="dark"]{--nuit:#141B16;--sable:#221E17;--or-plein:#D9A441}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .chapitre{position:relative;padding:clamp(76px,13vh,150px) 0;overflow:hidden;overflow:clip}
 /* « Comment ça marche » : rien ne déborde, et le grand chiffre doit pouvoir rester en place (position sticky) */
 #comment{overflow:visible}
 .chap-nuit{background:var(--nuit);color:var(--nuit-texte)}
-.chap-menthe{background:var(--menthe)}
+.chap-sable{background:var(--sable)}
+.chap-grenat{background:var(--grenat-fond);color:var(--nuit-texte)}
+.chap-grenat .btn-clair{color:var(--grenat-fond)}
 .chap-or{background:var(--or-plein);color:var(--or-texte)}
 #comment{background:var(--bg-card)}
 .chap-label{font-size:0.98rem;font-weight:700;margin-bottom:10px;opacity:0.8}
 .chap-geant{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-weight:600;line-height:0.84;letter-spacing:-0.045em;font-size:clamp(6rem,24vw,19.5rem);font-variant-numeric:lining-nums tabular-nums}
 .chap-actions{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin-top:30px}
-.btn-clair{background:#FFFFFF;color:#0F3B27}
+.btn-clair{background:#FFFDF8;color:var(--nuit)}
 .btn-clair:hover{transform:translateY(-2px)}
 .btn-sombre{background:var(--or-texte);color:#FFF6DC}
 .btn-sombre:hover{transform:translateY(-2px)}
@@ -469,7 +482,7 @@ html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
 .btn-clair:focus-visible,.btn-sombre:focus-visible,.lien-clair:focus-visible{outline:3px solid var(--vert-clair);outline-offset:3px}
 /* La promo du moment */
 .une{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px 64px;align-items:end}
-.une .chap-geant{color:var(--vert-clair);white-space:nowrap}
+.une .chap-geant{color:var(--grenat-clair);white-space:nowrap}
 .une .chap-geant::before{content:'-'}
 .une-signe{font-size:0.42em;vertical-align:1.05em;margin-left:0.06em;letter-spacing:0}
 .une-nom{font-family:'Fraunces',serif;font-size:clamp(1.7rem,3.2vw,2.7rem);font-weight:600;line-height:1.1;letter-spacing:-0.015em;margin-bottom:16px;color:var(--nuit-texte)}
@@ -481,7 +494,7 @@ html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
 /* Comment ça marche : le chiffre reste en place pendant que les étapes défilent */
 .etapes{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:40px;margin-top:20px}
 .etapes-num{position:sticky;top:calc(var(--bandeau-h,0px) + 110px);align-self:start;height:min(62vh,540px);display:flex;flex-direction:column;justify-content:center}
-.etapes-chiffres{position:relative;height:0.84em;color:var(--vert)}
+.etapes-chiffres{position:relative;height:0.84em;color:var(--texte)}
 .etape-chiffre{position:absolute;left:0;top:0;opacity:0;transform:translateY(0.18em);transition:opacity 0.4s ease,transform 0.65s cubic-bezier(0.34,1.4,0.64,1)}
 .etape-chiffre.actif{opacity:1;transform:none}
 .etapes-sur{font-weight:700;color:var(--texte-3);margin-top:18px}
@@ -492,18 +505,18 @@ html[data-theme="dark"]{--nuit:#0B2619;--menthe:#16261D;--or-plein:#D9A441}
 .etape p{font-size:1.12rem;color:var(--texte-2);max-width:36ch}
 .etape-mobile{display:none}
 /* Les rayons : grands mots au trait qui se remplissent en passant au centre de l'écran */
-.rayons-liste{list-style:none;margin-top:30px;border-top:1px solid color-mix(in srgb,var(--vert) 22%,transparent)}
-.rayon{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:0.22em;width:100%;padding:0.08em 0 0.12em;cursor:pointer;border-bottom:1px solid color-mix(in srgb,var(--vert) 22%,transparent);font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-variation-settings:'opsz' 144;font-size:clamp(3rem,10.5vw,8.8rem);line-height:1.04;letter-spacing:-0.03em;text-transform:lowercase;color:transparent;-webkit-text-stroke:1.5px var(--vert);transition:color 0.45s ease}
-.rayon.actif,.rayon:hover,.rayon:focus-visible{color:var(--vert)}
+.rayons-liste{list-style:none;margin-top:30px;border-top:1px solid color-mix(in srgb,var(--texte) 18%,transparent)}
+.rayon{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:0.22em;width:100%;padding:0.08em 0 0.12em;cursor:pointer;border-bottom:1px solid color-mix(in srgb,var(--texte) 18%,transparent);font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-variation-settings:'opsz' 144;font-size:clamp(3rem,10.5vw,8.8rem);line-height:1.04;letter-spacing:-0.03em;text-transform:lowercase;color:transparent;-webkit-text-stroke:1.5px var(--texte);transition:color 0.45s ease}
+.rayon.actif,.rayon:hover,.rayon:focus-visible{color:var(--texte)}
 .rayon:focus-visible{outline:3px solid var(--vert-vif);outline-offset:4px}
-.rayon-nb{font-family:'Manrope',sans-serif;font-style:normal;font-size:clamp(0.85rem,1.5vw,1.1rem);font-weight:800;letter-spacing:0;-webkit-text-stroke:0;color:var(--vert);align-self:flex-start;margin-top:0.9em}
-.rayons-liste.statique .rayon{color:var(--vert)}
+.rayon-nb{font-family:'Manrope',sans-serif;font-style:normal;font-size:clamp(0.85rem,1.5vw,1.1rem);font-weight:800;letter-spacing:0;-webkit-text-stroke:0;color:var(--grenat);align-self:flex-start;margin-top:0.9em}
+.rayons-liste.statique .rayon{color:var(--texte)}
 /* Photo du rayon : apparaît au bout de la ligne quand le mot se remplit */
 .rayon-photo{flex:none;align-self:center;margin-left:auto;width:0.82em;height:0.82em;border-radius:50%;overflow:hidden;background:#FFFFFF;opacity:0;transform:scale(0.6) rotate(-8deg);transition:opacity 0.4s ease,transform 0.55s cubic-bezier(0.34,1.4,0.64,1)}
 .rayon-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .rayon.actif .rayon-photo,.rayon:hover .rayon-photo,.rayon:focus-visible .rayon-photo,.rayons-liste.statique .rayon-photo{opacity:1;transform:none}
 /* Fenêtre du détail d'une promo */
-.pd-visuel{width:80px;height:80px;background:rgba(46,204,122,0.1);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--vert);position:relative;overflow:hidden}
+.pd-visuel{width:80px;height:80px;background:var(--tuile);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--vert);position:relative;overflow:hidden}
 .pd-visuel svg{width:40px;height:40px}
 .pd-visuel.avec-photo{width:170px;height:170px;background:#FFFFFF;border:1px solid var(--bord)}
 .pd-visuel .carte-photo{padding:12px}
@@ -534,7 +547,7 @@ body.avec-message .raccourci.visible{transform:translateY(160%) scale(0.9);opaci
   .etapes{grid-template-columns:1fr;gap:0}
   .etapes-num{display:none}
   .etape{min-height:0;padding:30px 0}
-  .etape-mobile{display:block;font-family:'Fraunces',serif;font-size:4.6rem;line-height:0.9;color:var(--vert);font-weight:600;margin-bottom:10px}
+  .etape-mobile{display:block;font-family:'Fraunces',serif;font-size:4.6rem;line-height:0.9;color:var(--texte);font-weight:600;margin-bottom:10px}
   .une .chap-geant{font-size:clamp(6.5rem,36vw,11rem)}
   .rayon{-webkit-text-stroke-width:1px;font-size:clamp(3rem,15vw,5.5rem)}
   .une-photo{width:130px;border-radius:18px;margin-bottom:16px}
@@ -547,11 +560,12 @@ body.avec-message .raccourci.visible{transform:translateY(160%) scale(0.9);opaci
 
 /* ── SQUELETTE DE CHARGEMENT : affiché seulement si la base met plus de 0,3 s à répondre ──
    Barres aux formes du contenu, balayées par un reflet (une passe régulière toutes les 1,4 s). */
-:root{--skel-a:#E8EFEA;--skel-b:#F5F9F6}
-html[data-theme="dark"]{--skel-a:#223029;--skel-b:#2E3F36}
+:root{--skel-a:#ECE5D6;--skel-b:#F7F3EA}
+html[data-theme="dark"]{--skel-a:#2A2620;--skel-b:#37322A}
 .chap-nuit{--skel-a:rgba(255,255,255,0.07);--skel-b:rgba(255,255,255,0.15)}
-.chap-menthe{--skel-a:rgba(27,107,69,0.09);--skel-b:rgba(27,107,69,0.03)}
-html[data-theme="dark"] .chap-menthe{--skel-a:rgba(255,255,255,0.06);--skel-b:rgba(255,255,255,0.12)}
+.chap-grenat{--skel-a:rgba(255,255,255,0.07);--skel-b:rgba(255,255,255,0.15)}
+.chap-sable{--skel-a:rgba(60,48,20,0.09);--skel-b:rgba(60,48,20,0.03)}
+html[data-theme="dark"] .chap-sable{--skel-a:rgba(255,255,255,0.06);--skel-b:rgba(255,255,255,0.12)}
 .skel-bar{display:block;background:linear-gradient(90deg,var(--skel-a) 25%,var(--skel-b) 50%,var(--skel-a) 75%);background-size:200% 100%;animation:shimmer-sweep 1.4s linear infinite;border-radius:8px}
 @keyframes shimmer-sweep{from{background-position:100% 0}to{background-position:-100% 0}}
 .skel-carte{cursor:default}
@@ -561,7 +575,7 @@ html[data-theme="dark"] .chap-menthe{--skel-a:rgba(255,255,255,0.06);--skel-b:rg
 html.en-chargement #a-la-une .une{display:none}
 html.en-chargement #a-la-une .skel-une{display:grid}
 .skel-une-chiffre{height:clamp(5rem,20vw,16rem);width:78%;border-radius:22px}
-.rayon-squelette{list-style:none;font-size:clamp(3rem,10.5vw,8.8rem);padding:0.1em 0;border-bottom:1px solid color-mix(in srgb,var(--vert) 22%,transparent)}
+.rayon-squelette{list-style:none;font-size:clamp(3rem,10.5vw,8.8rem);padding:0.1em 0;border-bottom:1px solid color-mix(in srgb,var(--texte) 18%,transparent)}
 .rayon-squelette .skel-bar{height:0.72em;border-radius:0.2em}
 /* Première visite : tant que la base n'a pas répondu, les informations de la pharmacie (nom, adresse,
    téléphone, horaires, bandeau) ne sont pas encore connues. Elles restent masquées, puis deviennent des
@@ -574,7 +588,7 @@ html.attente-base.en-chargement #brand-name-header{display:inline-block;width:7.
 .vient-de-charger{animation:skelReel 0.45s ease-out both}
 @keyframes skelReel{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 /* Photos : reflet sur la case tant que l'image n'est pas arrivée (réseau lent), puis fondu */
-.promo-img.avec-photo,.une-photo,.rayon-photo,.pd-visuel.avec-photo,.vignette.avec-photo{--skel-a:#EEF3EF;--skel-b:#FBFDFB}
+.promo-img.avec-photo,.une-photo,.rayon-photo,.pd-visuel.avec-photo,.vignette.avec-photo{--skel-a:#F1ECE1;--skel-b:#FDFBF7}
 .promo-img.avec-photo:not(.photo-prete),.une-photo:not(.photo-prete),.rayon-photo:not(.photo-prete),.pd-visuel.avec-photo:not(.photo-prete),.vignette.avec-photo:not(.photo-prete){background-image:linear-gradient(90deg,var(--skel-a) 25%,var(--skel-b) 50%,var(--skel-a) 75%);background-size:200% 100%;animation:shimmer-sweep 1.4s linear infinite}
 .promo-img.avec-photo img,.une-photo img,.rayon-photo img,.pd-visuel.avec-photo img,.vignette.avec-photo img{opacity:0;transition:opacity 0.35s}
 /* Photo arrivée : visible (sélecteur aussi précis que celui qui la cache pendant l'attente) */
@@ -630,20 +644,29 @@ body.reseau-visible .raccourci.visible{transform:translateY(160%) scale(0.9);opa
 .etat-reseau .pendule{margin:0 2px 0 7px;--angle:28deg}
 @media(prefers-reduced-motion:reduce){.pendule-bille{animation:none!important}}
 
-/* ── RACK FOCUS sur la promo du moment : net sur le chiffre pendant qu'il défile, puis la mise au point
-   glisse vers le produit ; les reflets du fond s'épanouissent comme un arrière-plan qui devient flou ── */
+/* ── RACK FOCUS sur la promo du moment : la mise au point passe du chiffre au produit.
+   Le contenu ne devient jamais flou (chiffre, produit et prix restent lisibles) : le plan qui n'a pas
+   la mise au point recule un peu, et ce sont les reflets du fond qui passent de nets à flous.
+   Uniquement opacité et transformations, que le téléphone anime sans recalculer la page. ── */
 #a-la-une .une-bokeh{position:absolute;inset:0;pointer-events:none;z-index:0}
 #a-la-une .container{position:relative;z-index:1}
-.bokeh{position:absolute;border-radius:50%;width:90px;height:90px;background:radial-gradient(circle,rgba(95,227,161,0.5) 0%,rgba(95,227,161,0.16) 46%,transparent 70%);opacity:0.3;transform:scale(0.7);filter:blur(1px);transition:transform 1.3s cubic-bezier(0.22,1,0.36,1),filter 1.3s,opacity 1.3s}
+.bokeh{position:absolute;width:90px;height:90px;opacity:0.32;transform:scale(0.7);transition:transform 1.3s cubic-bezier(0.22,1,0.36,1),opacity 1.3s}
+/* Deux dessins du même reflet, l'un net, l'autre flou : on passe de l'un à l'autre en fondu (pas de filtre) */
+.bokeh::before,.bokeh::after{content:'';position:absolute;inset:0;border-radius:50%;transition:opacity 1.3s}
+.bokeh::before{background:radial-gradient(circle,rgba(255,180,166,0.6) 0%,rgba(255,180,166,0.32) 40%,rgba(255,180,166,0.1) 55%,transparent 62%)}
+.bokeh::after{background:radial-gradient(circle,rgba(255,180,166,0.26) 0%,rgba(255,180,166,0.12) 40%,transparent 71%);opacity:0}
 .bokeh:nth-child(1){left:6%;top:16%}
 .bokeh:nth-child(2){left:44%;top:68%;width:64px;height:64px}
 .bokeh:nth-child(3){right:8%;top:10%;width:130px;height:130px}
 .bokeh:nth-child(4){right:30%;bottom:8%;width:74px;height:74px}
-#a-la-une.rack-produit .bokeh{transform:scale(1.55);filter:blur(10px);opacity:0.5}
-#a-la-une .une-chiffre,#a-la-une .une-detail :is(.une-photo,.une-nom,.une-prix,.une-fin){transition:filter 0.9s cubic-bezier(0.4,0,0.2,1),opacity 0.9s}
-#a-la-une.rack-chiffre .une-detail :is(.une-photo,.une-nom,.une-prix,.une-fin){filter:blur(5px);opacity:0.7}
-#a-la-une.rack-produit .une-chiffre{filter:blur(3px);opacity:0.55}
-@media(prefers-reduced-motion:reduce){#a-la-une .une-chiffre,#a-la-une .une-detail *{filter:none!important;opacity:1!important}.bokeh{transition:none}}
+#a-la-une.rack-produit .bokeh{transform:scale(1.55);opacity:0.55}
+#a-la-une.rack-produit .bokeh::before{opacity:0}
+#a-la-une.rack-produit .bokeh::after{opacity:1}
+#a-la-une .une-chiffre,#a-la-une .une-detail{transition:opacity 0.9s cubic-bezier(0.4,0,0.2,1),transform 0.9s cubic-bezier(0.22,1,0.36,1)}
+#a-la-une .une-chiffre{transform-origin:0 100%}
+#a-la-une.rack-chiffre .une-detail{opacity:0.62;transform:translateY(12px)}
+#a-la-une.rack-produit .une-chiffre{opacity:0.9;transform:scale(0.985)}
+@media(prefers-reduced-motion:reduce){#a-la-une .une-chiffre,#a-la-une .une-detail{opacity:1!important;transform:none!important}.bokeh,.bokeh::before,.bokeh::after{transition:none}}
 
 /* ── PAGE D'UN RAYON (site.html?rayon=solaire) : même en-tête, panier et pied de page que l'accueil ── */
 body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none!important}
@@ -655,7 +678,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
 .pr-tete{display:flex;align-items:center;gap:clamp(16px,3vw,32px);margin-bottom:34px}
 .pr-photo{flex:none;width:clamp(86px,13vw,150px);aspect-ratio:1;border-radius:50%;overflow:hidden;background:#FFFFFF;box-shadow:var(--shadow-s)}
 .pr-photo img{width:100%;height:100%;object-fit:cover;display:block}
-.pr-titre{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-variation-settings:'opsz' 144;font-size:clamp(3rem,9vw,6.8rem);line-height:0.95;letter-spacing:-0.03em;text-transform:lowercase;color:var(--vert);overflow-wrap:anywhere}
+.pr-titre{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-variation-settings:'opsz' 144;font-size:clamp(3rem,9vw,6.8rem);line-height:0.95;letter-spacing:-0.03em;text-transform:lowercase;color:var(--texte);overflow-wrap:anywhere}
 .pr-sous{margin-top:12px;color:var(--texte-2);font-weight:600}
 .pr-vide{grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--texte-2);line-height:1.6}
 .pr-vide a{color:var(--vert);font-weight:700}
@@ -750,7 +773,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
       <div class="float-card fc-1 flip-card" data-depth="0.3" data-flip-delay="0">
         <div class="flip-inner">
           <div class="flip-front">
-            <div class="fc-head"><div class="fc-ic" style="background:rgba(46,204,122,0.12)"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><div class="fc-title">Commande prête</div><div class="fc-sub">en 2h en moyenne</div></div></div>
+            <div class="fc-head"><div class="fc-ic" style="background:var(--tuile)"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><div class="fc-title">Commande prête</div><div class="fc-sub">en 2h en moyenne</div></div></div>
             <!-- Contenu rempli par site.js : la meilleure promo active saisie dans l'admin -->
             <div class="fc-body" id="hero-promo"><div style="margin-top:4px"><div class="fc-title">Réservez en ligne</div><div class="fc-sub">Réglez sur place, au retrait</div></div></div>
           </div>
@@ -787,7 +810,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
 </section>
 
 <!-- RÉCIT : LA PROMO DU MOMENT (remplie par site.js, masquée s'il n'y a pas de promo active) -->
-<section class="chapitre chap-nuit" id="a-la-une" aria-labelledby="une-nom" hidden>
+<section class="chapitre chap-grenat" id="a-la-une" aria-labelledby="une-nom" hidden>
   <div class="une-bokeh" aria-hidden="true"><span class="bokeh"></span><span class="bokeh"></span><span class="bokeh"></span><span class="bokeh"></span></div>
   <div class="container skel-une" aria-hidden="true">
     <div><p class="chap-label">La promo du moment</p><span class="skel-bar skel-une-chiffre"></span></div>
@@ -859,7 +882,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
 </section>
 
 <!-- RÉCIT : LES RAYONS (ordre de l'admin ; un clic ouvre la page du rayon) -->
-<section class="chapitre chap-menthe" id="rayons" aria-labelledby="rayons-titre" hidden>
+<section class="chapitre chap-sable" id="rayons" aria-labelledby="rayons-titre" hidden>
   <div class="container">
     <h2 class="section-title" id="rayons-titre">Nos rayons</h2>
     <p class="section-sub">Choisissez un rayon pour voir ses produits.</p>
@@ -959,7 +982,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
         </div>
       </div>
     </div>
-    <div id="cart-discount-row" style="display:none;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;color:var(--vert)"><span>Réduction <span id="promo-label"></span></span><span id="cart-discount">-0,00€</span></div>
+    <div id="cart-discount-row" style="display:none;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;color:var(--grenat)"><span>Réduction <span id="promo-label"></span></span><span id="cart-discount">-0,00€</span></div>
     <div class="cart-total"><span>Total</span><span class="amount" id="cart-total">0,00€</span></div>
     <button class="btn-lg btn-primary" style="width:100%;justify-content:center" id="checkout-btn">Commander en click & collect</button>
     <p style="text-align:center;font-size:0.72rem;color:var(--texte-3);margin-top:10px">Paiement en pharmacie au retrait</p>
@@ -972,12 +995,12 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
     <button class="modal-close" aria-label="Fermer" onclick="closePromoDetail()"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div id="pd-icon" class="pd-visuel"></div>
     <div style="text-align:center;margin-bottom:20px">
-      <div id="pd-cat" style="font-size:0.72rem;color:var(--vert);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"></div>
+      <div id="pd-cat" style="font-size:0.72rem;color:var(--texte-3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px"></div>
       <h2 style="font-size:1.4rem;margin-bottom:10px" id="pd-nom"></h2>
       <span id="pd-badge" class="promo-badge" style="font-size:0.9rem;padding:5px 14px"></span>
     </div>
     <div style="display:flex;align-items:baseline;justify-content:center;gap:12px;margin-bottom:10px">
-      <span class="price-now" style="font-size:2rem" id="pd-prix-promo"></span>
+      <span class="price-now prix-promo" style="font-size:2rem" id="pd-prix-promo"></span>
       <span class="price-old" id="pd-prix-normal"></span>
     </div>
     <div id="pd-timer" style="text-align:center;font-size:0.8rem;color:var(--texte-3);margin-bottom:24px"></div>

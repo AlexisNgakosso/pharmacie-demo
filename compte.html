@@ -13,15 +13,16 @@
 :root{
   --vert:#1B6B45;--vert-vif:#2ECC7A;--vert-clair:#5FE3A1;
   --or:#D9A441;--or-clair:#F0C674;
-  --texte:#16241C;--texte-2:#4A5C50;--texte-3:#8A988F;
-  --bord:#E6EBE6;--bg:#F7FAF7;--bg-card:#FFFFFF;
+  /* Papier blanc légèrement kaki (comme l'écran en Night Shift), comme sur le site */
+  --texte:#1F2119;--texte-2:#55534A;--texte-3:#716D60;
+  --bord:#E4DDCE;--bg:#F5F1E6;--bg-card:#FBF9F3;
   --rouge:#E55353;--rouge-pale:rgba(229,83,83,0.1);
-  --shadow-s:0 2px 8px rgba(20,40,28,0.06);--shadow:0 8px 30px rgba(20,40,28,0.1);
+  --shadow-s:0 2px 8px rgba(48,38,16,0.06);--shadow:0 8px 30px rgba(48,38,16,0.1);
   --r:18px;--r-s:12px;
 }
 html[data-theme="dark"]{
-  --vert:#2ECC7A;--vert-vif:#3FE08C;--texte:#EAF2EC;--texte-2:#A8BCB0;--texte-3:#6E827A;
-  --bord:#2C3D34;--bg:#121A16;--bg-card:#1A2620;
+  --vert:#3CC07D;--vert-vif:#4AD38B;--texte:#F2EDE3;--texte-2:#CEC6B6;--texte-3:#9D9585;
+  --bord:#36312A;--bg:#171510;--bg-card:#201D17;
   --shadow-s:0 2px 8px rgba(0,0,0,0.3);--shadow:0 8px 30px rgba(0,0,0,0.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -150,8 +151,8 @@ header{background:var(--bg-card);border-bottom:1px solid var(--bord);padding:12p
    Fond translucide flouté qui laisse deviner la page, reflet de lumière sur le bord haut.
    La déformation du fond (réfraction) n'existe que dans Chrome : ici, flou + saturation + reflets,
    rendus de la même façon sur iPhone, Android et ordinateur. */
-:root{--verre-fond:linear-gradient(145deg,rgba(255,255,255,0.84),rgba(236,246,240,0.62));--verre-bord:rgba(255,255,255,0.8);--verre-reflet:rgba(255,255,255,0.95);--verre-ombre:0 12px 32px rgba(12,46,29,0.16),0 2px 6px rgba(12,46,29,0.08);--verre-texte:#10261B;--verre-icone:#1B6B45}
-html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(52,74,62,0.6),rgba(18,28,23,0.5));--verre-bord:rgba(255,255,255,0.16);--verre-reflet:rgba(255,255,255,0.3);--verre-ombre:0 12px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);--verre-texte:#F0F7F2;--verre-icone:#5FE3A1}
+:root{--verre-fond:linear-gradient(145deg,rgba(255,253,247,0.86),rgba(242,236,222,0.64));--verre-bord:rgba(255,255,255,0.8);--verre-reflet:rgba(255,255,255,0.95);--verre-ombre:0 12px 32px rgba(48,38,16,0.16),0 2px 6px rgba(48,38,16,0.08);--verre-texte:#1F2119;--verre-icone:#1B6B45}
+html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(66,60,50,0.6),rgba(24,22,17,0.5));--verre-bord:rgba(255,255,255,0.16);--verre-reflet:rgba(255,255,255,0.3);--verre-ombre:0 12px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);--verre-texte:#F2EDE3;--verre-icone:#6FE0A6}
 .verre{position:relative;isolation:isolate;background:var(--verre-fond);-webkit-backdrop-filter:blur(20px) saturate(185%);backdrop-filter:blur(20px) saturate(185%);border:1px solid var(--verre-bord);box-shadow:inset 0 1px 0 var(--verre-reflet),inset 0 -1px 1px rgba(255,255,255,0.06),var(--verre-ombre);color:var(--verre-texte)}
 .verre::before{content:'';position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(180deg,var(--verre-reflet) 0%,transparent 46%);opacity:0.4;pointer-events:none;z-index:-1}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.verre{background:var(--bg-card)}}

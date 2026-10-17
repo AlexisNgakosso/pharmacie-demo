@@ -652,10 +652,15 @@ function initAmbient() {
   var ctx = canvas.getContext('2d');
   var W, H, nodes = [], drops = [];
   var rafId = null, running = false, visible = true, onScreen = true;
-  var frameInterval = 1000 / perf.fps, lastFrame = 0;
+  var frameInterval = 1000 / perf.fps, lastFrame = 0, lastDraw = 0;
+  // Taille du fond = sa taille affichée (hauteur de l'écran barre d'adresse repliée, voir .ambient).
+  // Sur téléphone, la barre d'adresse se replie ou revient au début du défilement et déclenche un
+  // « resize » : la taille affichée ne change pas, le dessin n'est donc ni effacé ni étiré.
   function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    var w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
+    if (w === W && h === H) return;
+    W = canvas.width = w;
+    H = canvas.height = h;
   }
   resize();
   window.addEventListener('resize', resize, { passive: true });
@@ -676,13 +681,18 @@ function initAmbient() {
       if (now - lastFrame < frameInterval) return;
       lastFrame = now;
     }
+    // Déplacement proportionnel au temps écoulé : même vitesse si le téléphone saute des images
+    // pendant un défilement (sinon les molécules ralentissent puis rattrapent d'un coup)
+    var k = (now && lastDraw) ? Math.min(now - lastDraw, 64) / 16.67 : 1;
+    lastDraw = now || 0;
     ctx.clearRect(0,0,W,H);
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var color = isDark ? '95,227,161' : '46,204,122';
+    // Molécules du fond : sable doré, discret (le vert reste au logo et aux boutons)
+    var color = isDark ? '214,190,140' : '160,128,64';
     // Molécules + liens
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
-      n.x += n.vx; n.y += n.vy;
+      n.x += n.vx * k; n.y += n.vy * k;
       if (n.x < 0 || n.x > W) n.vx *= -1;
       if (n.y < 0 || n.y > H) n.vy *= -1;
       ctx.beginPath();
@@ -720,7 +730,7 @@ function initAmbient() {
       ctx.arc(dp.x, dp.y + dp.len, 1.5, 0, Math.PI*2);
       ctx.fillStyle = 'rgba('+color+','+dp.opacity+')';
       ctx.fill();
-      dp.y += dp.speed;
+      dp.y += dp.speed * k;
       if (dp.y > H + 20) { dp.y = -20; dp.x = Math.random()*W; }
     }
   }
@@ -730,7 +740,7 @@ function initAmbient() {
   function start() {
     if (running) return;
     running = true;
-    lastFrame = 0;
+    lastFrame = 0; lastDraw = 0;
     rafId = requestAnimationFrame(draw);
   }
   function stop() {
@@ -809,7 +819,7 @@ function renderAnnonces() {
   if (carte) {
     carte.innerHTML = promo
       ? '<span class="promo-badge">-' + pct + '%</span><div style="margin-top:10px"><div class="fc-title">' + escHtml(promo.nom) + '</div>'
-        + '<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span class="price-now">' + prix(promo.prixPromo) + '</span>'
+        + '<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span class="price-now prix-promo">' + prix(promo.prixPromo) + '</span>'
         + (nombre(promo.prixNormal) > nombre(promo.prixPromo) ? '<span class="price-old">' + prix(promo.prixNormal) + '</span>' : '') + '</div></div>'
       : '<div style="margin-top:4px"><div class="fc-title">Réservez en ligne</div><div class="fc-sub">Réglez sur place, au retrait</div></div>';
   }
@@ -884,7 +894,8 @@ function renderUne() {
 function compterUne() {
   var nb = document.getElementById('une-pct');
   var cible = parseInt(nb && nb.getAttribute('data-cible'), 10);
-  if (!nb || !(cible > 0) || uneAnim.etat !== 'attente') return;
+  if (nb && !(cible > 0)) { rackFocus(''); return; }   // rien à compter : tout reste au premier plan
+  if (!nb || uneAnim.etat !== 'attente') return;
   uneAnim.etat = 'compte';
   rackFocus('chiffre');
   var debut = null, duree = DUREE_COMPTE_UNE;
@@ -910,7 +921,8 @@ function rackFocus(plan) {
 function rearmerUne() {
   cancelAnimationFrame(uneAnim.raf);
   clearTimeout(uneAnim.rack);
-  rackFocus('');
+  // Prêt pour le prochain passage : le produit attend déjà en retrait, le chiffre aura la mise au point
+  rackFocus('chiffre');
   uneAnim.etat = 'attente';
   var nb = document.getElementById('une-pct');
   if (nb) nb.textContent = '0';
@@ -1146,6 +1158,7 @@ function initRecit() {
   if (!recitAnime) return;
   // Promo : le chiffre défile quand il est bien visible, et recommence après être sorti de l'écran
   var chiffreUne = document.querySelector('#a-la-une .chap-geant');
+  if (chiffreUne && uneAnim.etat === 'attente') rackFocus('chiffre');
   if (chiffreUne) new IntersectionObserver(function(entries) {
     entries.forEach(function(e) {
       if (e.intersectionRatio >= 0.5) compterUne();
@@ -1245,7 +1258,7 @@ function renderPromos() {
     html += '<div class="promo-content">';
     html += '<div class="promo-cat">'+escHtml(p.cat)+'</div>';
     html += '<div class="promo-name">'+escHtml(p.nom)+'</div>';
-    html += '<div class="promo-prices"><span class="price-now">'+nombre(p.prixPromo).toFixed(2).replace('.',',')+'€</span><span class="price-old">'+nombre(p.prixNormal).toFixed(2).replace('.',',')+'€</span></div>';
+    html += '<div class="promo-prices"><span class="price-now prix-promo">'+nombre(p.prixPromo).toFixed(2).replace('.',',')+'€</span><span class="price-old">'+nombre(p.prixNormal).toFixed(2).replace('.',',')+'€</span></div>';
     html += '<button class="promo-add" onclick="addToCart(\''+escAttr(p.id)+'\',\''+escAttr(p.nom)+'\','+nombre(p.prixPromo)+',\''+escAttr(p.icon)+'\',\''+escAttr(p.cat)+'\')"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter au panier</button>';
     html += '</div></div>';
   });
@@ -2460,39 +2473,9 @@ function initFlipCards() {
 }
 
 
-function initGyroscope() {
-  var visual = document.getElementById('hero-visual');
-  if (!visual) return;
-  var isMobileDevice = ('ontouchstart' in window) && window.innerWidth <= 768;
-  if (!isMobileDevice) return;
-  var enabled = false;
-  var tiltX = 0, tiltY = 0;
-  function startListening() {
-    enabled = true;
-    window.addEventListener('deviceorientation', function(e) {
-      if (!enabled || !e.gamma) return;
-      var beta  = Math.max(-25, Math.min(25, (e.beta||0) - 45));
-      var gamma = Math.max(-25, Math.min(25, e.gamma||0));
-      tiltX += (gamma - tiltX) * 0.06;
-      tiltY += (beta  - tiltY) * 0.06;
-      visual.querySelectorAll('[data-depth]').forEach(function(card) {
-        var d = parseFloat(card.getAttribute('data-depth'));
-        card.style.transform = 'translate3d('+(tiltX*d*1.2)+'px,'+(tiltY*d*0.7)+'px,0) perspective(600px) rotateX('+(-tiltY*d*0.3)+'deg) rotateY('+(tiltX*d*0.3)+'deg)';
-      });
-    });
-  }
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+ — demande permission au premier toucher
-    document.addEventListener('touchstart', function() {
-      DeviceOrientationEvent.requestPermission().then(function(state) {
-        if (state === 'granted') startListening();
-      }).catch(function(){});
-    }, { once: true });
-  } else {
-    // Android et autres — pas de permission nécessaire
-    startListening();
-  }
-}
+// Inclinaison des cartes du haut au gyroscope : retirée. Sur téléphone, ces cartes sont empilées sans
+// transformation (CSS « REPOSITIONNEMENT CARTES MOBILE ») : l'inclinaison ne se voyait plus, mais elle
+// demandait sur iPhone l'accès aux capteurs de mouvement et recalculait les cartes 60 fois par seconde.
 
 // ── HERO PARALLAX 3D ──
 function initHeroParallax() {
@@ -2521,6 +2504,9 @@ function initScrollParallax() {
   var cartes = visual ? Array.prototype.slice.call(visual.querySelectorAll('[data-depth]')) : [];
   var profondeurs = cartes.map(function(c) { return parseFloat(c.getAttribute('data-depth')) || 0; });
   var parallaxe = cartes.length && !prefersReducedMotion() && ('translate' in document.documentElement.style);
+  // Téléphone et petite tablette : cartes empilées, sans décalage (calculé pendant le défilement, il suivait
+  // le doigt avec un temps de retard et se remettait en place d'un coup à l'arrêt)
+  var etroit = window.matchMedia ? window.matchMedia('(max-width: 768px)') : { matches: false };
   var enAttente = false, dernierY = -1;
   function majDefilement() {
     enAttente = false;
@@ -2530,7 +2516,7 @@ function initScrollParallax() {
     if (header) header.classList.toggle('scrolled', y > 30);
     if (gb) { gb.style.transition = 'transform 0.3s'; gb.style.transform = y > 30 ? 'translateY(-100%)' : 'translateY(0)'; }
     if (parallaxe && y < 900) {
-      cartes.forEach(function(c, i) { c.style.translate = '0 ' + (y * profondeurs[i] * 0.15).toFixed(1) + 'px'; });
+      cartes.forEach(function(c, i) { c.style.translate = etroit.matches ? '' : '0 ' + (y * profondeurs[i] * 0.15).toFixed(1) + 'px'; });
     }
   }
   window.addEventListener('scroll', function() {
@@ -2600,7 +2586,6 @@ window.addEventListener('DOMContentLoaded', function() {
   observeReveals();
   initHeroParallax();
   initScrollParallax();
-  initGyroscope();
   renderConseilsSite();
   // En mode base de données, les cartes ne démarrent qu'avec de vrais conseils
   // (copie locale de la dernière visite, sinon à la réponse de la base)
