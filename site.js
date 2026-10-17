@@ -167,6 +167,20 @@ function suivrePhotos(racine) {
   });
 }
 
+// Photo d'un article du panier : lue dans le catalogue au moment de l'affichage. Le panier enregistré
+// ne garde pas de photo : une photo changée ou retirée dans l'admin est suivie partout.
+function photoArticle(id) {
+  var a = CATALOGUE.find(function(x) { return x.id === id; }) || PROMOS.find(function(x) { return x.id === id; });
+  return a ? pharmaPhotoValide(a.photo) : '';
+}
+// Vignette d'un article (panier, récapitulatif, confirmation, message d'ajout) :
+// la même photo que sur sa carte du catalogue, sinon l'icône du rayon
+function vignetteArticle(item, classe) {
+  var photo = photoArticle(item && item.id);
+  return '<span class="' + classe + ' vignette' + (photo ? ' avec-photo' : '') + '" aria-hidden="true">' +
+    visuelCarte({ photo: photo, icon: item && item.icon }) + '</span>';
+}
+
 var cart = [];
 var appliedPromo = null;
 
@@ -1347,7 +1361,7 @@ function addToCart(id, nom, prix, icon, cat) {
   if (existing) { existing.qty++; }
   else { cart.push({ id:id, nom:nom, prix:prix, icon:icon, cat:cat||'Tous', qty:1 }); }
   updateCart();
-  pharmaToast(nom+' ajouté au panier');
+  pharmaToast(nom+' ajouté au panier', { article: { id: id, icon: icon } });
   // Pulse cart icon
   var btn = document.getElementById('cart-btn');
   if (btn) { btn.style.transform='scale(1.2)'; setTimeout(function(){btn.style.transform='';},200); }
@@ -1360,22 +1374,52 @@ function changeQty(id, delta) {
   var item = cart.find(function(i){ return i.id===id; });
   if (item) { item.qty += delta; if (item.qty <= 0) removeFromCart(id); else updateCart(); }
 }
+// Sous-total, réduction du code promo et total d'une liste d'articles (le panier, ou sa copie
+// gardée pour la confirmation de commande)
+function totauxPanier(lignes, promo) {
+  var subtotal = lignes.reduce(function(s,i){ return s+i.prix*i.qty; }, 0);
+  var discount = 0;
+  if (promo) {
+    if (promo.scope === 'Tous') {
+      discount = subtotal * promo.pct / 100;
+    } else {
+      // Réduction sur une catégorie spécifique
+      var catTotal = lignes.filter(function(i){ return i.cat === promo.scope; }).reduce(function(s,i){ return s+i.prix*i.qty; }, 0);
+      discount = catTotal * promo.pct / 100;
+    }
+  }
+  return { subtotal: subtotal, discount: discount, total: subtotal - discount };
+}
+function euros(v) { return nombre(v).toFixed(2).replace('.', ',') + '€'; }
+
+// Liste des articles avec leur vignette, pour le récapitulatif avant de commander et la confirmation
+// montants : total et réduction enregistrés avec la commande (ceux de la base font foi), à la confirmation
+function recapArticlesHTML(lignes, promo, montants) {
+  var t = totauxPanier(lignes, promo);
+  if (montants && isFinite(Number(montants.total))) t = { discount: nombre(montants.remise), total: nombre(montants.total) };
+  var nb = lignes.reduce(function(s, i) { return s + nombre(i.qty); }, 0);
+  return '<ul class="recap-liste">' + lignes.map(function(i) {
+    return '<li class="recap-ligne">' + vignetteArticle(i, 'recap-img') +
+      '<span class="recap-nom">' + escHtml(i.nom) + '<small>' + nombre(i.qty) + ' × ' + euros(i.prix) + '</small></span>' +
+      '<span class="recap-prix">' + euros(i.prix * i.qty) + '</span></li>';
+  }).join('') + '</ul>' +
+  (t.discount > 0 ? '<div class="recap-total recap-remise"><span>Réduction' + (promo && promo.code ? ' (' + escHtml(promo.code) + ')' : '') + '</span><span>-' + euros(t.discount) + '</span></div>' : '') +
+  '<div class="recap-total"><span>Total, ' + nb + ' article' + (nb > 1 ? 's' : '') + ', à régler au retrait</span><strong>' + euros(t.total) + '</strong></div>';
+}
+function afficherRecapCommande() {
+  var el = document.getElementById('co-recap');
+  if (!el) return;
+  el.innerHTML = cart.length ? recapArticlesHTML(cart, appliedPromo) : '';
+  el.hidden = !cart.length;
+  suivrePhotos(el);
+}
+
 function updateCart() {
   saveCart();
   var count = cart.reduce(function(s,i){ return s+i.qty; }, 0);
-  var subtotal = cart.reduce(function(s,i){ return s+i.prix*i.qty; }, 0);
-  // Calcul réduction
-  var discount = 0;
-  if (appliedPromo) {
-    if (appliedPromo.scope === 'Tous') {
-      discount = subtotal * appliedPromo.pct / 100;
-    } else {
-      // Réduction sur une catégorie spécifique
-      var catTotal = cart.filter(function(i){ return i.cat === appliedPromo.scope; }).reduce(function(s,i){ return s+i.prix*i.qty; }, 0);
-      discount = catTotal * appliedPromo.pct / 100;
-    }
-  }
-  var total = subtotal - discount;
+  var totaux = totauxPanier(cart, appliedPromo);
+  var discount = totaux.discount;
+  var total = totaux.total;
   var countEl = document.getElementById('cart-count');
   if (countEl) { countEl.textContent = count; countEl.style.display = count>0?'flex':'none'; }
   var totalEl = document.getElementById('cart-total');
@@ -1396,11 +1440,22 @@ function updateCart() {
     if (cart.length === 0) {
       itemsEl.innerHTML = '<div class="cart-empty"><svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;opacity:0.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>Votre panier est vide</p></div>';
     } else {
+      var svgMoins = '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      var svgPlus = '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      var svgRetirer = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
       itemsEl.innerHTML = cart.map(function(i){
-        return '<div class="cart-item"><div class="cart-item-img">'+(ICONS[i.icon]||'')+'</div><div class="cart-item-info"><div class="cart-item-name">'+escHtml(i.nom)+'</div><div class="cart-item-price">'+nombre(i.prix).toFixed(2).replace('.',',')+'€</div><div class="cart-qty"><button onclick="changeQty(\''+escAttr(i.id)+'\',-1)">−</button><span>'+nombre(i.qty)+'</span><button onclick="changeQty(\''+escAttr(i.id)+'\',1)">+</button><button onclick="removeFromCart(\''+escAttr(i.id)+'\')" style="margin-left:auto;color:var(--texte-3);border:none;background:none;cursor:pointer">✕</button></div></div></div>';
+        var id = escAttr(i.id), nom = escHtml(i.nom);
+        return '<div class="cart-item">' + vignetteArticle(i, 'cart-item-img') + '<div class="cart-item-info"><div class="cart-item-name">'+nom+'</div><div class="cart-item-price">'+euros(i.prix)+'</div><div class="cart-qty">' +
+          '<button onclick="changeQty(\''+id+'\',-1)" aria-label="Retirer un « '+nom+' »">'+svgMoins+'</button><span>'+nombre(i.qty)+'</span>' +
+          '<button onclick="changeQty(\''+id+'\',1)" aria-label="Ajouter un « '+nom+' »">'+svgPlus+'</button>' +
+          '<button class="cart-retirer" onclick="removeFromCart(\''+id+'\')" aria-label="Enlever « '+nom+' » du panier">'+svgRetirer+'</button></div></div></div>';
       }).join('');
+      suivrePhotos(itemsEl);
     }
   }
+  // Formulaire de commande déjà ouvert : son récapitulatif suit le panier (code promo appliqué, etc.)
+  var co = document.getElementById('checkout-modal');
+  if (co && co.classList.contains('open')) afficherRecapCommande();
 }
 
 // ── CODE PROMO ──
@@ -1488,6 +1543,8 @@ function continuerEnInvite() {
 // Pré-remplit le formulaire de commande avec le profil enregistré dans l'espace client,
 // pour éviter au client de ressaisir ses coordonnées à chaque commande.
 function prefillCheckout() {
+  // Appelé à chaque ouverture du formulaire : le récapitulatif montre le panier du moment
+  afficherRecapCommande();
   var profil = null;
   try { profil = JSON.parse(localStorage.getItem('pharma-profil') || 'null'); } catch (e) {}
   if (!profil) return;
@@ -1785,7 +1842,7 @@ function placeOrder() {
   appliedPromo = null;
   updateCart();
   return { ok: true, codeFidelite: codeFidelite ? codeFidelite.code : null, codeFidelitePct: reduction,
-           numero: numeroCommande, codeRetrait: codeRetrait, email: clientEmail, emails: emails };
+           total: total, remise: remiseEuros, numero: numeroCommande, codeRetrait: codeRetrait, email: clientEmail, emails: emails };
 }
 
 // ════════════════════════════════════════════
@@ -2030,6 +2087,7 @@ function nettoyerPanierCloud() {
     item.nom = ref.nom;
     item.prix = nombre(ref.prixPromo !== undefined ? ref.prixPromo : ref.prix);
     item.cat = ref.cat;
+    item.icon = ref.icon;
     return true;
   });
   updateCart();
@@ -2203,7 +2261,7 @@ function placeOrderCloud() {
       chargerDonneesCloud();   // stock à jour pour la suite de la visite
 
       return { ok: true, codeFidelite: codeFid ? codeFid.code : null, codeFidelitePct: codeFid ? codeFid.pct : r.reduction,
-               numero: r.id, codeRetrait: r.code_retrait, email: emailSaisi, emails: emails };
+               total: total, remise: remise, numero: r.id, codeRetrait: r.code_retrait, email: emailSaisi, emails: emails };
     }, function(e) {
       return showErr((e && e.message) || 'La commande n\'a pas pu être enregistrée. Réessayez.');
     });
@@ -2212,12 +2270,20 @@ function placeOrderCloud() {
 // ── CONFIRMATION DE COMMANDE ──
 // Affiche le numéro et le code de retrait dans la page même : le client les a
 // sous les yeux quoi qu'il arrive à l'email (échec d'envoi, spams, adresse erronée).
-function afficherConfirmation(res) {
+function afficherConfirmation(res, commande) {
   var modal = document.getElementById('confirm-modal');
   if (!modal) { pharmaToast('Commande enregistrée — code de retrait : ' + res.codeRetrait); return; }
   var set = function(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
   set('conf-num', 'Commande ' + res.numero);
   set('conf-code', res.codeRetrait);
+  // Articles commandés, d'après la copie du panier prise au moment de commander (le panier est vidé depuis)
+  var recap = document.getElementById('conf-recap');
+  if (recap) {
+    var lignes = commande && commande.lignes || [];
+    recap.innerHTML = lignes.length ? recapArticlesHTML(lignes, commande.promo, { total: res.total, remise: res.remise }) : '';
+    recap.hidden = !lignes.length;
+    suivrePhotos(recap);
+  }
   var fid = document.getElementById('conf-fid');
   if (fid) {
     if (res.codeFidelite) {
@@ -2474,12 +2540,21 @@ function initScrollParallax() {
 }
 
 // ── TOAST ──
-window.pharmaToast = function(msg) {
+// options.article : article ajouté au panier, montré par sa vignette (sa photo, sinon l'icône du rayon)
+window.pharmaToast = function(msg, options) {
   var c = document.getElementById('toast');
   if (!c) return;
   var el = document.createElement('div');
   el.className = 'toast verre';
-  el.innerHTML = '<svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var coche = '<svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var article = options && options.article;
+  if (article && photoArticle(article.id)) {
+    el.classList.add('toast-article');
+    el.innerHTML = '<span class="toast-vignette">' + vignetteArticle(article, 'toast-img') + '<span class="toast-coche">' + coche + '</span></span>';
+    suivrePhotos(el);
+  } else {
+    el.innerHTML = coche;
+  }
   // Le message est ajouté en texte brut : un nom de produit ne peut pas y injecter de HTML
   el.appendChild(document.createTextNode(String(msg == null ? '' : msg)));
   // Trois messages au plus à l'écran : le plus ancien laisse sa place
@@ -2586,11 +2661,16 @@ window.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     var libelle = btn.textContent;
     btn.textContent = 'Envoi en cours...';
+    // Copie du panier commandé, pour la confirmation (le panier est vidé une fois la commande enregistrée)
+    var commande = {
+      lignes: cart.map(function(i) { return { id: i.id, nom: i.nom, prix: i.prix, icon: i.icon, cat: i.cat, qty: i.qty }; }),
+      promo: appliedPromo ? { code: appliedPromo.code, pct: appliedPromo.pct, scope: appliedPromo.scope } : null
+    };
     // Mode base de données : la réponse du serveur arrive plus tard (promesse)
     Promise.resolve(MODE_CLOUD ? placeOrderCloud() : placeOrder()).then(function(res) {
       if (res && res.ok) {
         document.getElementById('checkout-modal').classList.remove('open');
-        afficherConfirmation(res);
+        afficherConfirmation(res, commande);
       }
       // Réactivation : immédiate si erreur (le client doit corriger),
       // différée en cas de succès pour laisser le modal se fermer.
