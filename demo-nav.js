@@ -29,6 +29,16 @@
   nav.appendChild(tag);
   pages.forEach(function (p) { nav.appendChild(lien(p[0], p[1], ici === p[0])); });
 
+  // Site : simuler un réseau lent ou coupé (squelette de chargement, animation de la croix)
+  if (ici === 'site.html' || ici === '') {
+    var simu = (/[?&]simu=(lent|coupe)/.exec(location.search) || [])[1] || '';
+    var suivant = { '': 'lent', lent: 'coupe', coupe: '' };
+    var libelle = { '': 'Réseau : normal', lent: 'Réseau : lent', coupe: 'Réseau : coupé' };
+    var r = lien('site.html' + (suivant[simu] ? '?simu=' + suivant[simu] : ''), petit ? libelle[simu].replace('Réseau : ', 'Rés. ') : libelle[simu], !!simu);
+    r.title = 'Toucher pour passer au réseau suivant (normal, lent, coupé)';
+    nav.appendChild(r);
+  }
+
   var reset = document.createElement('button');
   reset.type = 'button';
   reset.textContent = 'Remettre à zéro';

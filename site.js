@@ -9,8 +9,19 @@
 //  * local (démonstration) : DATA vient de data.js et reste dans le navigateur.
 var MODE_CLOUD = (typeof PharmaCloud !== 'undefined') && PharmaCloud.prevu;
 var DATA = MODE_CLOUD ? PharmaCloud.donneesInitiales() : PharmaStore.load();
+// Démonstration seulement (sans base) : le menu TEST simule un réseau lent ou coupé (site.html?simu=lent),
+// pour voir le squelette et l'animation sans couper son propre réseau. Sans effet avec la base.
+var SIMU = (!MODE_CLOUD && (/[?&]simu=(lent|coupe)(&|$)/.exec(location.search) || [])[1]) || '';
+var DONNEES_SIMU = null;
+if (SIMU) {
+  DONNEES_SIMU = DATA;
+  DATA = JSON.parse(JSON.stringify(DATA));
+  ['categories', 'produits', 'promos', 'conseils', 'joursSpeciaux'].forEach(function(k) { DATA[k] = []; });
+}
+// Le catalogue vient-il du réseau ? (base de données, ou simulation de la démonstration)
+var EN_LIGNE = MODE_CLOUD || !!SIMU;
 // 'local' | 'chargement' (attente de la base) | 'pret' | 'erreur' (base injoignable)
-var ETAT_CLOUD = MODE_CLOUD ? (PharmaCloud.actif ? 'chargement' : 'erreur') : 'local';
+var ETAT_CLOUD = MODE_CLOUD ? (PharmaCloud.actif ? 'chargement' : 'erreur') : (SIMU ? 'chargement' : 'local');
 var dernierChargementCloud = 0;
 
 // Chaque catégorie produit est associée à une icône SVG existante.
@@ -101,6 +112,10 @@ function buildCatalogueData() {
   });
 }
 buildCatalogueData();
+// Base de données sans copie locale : les informations de la pharmacie ne sont connues qu'à la réponse
+// de la base. D'ici là, celles de data.js (une autre pharmacie) ne doivent pas apparaître.
+var infosFiables = !EN_LIGNE || (MODE_CLOUD && PharmaCloud.depuisCache);
+if (!infosFiables) document.documentElement.classList.add('attente-base');
 
 var FAQ = [
   { q:'Comment fonctionne le click & collect ?', a:'Vous choisissez vos produits sur le site, vous validez votre commande, puis vous la récupérez directement {A_LA_NOM}. Le règlement se fait sur place, au retrait.' },
@@ -122,7 +137,33 @@ var ICONS = {
 // Visuel d'une carte : la photo ajoutée dans l'admin, sinon l'icône du rayon
 function visuelCarte(p) {
   var u = pharmaPhotoValide(p && p.photo);
-  return u ? '<img class="carte-photo" src="' + escHtml(u) + '" alt="" loading="lazy" decoding="async">' : (ICONS[p && p.icon] || '');
+  return u ? '<img class="carte-photo" src="' + escHtml(u) + '" alt="" loading="lazy" decoding="async" data-photo data-icone="' + escHtml(p.icon || '') + '">' : (ICONS[p && p.icon] || '');
+}
+
+// Photos : la case garde un reflet tant que l'image n'est pas arrivée, puis l'image apparaît en fondu.
+// Une image introuvable (supprimée, réseau coupé) laisse la place à l'icône du rayon.
+function suivrePhoto(img, siEchec) {
+  var cadre = img.parentNode;
+  if (!cadre) return;
+  function prete() { cadre.classList.add('photo-prete'); }
+  function echec() {
+    if (siEchec) { siEchec(img, cadre); return; }
+    cadre.classList.remove('avec-photo');
+    cadre.classList.add('photo-prete');
+    img.insertAdjacentHTML('beforebegin', ICONS[img.getAttribute('data-icone')] || '');
+    img.remove();
+  }
+  if (img.complete && img.getAttribute('src')) { if (img.naturalWidth) prete(); else echec(); return; }
+  img.addEventListener('load', prete, { once: true });
+  img.addEventListener('error', echec, { once: true });
+}
+function suivrePhotos(racine) {
+  if (!racine) return;
+  racine.querySelectorAll('img[data-photo]').forEach(function(img) {
+    if (img.__suivie) return;
+    img.__suivie = true;
+    suivrePhoto(img);
+  });
 }
 
 var cart = [];
@@ -803,11 +844,23 @@ function renderUne() {
   if (fig && img) {
     var u = pharmaPhotoValide(p.photo);
     fig.hidden = !u;
-    if (u) { if (img.getAttribute('src') !== u) img.src = u; } else img.removeAttribute('src');
+    if (u) {
+      if (img.getAttribute('src') !== u) {
+        fig.classList.remove('photo-prete');
+        img.src = u;
+        suivrePhoto(img, function() { fig.hidden = true; });
+      }
+    } else img.removeAttribute('src');
   }
   document.getElementById('une-prix').textContent = prix(p.prixPromo);
   document.getElementById('une-ancien').textContent = nombre(p.prixNormal) > nombre(p.prixPromo) ? prix(p.prixNormal) : '';
   document.getElementById('une-fin').textContent = p.fin ? 'Jusqu\'au ' + p.fin : '';
+  // Promo arrivée alors que le chiffre est déjà à l'écran (chargement depuis la base) : il défile tout de suite
+  var geant = sec.querySelector('.une .chap-geant');
+  if (recitAnime && uneAnim.etat === 'attente' && geant) {
+    var r = geant.getBoundingClientRect();
+    if (r.height && r.top < innerHeight && r.bottom > 0) requestAnimationFrame(compterUne);
+  }
 }
 
 // Le chiffre de la réduction défile de 0 à sa valeur à chaque arrivée du chapitre à l'écran,
@@ -817,6 +870,7 @@ function compterUne() {
   var cible = parseInt(nb && nb.getAttribute('data-cible'), 10);
   if (!nb || !(cible > 0) || uneAnim.etat !== 'attente') return;
   uneAnim.etat = 'compte';
+  rackFocus('chiffre');
   var debut = null, duree = DUREE_COMPTE_UNE;
   function pas(t) {
     if (uneAnim.etat !== 'compte') return;
@@ -824,14 +878,23 @@ function compterUne() {
     var x = Math.min(1, (t - debut) / duree);
     nb.textContent = Math.round(cible * (1 - Math.pow(1 - x, 2)));
     if (x < 1) uneAnim.raf = requestAnimationFrame(pas);
-    else uneAnim.etat = 'fait';
+    else { uneAnim.etat = 'fait'; uneAnim.rack = setTimeout(function() { rackFocus('produit'); }, 250); }
   }
   nb.textContent = '0';
   uneAnim.raf = requestAnimationFrame(pas);
 }
 // Le chiffre a quitté l'écran : il repart de 0, prêt à défiler au prochain passage
+// Rack focus : la mise au point est sur le chiffre ('chiffre'), puis sur le produit ('produit'), ou neutre ('')
+function rackFocus(plan) {
+  var sec = document.getElementById('a-la-une');
+  if (!sec) return;
+  sec.classList.toggle('rack-chiffre', plan === 'chiffre');
+  sec.classList.toggle('rack-produit', plan === 'produit');
+}
 function rearmerUne() {
   cancelAnimationFrame(uneAnim.raf);
+  clearTimeout(uneAnim.rack);
+  rackFocus('');
   uneAnim.etat = 'attente';
   var nb = document.getElementById('une-pct');
   if (nb) nb.textContent = '0';
@@ -854,9 +917,12 @@ function renderRayons() {
     var photo = pharmaPhotoRayon(DATA, c);
     return '<li><button type="button" class="rayon' + (photo ? ' a-photo' : '') + '" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Voir le rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
       + '<span class="rayon-mot">' + escHtml(c) + '</span><span class="rayon-nb" aria-hidden="true">' + n + '</span>'
-      + (photo ? '<span class="rayon-photo" aria-hidden="true"><img src="' + escHtml(photo) + '" alt="" loading="lazy" decoding="async"></span>' : '')
+      + (photo ? '<span class="rayon-photo" aria-hidden="true"><img src="' + escHtml(photo) + '" alt="" loading="lazy" decoding="async" data-photo></span>' : '')
       + '</button></li>';
   }).join('');
+  liste.querySelectorAll('.rayon-photo img').forEach(function(img) {
+    suivrePhoto(img, function(i, cadre) { var b = cadre.parentNode; cadre.remove(); if (b) b.classList.remove('a-photo'); });
+  });
   liste.querySelectorAll('.rayon').forEach(function(b) {
     b.addEventListener('click', function() {
       filterCat(b.getAttribute('data-cat'));
@@ -1044,7 +1110,9 @@ function openPromoDetail(id) {
   document.getElementById('pd-timer').textContent = 'Jusqu\'au '+p.fin;
   var visuel = document.getElementById('pd-icon');
   visuel.innerHTML = visuelCarte(p);
+  visuel.classList.remove('photo-prete');
   visuel.classList.toggle('avec-photo', !!pharmaPhotoValide(p.photo));
+  suivrePhotos(visuel);
   // Gestionnaire posé directement (et non par une chaîne de code) : aucune donnée ne peut s'y injecter
   var btnAjout = document.getElementById('pd-add');
   btnAjout.removeAttribute('onclick');
@@ -1075,6 +1143,7 @@ function renderPromos() {
     html += '</div></div>';
   });
   grid.innerHTML = html;
+  suivrePhotos(grid);
   // Effet hover sur image promo
   grid.querySelectorAll('.promo-img').forEach(function(img) {
     var overlay = img.querySelector('.promo-hover-overlay');
@@ -1100,7 +1169,7 @@ function renderCatalogue() {
   }
   var list = currentCat === 'Tous' ? CATALOGUE : CATALOGUE.filter(function(p){return p.cat===currentCat;});
   var html = '';
-  if (MODE_CLOUD && CATALOGUE.length === 0 && ETAT_CLOUD !== 'pret') {
+  if (EN_LIGNE && CATALOGUE.length === 0 && ETAT_CLOUD !== 'pret') {
     grid.innerHTML = messageCatalogueCloud();
     return;
   }
@@ -1122,6 +1191,7 @@ function renderCatalogue() {
     html += '</div></div>';
   });
   grid.innerHTML = html;
+  suivrePhotos(grid);
   observeReveals();
   initTilt();
 }
@@ -1616,36 +1686,212 @@ function placeOrder() {
 // ════════════════════════════════════════════
 
 // Message affiché à la place du catalogue tant que la base n'a pas répondu
+// ════ CHARGEMENT : SQUELETTE ════
+// Première visite (aucune copie locale du catalogue) : tant que la base n'a pas répondu, la page montre des
+// barres aux formes du contenu. Elles n'apparaissent qu'au-delà de 0,3 s, pour ne rien faire clignoter
+// sur une bonne connexion. Aux visites suivantes, la copie locale s'affiche tout de suite.
+var squelette = { visible: false, minuteur: null };
+function attenteCatalogue() { return EN_LIGNE && ETAT_CLOUD === 'chargement' && CATALOGUE.length === 0; }
+function cartesSquelette(n) {
+  var carte = '<div class="promo-card skel-carte" aria-hidden="true"><div class="promo-img"></div><div class="promo-content">'
+    + '<span class="skel-bar skel-ligne" style="width:34%;height:10px"></span>'
+    + '<span class="skel-bar skel-ligne" style="width:82%;height:16px;margin-top:12px"></span>'
+    + '<span class="skel-bar skel-ligne" style="width:30%;height:20px;margin-top:14px"></span>'
+    + '<span class="skel-bar" style="height:40px;margin-top:16px;border-radius:11px"></span></div></div>';
+  var html = '';
+  for (var i = 0; i < n; i++) html += carte;
+  return html;
+}
+function afficherSquelette() {
+  if (!attenteCatalogue() || squelette.visible) return;
+  squelette.visible = true;
+  document.documentElement.classList.add('en-chargement');
+  var une = document.getElementById('a-la-une');
+  if (une) une.hidden = false;
+  var rayons = document.getElementById('rayons'), liste = document.getElementById('rayons-liste');
+  if (rayons && liste) {
+    rayons.hidden = false;
+    liste.innerHTML = [62, 48, 70, 40].map(function(l) { return '<li class="rayon-squelette" aria-hidden="true"><span class="skel-bar" style="width:' + l + '%"></span></li>'; }).join('');
+  }
+  var carte = document.getElementById('hero-promo');
+  if (carte) carte.innerHTML = '<span class="skel-bar" style="width:54px;height:22px;border-radius:12px"></span>'
+    + '<span class="skel-bar" style="width:80%;height:14px;margin-top:12px"></span><span class="skel-bar" style="width:46%;height:18px;margin-top:9px"></span>';
+  renderCatalogue();
+}
+function preparerSquelette() {
+  clearTimeout(squelette.minuteur);
+  if (attenteCatalogue()) squelette.minuteur = setTimeout(afficherSquelette, 300);
+}
+// Fin de l'attente : le squelette s'efface et le vrai contenu arrive en fondu
+function finSquelette(avecFondu) {
+  clearTimeout(squelette.minuteur);
+  var etaitVisible = squelette.visible;
+  squelette.visible = false;
+  document.documentElement.classList.remove('en-chargement');
+  return function() {
+    if (!etaitVisible || !avecFondu) return;
+    ['#a-la-une .une', '#rayons-liste', '#catalogue-grid', '#hero-promo'].forEach(function(sel) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      el.classList.remove('vient-de-charger');
+      void el.offsetWidth;
+      el.classList.add('vient-de-charger');
+    });
+  };
+}
+
+// ════ RÉSEAU LENT OU ABSENT ════
+// Safari ne donne pas la qualité du réseau aux sites : « connexion lente » = catalogue toujours attendu
+// après 3 s ; « pas de réseau » = le navigateur le signale, ou la base ne répond pas. Une pastille en verre
+// liquide l'indique avec la croix de la pharmacie qui se remplit, et le site réessaie tout seul.
+var reseau = { etat: '', minuteurLent: null, minuteurEssai: null, minuteurMasque: null, delaiEssai: 15000, chargement: null, nbCroix: 0 };
+var simuRetabli = false;
+function horsLigne() { return navigator.onLine === false || (SIMU === 'coupe' && !simuRetabli); }
+var CROIX_TRACE = 'M18 6h12a2 2 0 0 1 2 2v10h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H32v10a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2V30H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h10V8a2 2 0 0 1 2-2z';
+function svgCroixLiquide(taille, coupe) {
+  var id = 'croix-clip-' + (++reseau.nbCroix);
+  return '<svg class="croix-liquide' + (coupe ? ' coupe' : '') + '" width="' + taille + '" height="' + taille + '" viewBox="0 0 48 48" aria-hidden="true">'
+    + '<defs><clipPath id="' + id + '"><path d="' + CROIX_TRACE + '"/></clipPath></defs>'
+    + '<path class="croix-fond" d="' + CROIX_TRACE + '"/>'
+    + '<g clip-path="url(#' + id + ')"><g class="croix-niveau"><path class="croix-vague croix-eau" d="M0 24q6-3.5 12 0t12 0t12 0t12 0t12 0t12 0V66H0z"/></g></g>'
+    + '<path class="croix-contour" d="' + CROIX_TRACE + '"/></svg>';
+}
+// Pendule de Newton (pas de connexion) : cinq comprimés blancs, ceux des bouts se renvoient le mouvement
+function htmlPendule(grand) {
+  return '<span class="pendule ' + (grand ? 'grand' : 'petit') + '" aria-hidden="true">'
+    + '<span class="pendule-bille"><i></i></span><span class="pendule-bille"><i></i></span><span class="pendule-bille"><i></i></span>'
+    + '<span class="pendule-bille"><i></i></span><span class="pendule-bille"><i></i></span></span>';
+}
+var ICONE_RESEAU_OK = '<svg class="ok" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+// etat : 'lent' | 'coupe' (pas de catalogue) | 'coupe-cache' (catalogue déjà affiché) | 'essai' (nouvelle tentative)
+//        | 'retabli' | '' (masquée)
+function afficherEtatReseau(etat) {
+  var el = document.getElementById('etat-reseau');
+  clearTimeout(reseau.minuteurMasque);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'etat-reseau';
+    el.className = 'etat-reseau verre';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.hidden = true;
+    document.body.appendChild(el);
+  }
+  reseau.etat = etat;
+  if (!etat) {
+    if (el.hidden) return;
+    el.classList.add('sortie');
+    reseau.minuteurMasque = setTimeout(function() { el.hidden = true; el.classList.remove('sortie'); document.body.classList.remove('reseau-visible'); }, 360);
+    return;
+  }
+  var html;
+  if (etat === 'lent') html = svgCroixLiquide(26) + '<span>Connexion lente, le catalogue arrive…</span>';
+  else if (etat === 'coupe') html = htmlPendule() + '<span>' + (horsLigne() ? 'Pas de réseau pour le moment' : 'Le catalogue ne répond pas') + '</span><button type="button">Réessayer</button>';
+  else if (etat === 'coupe-cache') html = htmlPendule() + '<span>Pas de connexion : le catalogue affiché peut ne pas être à jour</span>';
+  else if (etat === 'essai') html = htmlPendule() + '<span>Nouvel essai de connexion…</span>';
+  else html = ICONE_RESEAU_OK + '<span>Connexion rétablie</span>';
+  el.innerHTML = html;
+  var bouton = el.querySelector('button');
+  if (bouton) bouton.addEventListener('click', reessayerChargementCloud);
+  el.classList.remove('sortie');
+  el.hidden = false;
+  document.body.classList.add('reseau-visible');
+  if (etat === 'retabli') reseau.minuteurMasque = setTimeout(function() { afficherEtatReseau(''); }, 2500);
+}
+function lancerAttenteLente() {
+  clearTimeout(reseau.minuteurLent);
+  reseau.minuteurLent = setTimeout(function() { if (attenteCatalogue()) afficherEtatReseau('lent'); }, 3000);
+}
+// Nouvel essai automatique : 15 s, puis 30 s, puis toutes les minutes (seulement page affichée)
+function planifierNouvelEssai() {
+  clearTimeout(reseau.minuteurEssai);
+  reseau.minuteurEssai = setTimeout(function() {
+    if (ETAT_CLOUD !== 'erreur' && reseau.etat !== 'coupe-cache') return;
+    if (document.visibilityState === 'hidden') { planifierNouvelEssai(); return; }
+    nouvelEssai();
+  }, reseau.delaiEssai);
+  reseau.delaiEssai = Math.min(reseau.delaiEssai * 2, 60000);
+}
+function nouvelEssai() {
+  if (CATALOGUE.length) chargerDonneesCloud();
+  else reessayerChargementCloud();
+}
+function surveillerReseau() {
+  window.addEventListener('online', function() {
+    if (ETAT_CLOUD === 'erreur' || reseau.etat === 'coupe' || reseau.etat === 'coupe-cache') { reseau.delaiEssai = 15000; nouvelEssai(); }
+  });
+  window.addEventListener('offline', function() {
+    if (ETAT_CLOUD === 'pret' && CATALOGUE.length) afficherEtatReseau('coupe-cache');
+  });
+  if (attenteCatalogue()) lancerAttenteLente();
+}
+// Démonstration : chargement simulé (lent : 6 s ; coupé : échec, puis retour du réseau au nouvel essai)
+var essaisSimu = 0;
+function chargerSimule() {
+  essaisSimu++;
+  if (SIMU === 'coupe' && essaisSimu > 1) simuRetabli = true;
+  return new Promise(function(ok, ko) {
+    if (SIMU === 'coupe' && !simuRetabli) setTimeout(function() { ko(new Error('Connexion au serveur impossible.')); }, 1500);
+    else setTimeout(function() { ok(DONNEES_SIMU); }, SIMU === 'lent' ? 6000 : 2500);
+  });
+}
+
 function messageCatalogueCloud() {
-  var style = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--texte-2);font-size:0.95rem';
-  if (ETAT_CLOUD === 'chargement') return '<div style="' + style + '" role="status">Chargement du catalogue…</div>';
-  var tel = (DATA.parametres && DATA.parametres.tel) || '';
-  var appel = tel ? ', ou appelez la pharmacie au <a href="tel:' + escHtml(tel.replace(/\s+/g, '')) + '" style="color:var(--vert);font-weight:700">' + escHtml(tel) + '</a>' : '';
-  return '<div style="' + style + '" role="alert"><p style="margin:0 0 16px">Le catalogue n\'a pas pu être chargé. Vérifiez votre connexion internet' + appel + '.</p>'
+  if (ETAT_CLOUD === 'chargement') return '<p class="vh" role="status">Chargement du catalogue…</p>' + (squelette.visible ? cartesSquelette(6) : '');
+  var tel = (infosFiables && DATA.parametres && DATA.parametres.tel) || '';
+  var appel = tel ? ', ou appelez la pharmacie au <a href="tel:' + escHtml(tel.replace(/\s+/g, '')) + '">' + escHtml(tel) + '</a>' : '';
+  return '<div class="hors-ligne" role="alert">' + htmlPendule(true)
+    + '<p class="hors-ligne-titre">' + (horsLigne() ? 'Pas de réseau pour le moment' : 'Le catalogue ne répond pas pour le moment') + '</p>'
+    + '<p class="hors-ligne-texte">Le catalogue n\'a pas pu être chargé. Il s\'affichera tout seul dès que la connexion reviendra' + appel + '.</p>'
     + '<button type="button" class="btn-lg btn-primary" onclick="reessayerChargementCloud()">Réessayer</button></div>';
 }
 function reessayerChargementCloud() {
-  ETAT_CLOUD = 'chargement';
-  renderCatalogue();
+  if (!CATALOGUE.length) {
+    ETAT_CLOUD = 'chargement';
+    afficherSquelette();
+    renderCatalogue();
+    if (reseau.etat === 'coupe') afficherEtatReseau('essai');
+    else lancerAttenteLente();
+  }
   chargerDonneesCloud();
 }
 
 // Lit le catalogue, les promos, les conseils et les réglages dans la base, puis met la page à jour
 function chargerDonneesCloud() {
-  if (!MODE_CLOUD) return Promise.resolve(false);
-  if (!PharmaCloud.actif) { ETAT_CLOUD = 'erreur'; renderCatalogue(); return Promise.resolve(false); }
-  return PharmaCloud.chargerPublic().then(function(d) {
+  if (!EN_LIGNE) return Promise.resolve(false);
+  if (reseau.chargement) return reseau.chargement;
+  if (!SIMU && !PharmaCloud.actif) { ETAT_CLOUD = 'erreur'; renderCatalogue(); return Promise.resolve(false); }
+  reseau.chargement = (SIMU ? chargerSimule() : PharmaCloud.chargerPublic()).then(function(d) {
+    reseau.chargement = null;
+    clearTimeout(reseau.minuteurLent);
+    clearTimeout(reseau.minuteurEssai);
+    reseau.delaiEssai = 15000;
+    if (reseau.etat === 'coupe' || reseau.etat === 'coupe-cache' || reseau.etat === 'essai') afficherEtatReseau('retabli');
+    else if (reseau.etat === 'lent') afficherEtatReseau('');
     DATA = d;
     ETAT_CLOUD = 'pret';
     dernierChargementCloud = Date.now();
+    infosFiables = true;
+    document.documentElement.classList.remove('attente-base');
+    var fondu = finSquelette(true);
     rafraichirAffichageCloud();
+    fondu();
     return true;
   }, function(e) {
+    reseau.chargement = null;
     console.warn('Catalogue non chargé depuis la base :', e && e.message);
     ETAT_CLOUD = 'erreur';
+    clearTimeout(reseau.minuteurLent);
+    finSquelette(false);
+    // Les chapitres remplis par le squelette reprennent leur état (masqués sans données)
+    renderAnnonces();
+    renderRecit();
     renderCatalogue();
+    afficherEtatReseau(CATALOGUE.length ? 'coupe-cache' : 'coupe');
+    planifierNouvelEssai();
     return false;
   });
+  return reseau.chargement;
 }
 
 var flipCardsLancees = false;
@@ -1784,7 +2030,7 @@ function placeOrderCloud() {
   var cgu = document.getElementById('cgu-checkout');
   if (cgu && !cgu.checked) return Promise.resolve(showErr('Vous devez accepter les conditions pour commander.'));
 
-  var tel = (DATA.parametres && DATA.parametres.tel) || '';
+  var tel = (infosFiables && DATA.parametres && DATA.parametres.tel) || '';
   if (!PharmaCloud.actif) {
     return Promise.resolve(showErr('Le service de commande est momentanément indisponible.' + (tel ? ' Appelez la pharmacie au ' + tel + '.' : '')));
   }
@@ -2167,8 +2413,12 @@ window.addEventListener('DOMContentLoaded', function() {
   // En mode base de données, les cartes ne démarrent qu'avec de vrais conseils
   // (copie locale de la dernière visite, sinon à la réponse de la base)
   if (!MODE_CLOUD || PharmaCloud.depuisCache) { flipCardsLancees = true; initFlipCards(); }
-  if (MODE_CLOUD) {
+  if (EN_LIGNE) {
+    preparerSquelette();
+    surveillerReseau();
     chargerDonneesCloud();
+  }
+  if (MODE_CLOUD) {
     // Retour sur la page après une longue absence : catalogue et stock relus
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'visible' && Date.now() - dernierChargementCloud > 5 * 60 * 1000) chargerDonneesCloud();
