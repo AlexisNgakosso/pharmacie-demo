@@ -372,10 +372,28 @@ var PHARMA_CODE128 = ('212222 222122 222221 121223 121322 131222 122213 122312 1
   + '213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 '
   + '112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 '
   + '421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112').split(' ');
+// Emblème de la pharmacie (croix et serpent) vu à travers les barres du code : il colore les barres
+// sans changer leur dessin ni toucher aux espaces blancs, le code reste donc lisible.
+// Dessin dans un carré de 100 x 100.
+var PHARMA_EMBLEME = {
+  croix: 'M37 4h26a5 5 0 0 1 5 5v23h23a5 5 0 0 1 5 5v26a5 5 0 0 1-5 5H68v23a5 5 0 0 1-5 5H37a5 5 0 0 1-5-5V68H9a5 5 0 0 1-5-5V37a5 5 0 0 1 5-5h23V9a5 5 0 0 1 5-5z',
+  serpent: 'M50 94C26 86 28 72 50 66S74 50 50 42S26 26 46 18'
+};
+var PHARMA_EMBLEME_COULEURS = {
+  // Carte décorative de l'accueil : croix verte, serpent rouge
+  vitrine: { encre: '#1A2620', croix: '#22985E', serpent: '#D23F35' },
+  // Carte à scanner au comptoir : teintes foncées uniquement. Les douchettes éclairent en rouge :
+  // une barre rouge leur paraîtrait blanche et le code ne se lirait plus.
+  lecture: { encre: '#0B0F0D', croix: '#1B6B45', serpent: '#0B0F0D' }
+};
+var pharmaCodeBarresNum = 0;
+
 // Code-barres SVG. Lettres et tirets en jeu B ; une suite finale d'au moins 4 chiffres (en nombre pair)
 // passe en jeu C, deux chiffres par symbole : le code est plus court, donc ses barres plus larges.
+// options.embleme ('vitrine' ou 'lecture') : emblème dans les barres. Le dessin garde alors ses
+// proportions (hauteur en nombre de modules, comme la largeur) pour que la croix ne soit pas déformée.
 // Renvoie '' pour un texte non encodable.
-function pharmaCodeBarres(texte, hauteur) {
+function pharmaCodeBarres(texte, hauteur, options) {
   var t = String(texte == null ? '' : texte);
   if (!t || t.length > 40 || /[^\x20-\x7E]/.test(t)) return '';
   var m = /^(.*?)((?:\d\d){2,})$/.exec(t);
@@ -398,8 +416,22 @@ function pharmaCodeBarres(texte, hauteur) {
       x += l;
     }
   });
-  var largeur = x + 10;
-  return '<svg class="code-barres-svg" data-modules="' + largeur + '" viewBox="0 0 ' + largeur + ' ' + (hauteur || 50) + '" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="Code-barres ' + t.replace(/[<>&"]/g, '') + '"><rect width="' + largeur + '" height="' + (hauteur || 50) + '" fill="#fff"/><g fill="#000">' + barres + '</g></svg>';
+  var largeur = x + 10, h = hauteur || 50;
+  var nom = 'Code-barres ' + t.replace(/[<>&"]/g, '');
+  var couleurs = options && PHARMA_EMBLEME_COULEURS[options.embleme];
+  if (!couleurs) {
+    return '<svg class="code-barres-svg" data-modules="' + largeur + '" viewBox="0 0 ' + largeur + ' ' + h + '" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="' + nom + '"><rect width="' + largeur + '" height="' + h + '" fill="#fff"/><g fill="#000">' + barres + '</g></svg>';
+  }
+  // Barres à l'encre, puis l'emblème découpé dans ces mêmes barres (centré, presque toute la hauteur)
+  var id = 'cb-barres-' + (++pharmaCodeBarresNum);
+  var taille = h * 0.96, ex = (largeur - taille) / 2, ey = (h - taille) / 2;
+  return '<svg class="code-barres-svg avec-embleme" data-modules="' + largeur + '" viewBox="0 0 ' + largeur + ' ' + h + '" shape-rendering="crispEdges" role="img" aria-label="' + nom + '">' +
+    '<defs><clipPath id="' + id + '">' + barres + '</clipPath></defs>' +
+    '<rect width="' + largeur + '" height="' + h + '" fill="#fff"/><g fill="' + couleurs.encre + '">' + barres + '</g>' +
+    '<g clip-path="url(#' + id + ')"><g transform="translate(' + ex + ' ' + ey + ') scale(' + (taille / 100) + ')" shape-rendering="geometricPrecision">' +
+    '<path d="' + PHARMA_EMBLEME.croix + '" fill="' + couleurs.croix + '"/>' +
+    '<path d="' + PHARMA_EMBLEME.serpent + '" fill="none" stroke="' + couleurs.serpent + '" stroke-width="9" stroke-linecap="round"/>' +
+    '<circle cx="47" cy="17" r="6.5" fill="' + couleurs.serpent + '"/></g></g></svg>';
 }
 
 // Largeur du code-barres calée sur les pixels de l'écran : chaque barre fait un nombre entier de pixels

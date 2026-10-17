@@ -2577,7 +2577,11 @@ function closeAccount() { document.getElementById('account-modal').classList.rem
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', function() {
   var cbHaut = document.getElementById('hero-code-barres');
-  if (cbHaut) cbHaut.innerHTML = pharmaCodeBarres('FIDELITE', 40);
+  if (cbHaut) {
+    cbHaut.innerHTML = pharmaCodeBarres('FIDELITE', 52, { embleme: 'vitrine' });
+    pharmaAjusterCodeBarres(cbHaut);
+    window.addEventListener('resize', function() { pharmaAjusterCodeBarres(cbHaut); });
+  }
   applyPharmacyConfig();
   initTheme();
   initAmbient();
