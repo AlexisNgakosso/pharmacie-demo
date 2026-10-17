@@ -293,7 +293,7 @@ header{background:var(--bg-card);border-bottom:1px solid var(--bord);padding:12p
 
           <h3 style="font-size:1rem;margin:24px 0 14px">Canal de réception</h3>
           <div class="toggle-card"><div class="toggle-card-info"><h4>Par email</h4><p id="notif-email">marie.d@email.com</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
-          <div class="toggle-card"><div class="toggle-card-info"><h4>Par SMS</h4><p id="notif-tel">06 12 34 56 78</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+          <!-- « Par SMS » retiré : aucun envoi de SMS n'existe encore. À remettre quand un service d'envoi sera branché. -->
         </div>
 
         <div style="margin-top:24px"><button class="btn btn-primary" onclick="pharmaToast('Préférences enregistrées')">Enregistrer mes préférences</button></div>
@@ -321,11 +321,7 @@ header{background:var(--bg-card);border-bottom:1px solid var(--bord);padding:12p
         </div>
         <button class="btn btn-primary" onclick="pharmaToast('Mot de passe modifié')">Modifier le mot de passe</button>
 
-        <h3 style="font-size:1rem;margin:30px 0 14px">Sécurité de connexion</h3>
-        <div class="toggle-card">
-          <div class="toggle-card-info"><h4>Double authentification (2FA)</h4><p>Ajoute un code de vérification supplémentaire à chaque connexion.</p></div>
-          <label class="switch"><input type="checkbox" id="tfa-toggle" onchange="toggle2FA(this.checked)"><span class="switch-track"></span></label>
-        </div>
+        <!-- « Double authentification » retirée : l'interrupteur n'avait aucun effet. Elle viendra avec l'espace client relié à la base. -->
 
         <h3 style="font-size:1rem;margin:30px 0 14px">Mes données (RGPD)</h3>
         <div class="rgpd-row"><div class="rgpd-info"><h4>Télécharger mes données</h4><p>Recevez une copie de toutes vos données personnelles.</p></div><button class="btn btn-ghost" onclick="pharmaToast('Export en cours, vous recevrez un email')">Télécharger</button></div>

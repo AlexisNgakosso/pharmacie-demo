@@ -38,7 +38,7 @@ var PHARMA_SEED_DATA = {
     { id:1, produit:'Lot Crème Solaire SPF50 x3', prixNormal:25.20, prixPromo:18.90, pct:-25, debut:_pharmaDate(-15), fin:_pharmaDate(30), statut:'Active' }
   ],
   conseils: [
-    { id:1, icone:'soleil', titre:'Il fait chaud !', texte:'Hydratez-vous et protégez votre peau. Crème SPF50 en promo jusqu\'au 30 juin.', couleur:'#1B6B45', actif:true },
+    { id:1, icone:'soleil', titre:'Il fait chaud !', texte:'Hydratez-vous et protégez votre peau.', couleur:'#1B6B45', actif:true },
     { id:2, icone:'pilule', titre:'Le saviez-vous ?', texte:'La Vitamine C booste l\'immunité, idéale en été contre la fatigue.', couleur:'#D9A441', actif:true },
     { id:3, icone:'goutte', titre:'Hydratation', texte:'Buvez au moins 1,5L d\'eau par jour, surtout en été !', couleur:'#2ECC7A', actif:true }
   ],

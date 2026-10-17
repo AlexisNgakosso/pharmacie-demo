@@ -275,7 +275,7 @@ var PharmaAdminCloud = (function () {
       });
       instantane.tables[def.cle] = m;
     });
-    (d.employes || []).forEach(function (e) { instantane.employes[e.uid] = { role: roleVersBase(e), acces: texte(e.acces) }; });
+    (d.employes || []).forEach(function (e) { instantane.employes[e.uid] = { role: roleVersBase(e), acces: texte(e.acces), nom: texte(e.nom) }; });
   }
 
   // ── ENREGISTREMENT DES MODIFICATIONS ────────────────────
@@ -382,11 +382,34 @@ var PharmaAdminCloud = (function () {
       }
       delete restants[uid];
       var avant = instantane.employes[uid];
-      if (avant && avant.role === role && avant.acces === acces) return;
+      // Nom saisi dans l'admin : enregistré dans le profil du membre (prénom + nom) par une fonction
+      // réservée à l'administrateur. Pour un nouvel employé, il remplace le nom de son compte.
+      var nomVoulu = texte(e.nom).trim().replace(/\s+/g, ' ');
+      var nomBase = avant ? avant.nom : (p ? nomProfil(p) : nomVoulu);
+      var roleChange = !avant || avant.role !== role || avant.acces !== acces;
+      var nomChange = !!nomVoulu && nomVoulu !== nomBase;
+      if (!roleChange && !nomChange) return;
       etape(function () {
-        return executer(sb.rpc('definir_role', { p_user: uid, p_role: role, p_acces: acces })).then(function () {
-          instantane.employes[uid] = { role: role, acces: acces };
+        var suite = Promise.resolve();
+        if (roleChange) suite = suite.then(function () {
+          return executer(sb.rpc('definir_role', { p_user: uid, p_role: role, p_acces: acces })).then(function () {
+            instantane.employes[uid] = { role: role, acces: acces, nom: nomBase };
+          });
         });
+        if (nomChange) suite = suite.then(function () {
+          var mots = nomVoulu.split(' ');
+          return executer(sb.rpc('renommer_employe', { p_user: uid, p_prenom: mots[0], p_nom: mots.slice(1).join(' ') })).then(function () {
+            var s = instantane.employes[uid] || { role: role, acces: acces };
+            s.nom = nomVoulu;
+            instantane.employes[uid] = s;
+          }, function (err) {
+            // Base installée avant le 17 octobre : la fonction n'existe pas encore (PGRST202 : inconnue de
+            // l'API ; 42883 : supprimée de la base depuis le dernier relevé de l'API)
+            if (err && (err.code === 'PGRST202' || err.code === '42883')) throw new Error('le nom « ' + nomVoulu + ' » n\'a pas été enregistré : exécutez à nouveau le fichier 03-mise-a-jour-admin.sql dans Supabase (SQL Editor)');
+            throw err;
+          });
+        });
+        return suite;
       });
     });
     Object.keys(restants).forEach(function (uid) {
@@ -857,4 +880,27 @@ if (PharmaAdminCloud.actif) {
   PharmaStore.save = function () { PharmaAdminCloud.planifierSync(); return true; };
   PharmaStore.mettreAJour = function (fn) { var d = PharmaStore.load(); fn(d); PharmaAdminCloud.planifierSync(); return d; };
   PharmaStore.reset = function () { return PharmaStore.load(); };
+
+  // Fenêtre « Employé » : l'adresse d'un membre existant est celle de son compte de connexion et
+  // ne se change pas ici (son nom, si). Le texte d'aide décrit la marche à suivre avec la base.
+  document.addEventListener('DOMContentLoaded', function () {
+    var AIDE_AJOUT = 'Créez d\'abord son compte dans Supabase (Authentication, Users, Add user), puis saisissez ici la même adresse email. Il se connectera avec son propre mot de passe.';
+    var AIDE_MODIF = 'L\'adresse est celle de son compte de connexion : elle ne se change pas ici. Pour une autre adresse, retirez ce membre puis ajoutez le nouveau compte.';
+    function aide(txt) { var el = document.getElementById('emp-aide'); if (el) el.textContent = txt; }
+    function champEmail(actif) { var c = document.getElementById('emp-email'); if (c) c.disabled = !actif; }
+    aide(AIDE_AJOUT);
+    var editOrig = window.editEmploye;
+    if (typeof editOrig === 'function') {
+      window.editEmploye = function (id) {
+        editOrig(id);
+        var e = ((typeof DATA !== 'undefined' && DATA && DATA.employes) || []).find(function (x) { return x.id === id; });
+        if (e && e.uid) { champEmail(false); aide(AIDE_MODIF); }
+      };
+    }
+    document.addEventListener('pharma-edition-fermee', function (ev) {
+      if (ev.detail !== 'm-employe') return;
+      champEmail(true);
+      aide(AIDE_AJOUT);
+    });
+  });
 }

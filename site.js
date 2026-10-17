@@ -94,7 +94,7 @@ function buildCatalogueData() {
     return {
       id: 'promo-'+pr.id, promoId: pr.id, cat: cat, nom: pr.produit,
       prixPromo: pr.prixPromo, prixNormal: pr.prixNormal,
-      pct: Math.abs(pr.pct), fin: formatDateFr(pr.fin), icon: iconForCat(cat)
+      pct: Math.abs(pr.pct), fin: formatDateFr(pr.fin), finIso: String(pr.fin || '').slice(0, 10), icon: iconForCat(cat)
     };
   });
 }
@@ -684,11 +684,14 @@ function initAmbient() {
 }
 
 // ── CARROUSEL ──
+// Les annonces « promo » et « jour spécial » sont remplies depuis l'admin (renderAnnonces).
+// Une annonce sans contenu est masquée : le carrousel ne compte que les annonces visibles.
 var sliderCurrent = 0;
-var sliderTotal = 3;
+var sliderTotal = 0;
 var sliderAuto;
 
 function sliderGo(n) {
+  if (!sliderTotal) return;
   sliderCurrent = (n + sliderTotal) % sliderTotal;
   var track = document.getElementById('slider-track');
   if (track) track.style.transform = 'translateX(-'+sliderCurrent*100+'%)';
@@ -696,19 +699,118 @@ function sliderGo(n) {
 }
 function sliderNext() { sliderGo(sliderCurrent+1); resetSliderAuto(); }
 function sliderPrev() { sliderGo(sliderCurrent-1); resetSliderAuto(); }
-function resetSliderAuto() { clearInterval(sliderAuto); sliderAuto = setInterval(function(){ sliderGo(sliderCurrent+1); }, 5000); }
+function resetSliderAuto() {
+  clearInterval(sliderAuto);
+  if (sliderTotal > 1) sliderAuto = setInterval(function(){ sliderGo(sliderCurrent+1); }, 5000);
+}
 
+// Recompte les annonces visibles, refait les points, et masque flèches et points s'il n'y en a qu'une.
+// Rappelée à chaque mise à jour des annonces (chargement de la base, par exemple).
 function initSlider() {
+  var track = document.getElementById('slider-track');
   var dots = document.getElementById('slider-dots');
-  if (!dots) return;
+  if (!track || !dots) return;
+  sliderTotal = Array.prototype.filter.call(track.children, function(s) { return s.style.display !== 'none'; }).length;
+  dots.innerHTML = '';
   for (var i=0; i<sliderTotal; i++) {
     var d = document.createElement('div');
-    d.className = 'slider-dot' + (i===0?' active':'');
+    d.className = 'slider-dot';
     d.setAttribute('data-i', i);
-    d.addEventListener('click', function(){ sliderGo(parseInt(this.getAttribute('data-i'))); resetSliderAuto(); });
+    d.addEventListener('click', function(){ sliderGo(parseInt(this.getAttribute('data-i'), 10)); resetSliderAuto(); });
     dots.appendChild(d);
   }
+  var nav = document.getElementById('slider-nav');
+  if (nav) nav.style.display = sliderTotal > 1 ? 'flex' : 'none';
+  sliderGo(Math.min(sliderCurrent, Math.max(0, sliderTotal - 1)));
   resetSliderAuto();
+}
+
+// ── ANNONCES DE L'ACCUEIL (promo et jour spécial saisis dans l'admin) ──
+var JOURS_SEMAINE = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+
+// La promo mise en avant : la plus forte réduction, puis celle qui se termine le plus tôt
+function promoALaUne() {
+  return PROMOS.slice().sort(function(a, b) {
+    var ecart = nombre(b.pct) - nombre(a.pct);
+    if (ecart) return ecart;
+    var fa = a.finIso || '9999', fb = b.finIso || '9999';
+    return fa < fb ? -1 : (fa > fb ? 1 : 0);
+  })[0] || null;
+}
+
+// Prochain jour spécial (garde, fermeture, horaires modifiés) dans les 14 jours, comme dans le pied de page
+function prochainJourSpecial() {
+  var auj = pharmaDateLocale();
+  var limite = new Date(); limite.setDate(limite.getDate() + 14);
+  var fin = pharmaDateLocale(limite);
+  return (DATA.joursSpeciaux || []).filter(function(j) {
+    var d = String(j && j.date || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= auj && d <= fin;
+  }).sort(function(a, b) { return String(a.date).slice(0, 10) < String(b.date).slice(0, 10) ? -1 : 1; })[0] || null;
+}
+
+// « aujourd'hui », « demain » ou « le samedi 24 octobre »
+function quandJourSpecial(iso) {
+  var demain = new Date(); demain.setDate(demain.getDate() + 1);
+  if (iso === pharmaDateLocale()) return 'aujourd\'hui';
+  if (iso === pharmaDateLocale(demain)) return 'demain';
+  var p = iso.split('-');
+  var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  return 'le ' + (isNaN(d.getTime()) ? '' : JOURS_SEMAINE[d.getDay()] + ' ') + formatDateFr(iso);
+}
+
+function texteJourSpecial(j) {
+  var iso = String(j.date).slice(0, 10);
+  var heureOk = function(h) { return /^\d{1,2}:\d{2}$/.test(String(h || '')); };
+  var heures = (heureOk(j.debut) && heureOk(j.fin)) ? ' · ' + formatHeure(j.debut) + '–' + formatHeure(j.fin) : '';
+  if (j.type === 'Fermeture') return 'Fermeture exceptionnelle ' + quandJourSpecial(iso);
+  if (j.type === 'Garde') return 'Pharmacie de garde ' + quandJourSpecial(iso) + heures;
+  return String(j.type || 'Horaires modifiés') + ' ' + quandJourSpecial(iso) + heures;
+}
+
+function renderAnnonces() {
+  var promo = promoALaUne();
+  var prix = function(v) { return nombre(v).toFixed(2).replace('.', ',') + '€'; };
+  var pct = promo ? Math.round(nombre(promo.pct)) : 0;
+
+  // Carte de l'accueil : la promo à la une, sinon le principe du click & collect
+  var carte = document.getElementById('hero-promo');
+  if (carte) {
+    carte.innerHTML = promo
+      ? '<span class="promo-badge">-' + pct + '%</span><div style="margin-top:10px"><div class="fc-title">' + escHtml(promo.nom) + '</div>'
+        + '<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span class="price-now">' + prix(promo.prixPromo) + '</span>'
+        + (nombre(promo.prixNormal) > nombre(promo.prixPromo) ? '<span class="price-old">' + prix(promo.prixNormal) + '</span>' : '') + '</div></div>'
+      : '<div style="margin-top:4px"><div class="fc-title">Réservez en ligne</div><div class="fc-sub">Réglez sur place, au retrait</div></div>';
+  }
+
+  // Chiffre « Jusqu'à -X % » : la plus forte réduction en cours, masqué s'il n'y a pas de promo
+  var stat = document.getElementById('hero-stat-promo');
+  var statNum = document.getElementById('hero-stat-promo-num');
+  if (stat && statNum) {
+    stat.style.display = pct > 0 ? '' : 'none';
+    statNum.textContent = pct > 0 ? '-' + pct + '%' : '';
+  }
+
+  // Annonce promo du carrousel
+  var annoncePromo = document.getElementById('annonce-promo');
+  if (annoncePromo) {
+    annoncePromo.style.display = promo ? '' : 'none';
+    var titre = document.getElementById('annonce-promo-titre');
+    var sous = document.getElementById('annonce-promo-sous');
+    if (promo && titre) titre.innerHTML = 'Promo — ' + escHtml(promo.nom) + ' à <span style="color:var(--vert)">-' + pct + '%</span>';
+    if (promo && sous) sous.textContent = (promo.fin ? 'Offre valable jusqu\'au ' + promo.fin + ' · ' : '') + 'Click & Collect';
+  }
+
+  // Annonce du prochain jour spécial (page Horaires de l'admin)
+  var annonceGarde = document.getElementById('annonce-garde');
+  if (annonceGarde) {
+    var jour = prochainJourSpecial();
+    annonceGarde.style.display = jour ? '' : 'none';
+    var titreGarde = document.getElementById('annonce-garde-titre');
+    if (jour && titreGarde) titreGarde.textContent = texteJourSpecial(jour);
+  }
+
+  initSlider();
 }
 
 
@@ -1333,6 +1435,7 @@ function rafraichirAffichageCloud() {
   applyPharmacyConfig();
   buildCatalogueData();
   renderPromos();
+  renderAnnonces();
   renderCatalogue();
   renderConseilsSite();
   renderFaq();
@@ -1814,7 +1917,7 @@ window.addEventListener('DOMContentLoaded', function() {
   applyPharmacyConfig();
   initTheme();
   initAmbient();
-  initSlider();
+  renderAnnonces();
   renderPromos();
   renderCatalogue();
   renderFaq();

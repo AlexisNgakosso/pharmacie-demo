@@ -449,7 +449,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
 <div id="toast"></div>
 
 <!-- GARDE BANNER -->
-<div class="garde-bar" id="garde-bar">Pharmacie de garde ce samedi 21 juin · Ouverts de 8h à 20h</div>
+<div class="garde-bar" id="garde-bar" style="display:none"></div>
 
 <!-- HEADER -->
 <header id="header">
@@ -499,7 +499,7 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
       <div class="hero-stats reveal reveal-d3">
         <div class="hero-stat"><div class="num">500+</div><div class="lbl">Produits</div></div>
         <div class="hero-stat"><div class="num">24h</div><div class="lbl">Retrait rapide</div></div>
-        <div class="hero-stat"><div class="num">-25%</div><div class="lbl">Jusqu'à</div></div>
+        <div class="hero-stat" id="hero-stat-promo" style="display:none"><div class="num" id="hero-stat-promo-num"></div><div class="lbl">Jusqu'à</div></div>
       </div>
     </div>
     <div class="hero-visual" id="hero-visual">
@@ -508,10 +508,11 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
         <div class="flip-inner">
           <div class="flip-front">
             <div class="fc-head"><div class="fc-ic" style="background:rgba(46,204,122,0.12)"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--vert)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><div class="fc-title">Commande prête</div><div class="fc-sub">en 2h en moyenne</div></div></div>
-            <div class="fc-body"><span class="promo-badge">-25%</span><div style="margin-top:10px"><div class="fc-title">Crème Solaire SPF50</div><div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span class="price-now">18,90€</span><span class="price-old">25,20€</span></div></div></div>
+            <!-- Contenu rempli par site.js : la meilleure promo active saisie dans l'admin -->
+            <div class="fc-body" id="hero-promo"><div style="margin-top:4px"><div class="fc-title">Réservez en ligne</div><div class="fc-sub">Réglez sur place, au retrait</div></div></div>
           </div>
           <div class="flip-back" style="background:linear-gradient(135deg,#1B6B45,#0F4A2E)">
-            <div><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></div><div class="tip-title">Il fait chaud !</div><div class="tip-text">Hydratez-vous et protégez votre peau. Crème SPF50 en promo jusqu'au 30 juin.</div></div>
+            <div><div class="tip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></div><div class="tip-title">Il fait chaud !</div><div class="tip-text">Hydratez-vous et protégez votre peau.</div></div>
           </div>
         </div>
       </div>
@@ -542,17 +543,17 @@ html[data-theme="dark"] header.scrolled{background:rgba(26,38,32,0.9)}
   </div>
 </section>
 
-<!-- CARROUSEL ANNONCES -->
+<!-- CARROUSEL ANNONCES : la promo et le jour spécial sont remplis par site.js depuis l'admin, et masqués s'il n'y en a pas -->
 <section style="background:var(--bg-card);padding:0;position:relative;z-index:1;border-bottom:1px solid var(--bord)">
   <div class="container" style="padding-top:18px;padding-bottom:18px">
     <div class="slider-wrap">
       <div class="slider-track" id="slider-track">
-        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(27,107,69,0.08),rgba(46,204,122,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--vert);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Promo Été — Crème Solaire SPF50 x3 à <span style="color:var(--vert)">-25%</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Offre valable jusqu'au 30 juin · Click & Collect</div></div><button class="btn-lg btn-primary" style="margin-left:auto;padding:10px 20px;font-size:0.82rem" onclick="document.getElementById('promos').scrollIntoView()">Voir l'offre</button></div></div>
+        <div class="slider-slide" id="annonce-promo" style="display:none"><div style="background:linear-gradient(135deg,rgba(27,107,69,0.08),rgba(46,204,122,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--vert);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem" id="annonce-promo-titre"></div><div style="font-size:0.8rem;color:var(--texte-3)" id="annonce-promo-sous"></div></div><button class="btn-lg btn-primary" style="margin-left:auto;padding:10px 20px;font-size:0.82rem" onclick="document.getElementById('promos').scrollIntoView()">Voir l'offre</button></div></div>
         <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(217,164,65,0.1),rgba(240,198,116,0.06));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:var(--or);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Programme fidélité — <span id="fid-resume-slider">5 achats = -10% offert</span></div><div style="font-size:0.8rem;color:var(--texte-3)">Créez votre compte et suivez vos achats</div></div><button class="btn-lg" style="margin-left:auto;padding:10px 20px;font-size:0.82rem;background:var(--or);color:#3A2A05;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="document.getElementById('fidelite').scrollIntoView()">Rejoindre</button></div></div>
-        <div class="slider-slide"><div style="background:linear-gradient(135deg,rgba(74,144,217,0.08),rgba(95,227,161,0.05));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:#4A90D9;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div style="font-weight:700;font-size:0.95rem">Pharmacie de garde ce samedi 21 juin · 8h–20h</div><div style="font-size:0.8rem;color:var(--texte-3)"><span data-pharma="adresse-courte">1 rue de l’Exemple, Paris</span></div></div></div></div>
+        <div class="slider-slide" id="annonce-garde" style="display:none"><div style="background:linear-gradient(135deg,rgba(74,144,217,0.08),rgba(95,227,161,0.05));border-radius:14px;padding:16px 24px;display:flex;align-items:center;gap:16px"><div style="width:40px;height:40px;background:#4A90D9;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div style="font-weight:700;font-size:0.95rem" id="annonce-garde-titre"></div><div style="font-size:0.8rem;color:var(--texte-3)"><span data-pharma="adresse-courte">1 rue de l’Exemple, Paris</span></div></div></div></div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px">
+    <div id="slider-nav" style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px">
       <button class="slider-arrow" aria-label="Annonce précédente" onclick="sliderPrev()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
       <div class="slider-dots" id="slider-dots"></div>
       <button class="slider-arrow" aria-label="Annonce suivante" onclick="sliderNext()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>

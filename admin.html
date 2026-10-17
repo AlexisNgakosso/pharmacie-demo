@@ -153,6 +153,7 @@ tbody tr:hover td{background:var(--fond)}
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .inp{padding:0 10px;height:32px;border:1px solid var(--bord);border-radius:var(--radius-s);font-family:'Manrope',sans-serif;font-size:0.76rem;background:var(--blanc);outline:none;transition:border-color 0.16s;color:var(--texte)}
 .inp:focus{border-color:var(--vert-vif)}
+.inp:disabled{background:var(--fond);color:var(--texte-2);cursor:not-allowed}
 .inp-search{padding-left:30px;flex:1;min-width:160px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='%239AA3B2' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:9px center}
 
 /* ACTION BUTTONS */
@@ -787,7 +788,7 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
           <div class="form-group full"><label>Nom complet *</label><input class="inp" id="emp-nom" placeholder="Marie Dupont"></div>
           <div class="form-group full"><label>Email professionnel</label><input class="inp" id="emp-email" placeholder="marie@pharmacie-demo.test"></div>
           <div class="form-group full"><label>Rôle</label><select class="inp" id="emp-role"><option value="Employé">Employé (commandes + tickets)</option><option value="Admin">Admin (accès complet)</option></select></div>
-          <div class="form-group full" style="font-size:0.76rem;color:var(--texte-2);line-height:1.5;background:var(--fond);border:1px solid var(--bord);border-radius:8px;padding:10px">Les identifiants de connexion (email et mot de passe personnel) seront créés avec la connexion sécurisée de l'administration. Cette liste sert en attendant à organiser l'équipe.</div>
+          <div class="form-group full" id="emp-aide" style="font-size:0.76rem;color:var(--texte-2);line-height:1.5;background:var(--fond);border:1px solid var(--bord);border-radius:8px;padding:10px">Les identifiants de connexion (email et mot de passe personnel) seront créés avec la connexion sécurisée de l'administration. Cette liste sert en attendant à organiser l'équipe.</div>
         </div>
       </form>
     </div>

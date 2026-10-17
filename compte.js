@@ -291,10 +291,6 @@ function syncProfilDisplay() {
     var notifMail = document.getElementById('notif-email');
     if (notifMail) notifMail.textContent = profil.email;
   }
-  if (profil.tel) {
-    var notifTel = document.getElementById('notif-tel');
-    if (notifTel) notifTel.textContent = profil.tel;
-  }
 }
 
 // ── SÉLECTEUR DE THÈME (Clair / Sombre / Automatique) ──
@@ -315,18 +311,6 @@ function updateThemeOptionsUI() {
   document.querySelectorAll('.theme-opt').forEach(function(btn) {
     btn.classList.toggle('active', btn.getAttribute('data-theme') === current);
   });
-}
-
-// ── 2FA ──
-function toggle2FA(enabled) {
-  try { localStorage.setItem('pharma-2fa', enabled ? '1' : '0'); } catch(e){}
-  pharmaToast(enabled ? 'Double authentification activée' : 'Double authentification désactivée');
-}
-function initSecuritySettings() {
-  var tfa = null;
-  try { tfa = localStorage.getItem('pharma-2fa'); } catch(e){}
-  var box = document.getElementById('tfa-toggle');
-  if (box) box.checked = (tfa === '1');
 }
 
 // ── TABS ──
@@ -400,7 +384,6 @@ window.addEventListener('DOMContentLoaded', function() {
   initTheme();
   updateThemeOptionsUI();
   initAvatar();
-  initSecuritySettings();
   // L'admin (autre onglet) fait évoluer commandes et codes : on se recale sur les données les plus récentes.
   window.addEventListener('storage', function(e) {
     if (e.key === 'pharma-data') { DATA = PharmaStore.load(); initFidelite(); renderMesCommandes(); }

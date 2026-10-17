@@ -2013,9 +2013,28 @@ function openModal(id) {
   el.classList.add('open');
 }
 
+// Fenêtres d'ajout et de modification : à la fermeture (enregistrement, Annuler, croix, Échap,
+// clic à côté), l'élément modifié est oublié et le formulaire vidé. Sans cela, « Nouveau produit »
+// (ou client, employé) ouvert après une modification écrasait l'élément modifié au lieu d'en créer un.
+var MODALES_EDITION = {
+  'm-produit': { id: 'p-id', form: 'form-produit', titre: 'm-produit-title', titreAjout: 'Ajouter un produit' },
+  'm-client':  { id: 'cl-id', form: 'form-client' },
+  'm-employe': { id: 'emp-id', form: 'form-employe' }
+};
+function oublierEdition(modalId) {
+  var m = MODALES_EDITION[modalId];
+  if (!m) return;
+  var cache = document.getElementById(m.id);
+  if (cache) cache.value = '';
+  resetForm(m.form);
+  if (m.titre) { var t = document.getElementById(m.titre); if (t) t.textContent = m.titreAjout; }
+  document.dispatchEvent(new CustomEvent('pharma-edition-fermee', { detail: modalId }));
+}
+
 function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
+  oublierEdition(id);
   el.style.animation = 'slideDown 0.22s ease forwards';
   setTimeout(function(){ el.classList.remove('open'); el.style.animation=''; }, 200);
 }
