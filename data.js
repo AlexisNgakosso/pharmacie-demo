@@ -1,5 +1,5 @@
 // ============================================================
-// PHARMACIE GUY MÔQUET — Données partagées (admin.html / site.html / compte.html)
+// PHARMACIE DÉMO — Données partagées (admin.html / site.html / compte.html)
 // ============================================================
 // Ce fichier doit être chargé AVANT admin.js / site.js / compte.js
 // dans les 3 pages HTML (<script src="data.js"></script>).

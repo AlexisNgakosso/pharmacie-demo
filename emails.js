@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// PHARMACIE GUY MÔQUET — Envoi d'emails (EmailJS)
+// PHARMACIE DÉMO — Envoi d'emails (EmailJS)
 // ════════════════════════════════════════════
 // Module partagé : chargé par site.html (confirmation, code fidélité) et
 // admin.html (commande prête, email de test), APRÈS data.js.

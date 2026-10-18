@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// PHARMACIE GUY MÔQUET — Site client
+// PHARMACIE DÉMO — Site client
 // ════════════════════════════════════════════
 
 // ── DONNÉES PARTAGÉES (admin.html / site.html / compte.html) ──
@@ -120,7 +120,7 @@ if (!infosFiables) document.documentElement.classList.add('attente-base');
 
 var FAQ = [
   { q:'Comment fonctionne le click & collect ?', a:'Vous choisissez vos produits sur le site, vous validez votre commande, puis vous la récupérez directement {A_LA_NOM}. Le règlement se fait sur place, au retrait.' },
-  { q:'Quel est le délai de préparation d\'une commande ?', a:'Vos commandes sont généralement prêtes en 2h en moyenne pendant les horaires d\'ouverture. Vous recevrez une notification dès qu\'elle est disponible au retrait.' },
+  { q:'Quel est le délai de préparation d\'une commande ?', a:'Vos commandes sont généralement prêtes en 1h en moyenne pendant les horaires d\'ouverture. Vous recevrez une notification dès qu\'elle est disponible au retrait.' },
   { q:'Comment payer ma commande ?', a:'Le paiement se fait exclusivement en pharmacie au moment du retrait (carte bancaire, espèces ou chèque). Aucun paiement n\'est demandé au moment de la commande en ligne.' },
   { q:'Puis-je modifier ou annuler ma commande ?', a:'Oui, contactez la pharmacie par téléphone le plus tôt possible après votre commande. Si elle est déjà en préparation, certaines modifications peuvent ne plus être possibles.' },
   { q:'Comment fonctionne le programme de fidélité ?', a:'Chaque achat compte : une fois le palier atteint, un code de réduction est automatiquement généré et disponible dans votre espace client. Créez votre compte pour commencer à cumuler.' },

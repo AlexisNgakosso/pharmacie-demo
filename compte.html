@@ -275,7 +275,7 @@ html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(66,60,50,0.6),r
           <div class="qr-name" id="fid-nom"></div>
           <div class="qr-sub" id="fid-numero"></div>
           <div class="wallet-btns">
-            <button class="wallet-btn" onclick="pharmaToast('Apple Wallet : bientôt disponible')"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>Apple Wallet</button>
+            <!-- Bouton « Apple Wallet » retiré pour l'instant (décision du 18 octobre) : à remettre quand la carte Apple Wallet sera activée. -->
             <button class="wallet-btn" onclick="pharmaToast('Google Wallet : bientôt disponible')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Google Wallet</button>
           </div>
         </div>
@@ -307,17 +307,17 @@ html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(66,60,50,0.6),r
 
         <div id="notif-types" style="margin-top:20px">
           <h3 style="font-size:1rem;margin-bottom:14px">Par type</h3>
-          <div class="toggle-card"><div class="toggle-card-info"><h4>Commande prête à retirer</h4><p>Soyez alerté dès que votre commande est disponible.</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
-          <div class="toggle-card"><div class="toggle-card-info"><h4>Promotions & offres</h4><p>Recevez les nouvelles promos et codes fidélité.</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
-          <div class="toggle-card"><div class="toggle-card-info"><h4>Rappel de renouvellement</h4><p>Pour vos produits achetés régulièrement.</p></div><label class="switch"><input type="checkbox"><span class="switch-track"></span></label></div>
-          <div class="toggle-card"><div class="toggle-card-info"><h4>Gardes & horaires exceptionnels</h4><p>Ouvertures spéciales, jours fériés, gardes.</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Commande prête à retirer</h4><p>Soyez alerté dès que votre commande est disponible.</p></div><label class="switch"><input type="checkbox" id="notif-pret" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Promotions & offres</h4><p>Recevez les nouvelles promos et codes fidélité.</p></div><label class="switch"><input type="checkbox" id="notif-promos" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Rappel de renouvellement</h4><p>Pour vos produits achetés régulièrement.</p></div><label class="switch"><input type="checkbox" id="notif-renouvellement"><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Gardes & horaires exceptionnels</h4><p>Ouvertures spéciales, jours fériés, gardes.</p></div><label class="switch"><input type="checkbox" id="notif-gardes" checked><span class="switch-track"></span></label></div>
 
           <h3 style="font-size:1rem;margin:24px 0 14px">Canal de réception</h3>
-          <div class="toggle-card"><div class="toggle-card-info"><h4>Par email</h4><p id="notif-email">marie.d@email.com</p></div><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+          <div class="toggle-card"><div class="toggle-card-info"><h4>Par email</h4><p id="notif-email">marie.d@email.com</p></div><label class="switch"><input type="checkbox" id="notif-canal-email" checked><span class="switch-track"></span></label></div>
           <!-- « Par SMS » retiré : aucun envoi de SMS n'existe encore. À remettre quand un service d'envoi sera branché. -->
         </div>
 
-        <div style="margin-top:24px"><button class="btn btn-primary" onclick="pharmaToast('Préférences enregistrées')">Enregistrer mes préférences</button></div>
+        <div style="margin-top:24px"><button class="btn btn-primary" onclick="enregistrerNotifs()">Enregistrer mes préférences</button></div>
       </div>
     </div>
 
@@ -334,28 +334,23 @@ html[data-theme="dark"]{--verre-fond:linear-gradient(145deg,rgba(66,60,50,0.6),r
           <button type="button" class="theme-opt" data-theme="auto" onclick="setThemePref('auto')"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Automatique</button>
         </div>
 
-        <h3 style="font-size:1rem;margin-bottom:14px">Changer le mot de passe</h3>
-        <div class="field"><label>Mot de passe actuel</label><input type="password" placeholder="••••••••"></div>
-        <div class="field-row">
-          <div class="field"><label>Nouveau mot de passe</label><input type="password" placeholder="••••••••"></div>
-          <div class="field"><label>Confirmer</label><input type="password" placeholder="••••••••"></div>
-        </div>
-        <button class="btn btn-primary" onclick="pharmaToast('Mot de passe modifié')">Modifier le mot de passe</button>
+
+        <!-- « Changer le mot de passe » retiré : le bouton n'avait aucun effet (pas encore de vrai compte client). Il viendra avec l'espace client relié à la base. -->
 
         <!-- « Double authentification » retirée : l'interrupteur n'avait aucun effet. Elle viendra avec l'espace client relié à la base. -->
 
         <h3 style="font-size:1rem;margin:30px 0 14px">Mes données (RGPD)</h3>
-        <div class="rgpd-row"><div class="rgpd-info"><h4>Télécharger mes données</h4><p>Recevez une copie de toutes vos données personnelles.</p></div><button class="btn btn-ghost" onclick="pharmaToast('Export en cours, vous recevrez un email')">Télécharger</button></div>
-        <div class="rgpd-row"><div class="rgpd-info"><h4>Consentement données</h4><p>Vous avez accepté le traitement de vos données le 12/01/2025.</p></div><span style="color:var(--vert);font-weight:700;font-size:0.82rem">✓ Actif</span></div>
+        <div class="rgpd-row"><div class="rgpd-info"><h4>Télécharger mes données</h4><p>Téléchargez une copie de vos données personnelles (profil, commandes, fidélité, préférences).</p></div><button class="btn btn-ghost" onclick="telechargerMesDonnees()">Télécharger</button></div>
+        <div class="rgpd-row"><div class="rgpd-info"><h4>Communications de la pharmacie</h4><p id="rgpd-consentement-texte">Vos données servent à préparer vos commandes et à gérer votre carte de fidélité.</p></div><span id="rgpd-consentement-etat" style="font-weight:700;font-size:0.82rem;white-space:nowrap"></span></div>
         <div class="rgpd-row"><div class="rgpd-info"><h4 style="color:var(--rouge)">Supprimer mon compte</h4><p>Suppression définitive de votre compte et vos données.</p></div><button class="btn btn-danger" onclick="confirmDelete()">Supprimer</button></div>
       </div>
     </div>
   </main>
 </div>
 
-<script src="supabase-config.js?v=20261018100548"></script>
-<script src="data.js?v=20261018100548"></script>
-<script src="compte.js?v=20261018100548"></script>
-<script src="demo-nav.js?v=20261018100548"></script>
+<script src="supabase-config.js?v=20261019002008"></script>
+<script src="data.js?v=20261019002008"></script>
+<script src="compte.js?v=20261019002008"></script>
+<script src="demo-nav.js?v=20261019002008"></script>
 </body>
 </html>

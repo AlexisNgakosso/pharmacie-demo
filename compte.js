@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// PHARMACIE GUY MÔQUET — Espace client
+// PHARMACIE DÉMO — Espace client
 // ════════════════════════════════════════════
 
 // ── DONNÉES PARTAGÉES (mêmes que admin.html / site.html) ──
@@ -351,6 +351,80 @@ function toggleGlobalNotif() {
   }
 }
 
+// ── PRÉFÉRENCES DE NOTIFICATION (enregistrées dans ce navigateur) ──
+var CLE_NOTIFS = 'pharma-notifs';
+var CHAMPS_NOTIFS = { global:'notif-global', pret:'notif-pret', promos:'notif-promos', renouvellement:'notif-renouvellement', gardes:'notif-gardes', email:'notif-canal-email' };
+function lireNotifs() {
+  var p = null;
+  try { p = JSON.parse(localStorage.getItem(CLE_NOTIFS) || 'null'); } catch (e) {}
+  return (p && typeof p === 'object') ? p : null;
+}
+function initNotifs() {
+  var p = lireNotifs();
+  if (!p) return;
+  Object.keys(CHAMPS_NOTIFS).forEach(function(k) {
+    var el = document.getElementById(CHAMPS_NOTIFS[k]);
+    if (el && typeof p[k] === 'boolean') el.checked = p[k];
+  });
+  var types = document.getElementById('notif-types');
+  var global = document.getElementById('notif-global');
+  if (types && global && !global.checked) { types.style.opacity = '0.4'; types.style.pointerEvents = 'none'; }
+}
+function enregistrerNotifs() {
+  var p = {};
+  Object.keys(CHAMPS_NOTIFS).forEach(function(k) {
+    var el = document.getElementById(CHAMPS_NOTIFS[k]);
+    if (el) p[k] = !!el.checked;
+  });
+  try { localStorage.setItem(CLE_NOTIFS, JSON.stringify(p)); }
+  catch (e) { pharmaToast('Préférences non enregistrées : stockage du navigateur indisponible'); return; }
+  pharmaToast('Préférences enregistrées');
+}
+
+// ── MES DONNÉES (RGPD) : copie téléchargeable de ce que le site connaît du client ──
+function telechargerMesDonnees() {
+  var client = getCurrentClient();
+  var nom = getCurrentClientNom(), email = getCurrentClientEmail();
+  var commandes = (DATA.commandes || []).filter(function(c) { return PharmaClients.commandeAppartient(c, nom, email); });
+  var codes = client ? (DATA.codesPromo || []).filter(function(c) {
+    return (c.clientId !== undefined) ? c.clientId === client.id : c.client === client.nom;
+  }) : [];
+  var export_ = {
+    pharmacie: (DATA.parametres && DATA.parametres.nom) || '',
+    date: new Date().toISOString(),
+    profil: getProfilEnregistre(),
+    fiche: client ? { nom: client.nom, email: client.email, telephone: client.tel, communications: !!client.rgpd, achats: client.achats } : null,
+    carteFidelite: client ? pharmaNumeroFidelite(client) : null,
+    commandes: commandes,
+    codesFidelite: codes,
+    preferencesNotifications: lireNotifs()
+  };
+  var json = JSON.stringify(export_, null, 2);
+  try {
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'mes-donnees.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    pharmaToast('Vos données ont été téléchargées');
+  } catch (e) { pharmaToast('Téléchargement impossible sur ce navigateur'); }
+}
+
+// Accord pour les communications : lu sur la fiche du client (aucune date inventée)
+function afficherConsentement() {
+  var txt = document.getElementById('rgpd-consentement-texte');
+  var etat = document.getElementById('rgpd-consentement-etat');
+  if (!txt || !etat) return;
+  var client = getCurrentClient();
+  var oui = !!(client && client.rgpd);
+  txt.textContent = oui
+    ? 'Vous avez accepté de recevoir les communications de la pharmacie. Vous pouvez retirer cet accord à tout moment en contactant la pharmacie.'
+    : 'Vous n\'avez pas donné votre accord pour recevoir les communications de la pharmacie. Vos données servent uniquement à vos commandes et à votre carte de fidélité.';
+  etat.textContent = oui ? 'Accepté' : 'Non accepté';
+  etat.style.color = oui ? 'var(--vert)' : 'var(--texte-3)';
+}
+
 // ── DELETE ACCOUNT ──
 function confirmDelete() {
   if (confirm('Êtes-vous sûr de vouloir supprimer définitivement votre compte ? Cette action est irréversible.')) {
@@ -401,12 +475,14 @@ window.addEventListener('DOMContentLoaded', function() {
   syncProfilDisplay();
   initFidelite();
   renderMesCommandes();
+  initNotifs();
+  afficherConsentement();
   initTheme();
   updateThemeOptionsUI();
   initAvatar();
   // L'admin (autre onglet) fait évoluer commandes et codes : on se recale sur les données les plus récentes.
   window.addEventListener('storage', function(e) {
-    if (e.key === 'pharma-data') { DATA = PharmaStore.load(); initFidelite(); renderMesCommandes(); }
+    if (e.key === 'pharma-data') { DATA = PharmaStore.load(); initFidelite(); renderMesCommandes(); afficherConsentement(); }
   });
   var tb = document.getElementById('theme-btn');
   if (tb) tb.addEventListener('click', function(){ toggleTheme(); updateThemeOptionsUI(); });

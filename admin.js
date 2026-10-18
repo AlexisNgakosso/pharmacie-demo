@@ -1,5 +1,5 @@
 // ============================================================
-// PHARMACIE GUY MÔQUET — Back-office JS
+// PHARMACIE DÉMO — Back-office JS
 // ============================================================
 
 // ── DONNÉES PARTAGÉES ───────────────────────────────────────
@@ -257,10 +257,17 @@ function updateNavBadges() {
 // ── PRODUITS ────────────────────────────────────────────────
 function renderProduits(filtre, cat) {
   var html = '';
+  // Filtre de stock (Normal / Faible / Rupture), mêmes seuils que les badges du tableau
+  var stockEl = document.getElementById('filter-stock-produits');
+  var etatStock = stockEl ? stockEl.value : '';
   var list = DATA.produits.filter(function(p) {
     var matchSearch = !filtre || searchMatch(p.nom+' '+p.ref+' '+p.cat, filtre);
     var matchCat = !cat || cat === 'Toutes' || p.cat === cat;
-    return matchSearch && matchCat;
+    var matchStock = !etatStock
+      || (etatStock === 'rupture' && p.stock <= 0)
+      || (etatStock === 'faible' && p.stock > 0 && p.stock <= p.seuil)
+      || (etatStock === 'ok' && p.stock > p.seuil);
+    return matchSearch && matchCat && matchStock;
   });
   if (list.length === 0) {
     html = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--texte-3)">Aucun produit trouvé</td></tr>';
