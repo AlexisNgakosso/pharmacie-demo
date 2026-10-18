@@ -90,6 +90,8 @@ var PHARMA_SEED_DATA = {
   // Contenu des rayons, dans l'ordre choisi dans l'admin ({ 'Bébé': [4, 1] }). Un produit figure toujours
   // dans son rayon principal (champ « cat ») ; cette liste ajoute d'autres rayons et règle l'ordre d'affichage.
   contenuRayons: {},
+  // Rayons masqués sur le site (bouton de la page Rayons de l'admin). Leurs produits restent en vente.
+  rayonsMasques: [],
   joursSpeciaux: [
     { date:_pharmaDate(5), type:'Garde', debut:'08:00', fin:'20:00', msg:'Pharmacie de garde — Ouverts de 8h à 20h' },
     { date:_pharmaDate(40), type:'Fermeture', debut:'', fin:'', msg:'Fermés exceptionnellement ce jour' }
@@ -318,6 +320,11 @@ function pharmaPhotoRayon(data, cat) {
 }
 
 // ── RAYONS : contenu, ordre et adresse de leur page ─────────
+// Rayon affiché sur le site (sinon masqué depuis la page Rayons de l'admin)
+function pharmaRayonVisible(data, nom) {
+  var m = data && data.rayonsMasques;
+  return !(Array.isArray(m) && m.indexOf(nom) !== -1);
+}
 // Adresse d'un rayon : « Hygiène » → « hygiene » (site.html?rayon=hygiene)
 function pharmaSlugRayon(nom) {
   return String(nom == null ? '' : nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')

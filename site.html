@@ -451,6 +451,9 @@ html[data-theme="dark"] header.scrolled{background:var(--bg-card)}
   .flip-back .tip-title{font-size:0.82rem;margin-bottom:4px}
   .flip-back .tip-text{font-size:0.74rem;line-height:1.45}
 }
+/* Raccourci vers une section : la page s'efface, saute à la section, puis réapparaît (sous l'en-tête) */
+.voile-nav{position:fixed;inset:0;z-index:95;background:var(--bg);opacity:0;pointer-events:none;transition:opacity 0.45s cubic-bezier(0.4,0,0.2,1)}
+.voile-nav.visible{opacity:1;pointer-events:auto;transition-duration:0.24s}
 .mobile-menu{position:fixed;inset:0;background:var(--bg-card);z-index:200;transform:translateX(100%);transition:transform 0.4s;display:flex;flex-direction:column;padding:80px 30px 30px}
 .mobile-menu.open{transform:translateX(0)}
 .mobile-menu a{padding:16px 0;font-size:1.2rem;font-weight:600;border-bottom:1px solid var(--bord)}
@@ -667,6 +670,27 @@ body.reseau-visible .raccourci.visible{transform:translateY(160%) scale(0.9);opa
 #a-la-une.rack-chiffre .une-detail{opacity:0.62;transform:translateY(12px)}
 #a-la-une.rack-produit .une-chiffre{opacity:0.9;transform:scale(0.985)}
 @media(prefers-reduced-motion:reduce){#a-la-une .une-chiffre,#a-la-une .une-detail{opacity:1!important;transform:none!important}.bokeh,.bokeh::before,.bokeh::after{transition:none}}
+/* ── PROMOS MISES EN AVANT : défilement de droite à gauche ── */
+#a-la-une .une{touch-action:pan-y pinch-zoom}
+#a-la-une .une.glisse{user-select:none;-webkit-user-select:none;cursor:grabbing}
+.une-nav{display:flex;align-items:center;gap:10px;margin-top:clamp(28px,5vh,44px)}
+.une-nav[hidden]{display:none}
+html.en-chargement #a-la-une .une-nav{display:none}
+.une-fleche,.une-pause{flex:none;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,0.32);background:transparent;color:var(--nuit-texte);cursor:pointer;transition:background 0.2s,border-color 0.2s}
+.une-pause{width:36px;height:36px;margin-left:auto;border-color:rgba(255,255,255,0.22);color:var(--nuit-doux)}
+.une-fleche:hover,.une-pause:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.5)}
+.une-fleche:focus-visible,.une-pause:focus-visible,.une-point:focus-visible{outline:3px solid var(--grenat-clair);outline-offset:3px}
+.une-points{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+/* Point : cible de 24 px pour le doigt, dessin de 8 px ; l'actif s'allonge et se remplit jusqu'à la promo suivante */
+.une-point{position:relative;width:24px;height:24px;border:0;padding:0;background:transparent;cursor:pointer}
+.une-point::before{content:'';position:absolute;left:8px;top:8px;width:8px;height:8px;border-radius:4px;background:rgba(255,255,255,0.38);transition:width 0.35s cubic-bezier(0.22,1,0.36,1),left 0.35s cubic-bezier(0.22,1,0.36,1),background 0.2s}
+.une-point[aria-current="true"]{width:44px}
+.une-point[aria-current="true"]::before{left:4px;width:36px;background:rgba(255,255,255,0.3)}
+.une-point::after{content:'';position:absolute;left:4px;top:8px;width:0;height:8px;border-radius:4px;background:var(--nuit-texte);opacity:0}
+.une-point[aria-current="true"]::after{opacity:1;width:36px}
+.une-nav.defile .une-point[aria-current="true"]::after{animation:jaugeUne 5.5s linear both}
+@keyframes jaugeUne{from{width:8px}to{width:36px}}
+@media(prefers-reduced-motion:reduce){.une-nav.defile .une-point[aria-current="true"]::after{animation:none}}
 
 /* ── PAGE D'UN RAYON (site.html?rayon=solaire) : même en-tête, panier et pied de page que l'accueil ── */
 body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none!important}
@@ -759,8 +783,8 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
       <h1 class="reveal reveal-d1">Votre parapharmacie, <span class="accent">prête à emporter</span></h1>
       <p class="reveal reveal-d2">Commandez vos produits en ligne, profitez des promotions du moment et récupérez votre commande <span data-pharma="a-la-nom">à la Pharmacie Démo</span> quand vous voulez. Simple, rapide, sans attente.</p>
       <div class="hero-cta reveal reveal-d3">
-        <button class="btn-lg btn-primary" data-si-promo onclick="document.getElementById('promos').scrollIntoView()"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>Voir les promos</button>
-        <button class="btn-lg btn-outline" onclick="document.getElementById('catalogue').scrollIntoView()">Parcourir le catalogue</button>
+        <button class="btn-lg btn-primary" data-si-promo onclick="allerA('promos')"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>Voir les promos</button>
+        <button class="btn-lg btn-outline" onclick="allerA('catalogue')">Parcourir le catalogue</button>
       </div>
       <div class="hero-stats reveal reveal-d3">
         <div class="hero-stat"><div class="num">500+</div><div class="lbl">Produits</div></div>
@@ -832,6 +856,12 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
         <a class="lien-clair" href="#promos">Voir toutes les promos</a>
       </div>
     </div>
+  </div>
+  <div class="container une-nav" id="une-nav" hidden>
+    <button type="button" class="une-fleche" id="une-prec" aria-label="Promotion précédente"></button>
+    <div class="une-points" id="une-points"></div>
+    <button type="button" class="une-fleche" id="une-suiv" aria-label="Promotion suivante"></button>
+    <button type="button" class="une-pause" id="une-pause" aria-label="Mettre en pause le défilement"></button>
   </div>
 </section>
 
@@ -1077,12 +1107,12 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
   </div>
 </div>
 
-<script src="supabase.js?v=20261017234437"></script>
-<script src="supabase-config.js?v=20261017234437"></script>
-<script src="data.js?v=20261017234437"></script>
-<script src="cloud.js?v=20261017234437"></script>
-<script src="emails.js?v=20261017234437"></script>
-<script src="site.js?v=20261017234437"></script>
+<script src="supabase.js?v=20261018100548"></script>
+<script src="supabase-config.js?v=20261018100548"></script>
+<script src="data.js?v=20261018100548"></script>
+<script src="cloud.js?v=20261018100548"></script>
+<script src="emails.js?v=20261018100548"></script>
+<script src="site.js?v=20261018100548"></script>
 
 <!-- MODAL PAGES LÉGALES -->
 <div class="modal-ov" id="legal-modal">
@@ -1105,6 +1135,6 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
   </div>
 </div>
 
-<script src="demo-nav.js?v=20261017234437"></script>
+<script src="demo-nav.js?v=20261018100548"></script>
 </body>
 </html>

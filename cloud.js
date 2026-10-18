@@ -126,10 +126,15 @@ var PharmaCloud = (function () {
     });
     return photos;
   }
+  // Rayons masqués sur le site (colonne « visible » absente tant que 06-rayons-promos.sql n'a pas été exécuté : tous affichés)
+  function rayonsMasquesVersLocal(lignes) {
+    return tableau(lignes).filter(function (c) { return c && c.visible === false; }).map(function (c) { return texte(c.nom); });
+  }
   function promoVersLocal(r) {
     return { id: r.id, produit: texte(r.produit), produitId: r.produit_id == null ? null : r.produit_id,
              qte: entier(r.qte) || 1, prixNormal: nombre(r.prix_normal), prixPromo: nombre(r.prix_promo),
-             pct: entier(r.pct), debut: texte(r.debut), fin: texte(r.fin), statut: texte(r.statut) };
+             pct: entier(r.pct), debut: texte(r.debut), fin: texte(r.fin), statut: texte(r.statut),
+             miseEnAvant: r.mise_en_avant === true };
   }
   function conseilVersLocal(r) {
     return { id: r.id, icone: texte(r.icone), titre: texte(r.titre), texte: texte(r.texte),
@@ -204,7 +209,7 @@ var PharmaCloud = (function () {
     try {
       localStorage.setItem(CLE_CACHE, JSON.stringify({ v: VERSION_CACHE, t: Date.now(), d: {
         parametres: d.parametres, horaires: d.horaires, joursSpeciaux: d.joursSpeciaux,
-        categories: d.categories, photosRayons: d.photosRayons, contenuRayons: d.contenuRayons, produits: d.produits, promos: d.promos, conseils: d.conseils
+        categories: d.categories, photosRayons: d.photosRayons, contenuRayons: d.contenuRayons, rayonsMasques: d.rayonsMasques, produits: d.produits, promos: d.promos, conseils: d.conseils
       } }));
     } catch (e) { /* stockage plein ou bloqué : sans conséquence */ }
   }
@@ -214,7 +219,7 @@ var PharmaCloud = (function () {
     var d = squelette();
     var c = lireCache();
     if (c) {
-      ['horaires', 'joursSpeciaux', 'categories', 'photosRayons', 'contenuRayons', 'produits', 'promos', 'conseils'].forEach(function (k) {
+      ['horaires', 'joursSpeciaux', 'categories', 'photosRayons', 'contenuRayons', 'rayonsMasques', 'produits', 'promos', 'conseils'].forEach(function (k) {
         if (c[k] !== undefined) d[k] = c[k];
       });
       if (c.parametres && typeof c.parametres === 'object') {
@@ -242,6 +247,7 @@ var PharmaCloud = (function () {
       d.categories = rayons.categories;
       d.contenuRayons = rayons.contenu;
       d.photosRayons = photosRayonsVersLocal(r[1]);
+      d.rayonsMasques = rayonsMasquesVersLocal(r[1]);
       d.produits = tableau(r[2]).filter(function (p) { return p.actif !== false; }).map(produitVersLocal);
       d.promos = tableau(r[3]).map(promoVersLocal);
       d.conseils = tableau(r[4]).filter(function (c) { return c.actif !== false; }).map(conseilVersLocal);
@@ -314,7 +320,7 @@ var PharmaCloud = (function () {
     executer: executer,
     // conversions réutilisées par l'administration et l'espace client
     conv: { produit: produitVersLocal, promo: promoVersLocal, conseil: conseilVersLocal, reglagesPublics: appliquerReglagesPublics,
-            photosRayons: photosRayonsVersLocal, rayons: rayonsVersLocal },
+            photosRayons: photosRayonsVersLocal, rayons: rayonsVersLocal, rayonsMasques: rayonsMasquesVersLocal },
     lireLiensRayons: lireLiensRayons,
     squelette: squelette
   };

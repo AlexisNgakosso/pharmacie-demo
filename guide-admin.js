@@ -177,7 +177,8 @@
           'Page <strong>Rayons</strong> : l\'ordre des rayons sur le site (glisser par la poignée, ou flèches haut et bas), leur nom, leur photo.',
           'Touchez un rayon pour gérer ses produits : en ajouter (recherche), les retirer, les mettre dans l\'ordre de la page du rayon.',
           'Un produit a un <strong>rayon principal</strong> (fenêtre du produit) et peut être ajouté à d\'autres rayons.',
-          'Chaque rayon a sa page sur le site, ouverte depuis « Nos rayons » sur l\'accueil et depuis le menu.'
+          'Chaque rayon a sa page sur le site, ouverte depuis « Nos rayons » sur l\'accueil et depuis le menu.',
+          'Bouton <strong>Sur le site</strong> : masquer un rayon (hors saison par exemple). Il disparaît des rayons, des filtres et du menu du site ; ses produits restent en vente dans « Tous » et dans leurs autres rayons.'
         ])
         + note('Utilisez vos propres photos ou celles fournies par la marque pour la vente en ligne : une image trouvée sur internet n\'est pas libre de droits.')
         + note('Le site ne vend que de la parapharmacie : n\'ajoutez aucun médicament au catalogue.', 'alerte'),
@@ -221,7 +222,8 @@
           'La promo s\'affiche sur l\'accueil du site du premier au dernier jour inclus, dès minuit.',
           'Le prix promo doit être inférieur au prix normal, la fin après le début.',
           'Le stock consommé est celui du produit relié (un lot de 3 retire 3 unités).',
-          'Supprimez une promo pour la retirer immédiatement du site.'
+          'Supprimez une promo pour la retirer immédiatement du site.',
+          'Case <strong>Mise en avant</strong> : la promo défile dans « La promo du moment » en haut de l\'accueil, avec les autres promos cochées. Aucune cochée : l\'accueil montre la plus forte remise.'
         ])
         + note('Créer une promotion n\'envoie aucun message aux clients : pour les prévenir, utilisez Notifications.'),
       visite: [

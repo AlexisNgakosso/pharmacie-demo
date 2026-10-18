@@ -108,7 +108,7 @@ function buildCatalogueData() {
       id: 'promo-'+pr.id, promoId: pr.id, cat: cat, nom: pr.produit,
       prixPromo: pr.prixPromo, prixNormal: pr.prixNormal,
       pct: Math.abs(pr.pct), fin: formatDateFr(pr.fin), finIso: String(pr.fin || '').slice(0, 10), icon: iconForCat(cat),
-      photo: produit ? pharmaPhotoValide(produit.photo) : ''
+      photo: produit ? pharmaPhotoValide(produit.photo) : '', miseEnAvant: pr.miseEnAvant === true
     };
   });
 }
@@ -770,13 +770,22 @@ function initAmbient() {
 var JOURS_SEMAINE = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 
 // La promo mise en avant : la plus forte réduction, puis celle qui se termine le plus tôt
+function ordrePromos(a, b) {
+  var ecart = nombre(b.pct) - nombre(a.pct);
+  if (ecart) return ecart;
+  var fa = a.finIso || '9999', fb = b.finIso || '9999';
+  return fa < fb ? -1 : (fa > fb ? 1 : 0);
+}
 function promoALaUne() {
-  return PROMOS.slice().sort(function(a, b) {
-    var ecart = nombre(b.pct) - nombre(a.pct);
-    if (ecart) return ecart;
-    var fa = a.finIso || '9999', fb = b.finIso || '9999';
-    return fa < fb ? -1 : (fa > fb ? 1 : 0);
-  })[0] || null;
+  return PROMOS.slice().sort(ordrePromos)[0] || null;
+}
+// Promos qui défilent dans « La promo du moment » : celles cochées « Mise en avant » dans l'admin,
+// la plus forte remise d'abord. Aucune cochée : la plus forte remise seule, comme avant.
+function promosEnAvant() {
+  var choisies = PROMOS.filter(function(p) { return p.miseEnAvant; }).sort(ordrePromos);
+  if (choisies.length) return choisies;
+  var p = promoALaUne();
+  return p ? [p] : [];
 }
 
 // Prochain jour spécial (garde, fermeture, horaires modifiés) dans les 14 jours, comme dans le pied de page
@@ -848,10 +857,16 @@ function renderRecit() {
   renderAujourdhui();
 }
 
-// Chapitre « La promo du moment »
+// Chapitre « La promo du moment » : la promo affichée est celle où en est le défilement
+var unePromos = [], uneIndex = 0;
 function renderUne() {
-  var p = promoALaUne();
+  var avant = unePromo && unePromo.id;
+  unePromos = promosEnAvant();
+  var garde = unePromos.findIndex(function(x) { return x.id === avant; });
+  uneIndex = garde >= 0 ? garde : (uneIndex < unePromos.length ? uneIndex : 0);
+  var p = unePromos[uneIndex] || null;
   unePromo = p;
+  renderUneNav();
   document.querySelectorAll('[data-si-promo]').forEach(function(el) { el.style.display = p ? '' : 'none'; });
   var grille = document.getElementById('promos');
   if (grille) grille.style.display = PROMOS.length ? '' : 'none';
@@ -905,7 +920,7 @@ function compterUne() {
     var x = Math.min(1, (t - debut) / duree);
     nb.textContent = Math.round(cible * (1 - Math.pow(1 - x, 2)));
     if (x < 1) uneAnim.raf = requestAnimationFrame(pas);
-    else { uneAnim.etat = 'fait'; uneAnim.rack = setTimeout(function() { rackFocus('produit'); }, 250); }
+    else { uneAnim.etat = 'fait'; uneAnim.rack = setTimeout(function() { rackFocus('produit'); planifierUneSuivante(); }, 250); }
   }
   nb.textContent = '0';
   uneAnim.raf = requestAnimationFrame(pas);
@@ -921,11 +936,180 @@ function rackFocus(plan) {
 function rearmerUne() {
   cancelAnimationFrame(uneAnim.raf);
   clearTimeout(uneAnim.rack);
+  arreterMinuteurUne();
   // Prêt pour le prochain passage : le produit attend déjà en retrait, le chiffre aura la mise au point
   rackFocus('chiffre');
   uneAnim.etat = 'attente';
   var nb = document.getElementById('une-pct');
   if (nb) nb.textContent = '0';
+}
+
+// ── DÉFILEMENT DES PROMOS MISES EN AVANT ──
+// La promo suivante arrive par la droite, la précédente part vers la gauche. Défilement automatique
+// toutes les 5,5 secondes une fois le chiffre arrivé ; il s'interrompt sous la souris, pendant qu'on
+// utilise le clavier dans le chapitre, hors de l'écran, et s'arrête dès que le visiteur choisit lui-même
+// (flèches, points, glisser au doigt) ou touche « pause ». Animations réduites : pas de défilement automatique.
+var DUREE_UNE = 5500;
+var uneDefil = { minuteur: 0, survol: false, focus: false, arret: false, glisse: false };
+var SVG_UNE = {
+  prec: '<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
+  suiv: '<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>',
+  pause: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+  lecture: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>'
+};
+function defilementAutoPossible() {
+  return unePromos.length > 1 && recitAnime && !uneDefil.arret && !uneDefil.survol && !uneDefil.focus && !document.hidden;
+}
+function arreterMinuteurUne() {
+  clearTimeout(uneDefil.minuteur);
+  var nav = document.getElementById('une-nav');
+  if (nav) nav.classList.remove('defile');
+}
+function planifierUneSuivante() {
+  arreterMinuteurUne();
+  if (!defilementAutoPossible() || uneAnim.etat !== 'fait') return;
+  var nav = document.getElementById('une-nav');
+  if (nav) { void nav.offsetWidth; nav.classList.add('defile'); }   // la jauge du point actif se remplit
+  uneDefil.minuteur = setTimeout(function() { changerUne(1); }, DUREE_UNE);
+}
+function renderUneNav() {
+  var nav = document.getElementById('une-nav');
+  if (!nav) return;
+  var n = unePromos.length;
+  nav.hidden = n < 2;
+  var sec = document.getElementById('a-la-une');
+  if (sec) {
+    if (n > 1) sec.setAttribute('aria-roledescription', 'carrousel'); else sec.removeAttribute('aria-roledescription');
+  }
+  if (n < 2) { arreterMinuteurUne(); return; }
+  var points = document.getElementById('une-points');
+  if (points && points.children.length !== n) {
+    points.innerHTML = unePromos.map(function(p, i) { return '<button type="button" class="une-point" data-i="' + i + '"></button>'; }).join('');
+  }
+  if (points) Array.prototype.forEach.call(points.children, function(b, i) {
+    var p = unePromos[i];
+    b.setAttribute('aria-label', 'Promotion ' + (i + 1) + ' sur ' + n + (p ? ' : ' + p.nom : ''));
+    if (i === uneIndex) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+  });
+  var pause = document.getElementById('une-pause');
+  if (pause) {
+    var arrete = uneDefil.arret || !recitAnime;
+    pause.innerHTML = arrete ? SVG_UNE.lecture : SVG_UNE.pause;
+    pause.setAttribute('aria-label', arrete ? 'Faire défiler les promotions' : 'Mettre en pause le défilement');
+    pause.hidden = !recitAnime;
+  }
+}
+// sens : 1 = suivante (arrive par la droite), -1 = précédente ; cible : numéro précis (points)
+function changerUne(sens, cible) {
+  var n = unePromos.length;
+  if (n < 2 || uneDefil.glisse) return;
+  var i = cible != null ? cible : (uneIndex + sens + n) % n;
+  if (i === uneIndex) { remettreUneEnPlace(); return; }
+  if (cible != null) sens = i > uneIndex ? 1 : -1;
+  arreterMinuteurUne();
+  var une = document.querySelector('#a-la-une .une');
+  function montrer() {
+    rearmerUne();
+    uneIndex = i;
+    unePromo = unePromos[i];
+    renderUne();   // le chiffre repart de 0 et défile dès que la promo est à l'écran
+  }
+  if (!une || !recitAnime) {
+    montrer();
+    if (une) { une.style.transition = 'none'; une.style.transform = ''; une.style.opacity = ''; }
+    return;
+  }
+  uneDefil.glisse = true;
+  une.style.transition = 'transform 0.3s cubic-bezier(0.4,0,1,1), opacity 0.3s';
+  une.style.transform = 'translateX(' + (-sens * 70) + 'px)';
+  une.style.opacity = '0';
+  setTimeout(function() {
+    montrer();
+    une.style.transition = 'none';
+    une.style.transform = 'translateX(' + (sens * 70) + 'px)';
+    void une.offsetWidth;
+    une.style.transition = 'transform 0.55s cubic-bezier(0.22,1,0.36,1), opacity 0.45s';
+    une.style.transform = '';
+    une.style.opacity = '';
+    setTimeout(function() { une.style.transition = ''; uneDefil.glisse = false; }, 560);
+  }, 300);
+}
+function remettreUneEnPlace() {
+  var une = document.querySelector('#a-la-une .une');
+  if (!une) return;
+  une.style.transition = 'transform 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.3s';
+  une.style.transform = '';
+  une.style.opacity = '';
+}
+// Le visiteur choisit lui-même : le défilement automatique s'arrête (il peut le relancer avec le bouton)
+function choixVisiteurUne(sens, cible) {
+  uneDefil.arret = true;
+  renderUneNav();
+  changerUne(sens, cible);
+}
+function initDefilementUne() {
+  var sec = document.getElementById('a-la-une');
+  var une = sec && sec.querySelector('.une');
+  if (!sec || !une) return;
+  var prec = document.getElementById('une-prec'), suiv = document.getElementById('une-suiv');
+  var points = document.getElementById('une-points'), pause = document.getElementById('une-pause');
+  if (prec) { prec.innerHTML = SVG_UNE.prec; prec.addEventListener('click', function() { choixVisiteurUne(-1); }); }
+  if (suiv) { suiv.innerHTML = SVG_UNE.suiv; suiv.addEventListener('click', function() { choixVisiteurUne(1); }); }
+  if (points) points.addEventListener('click', function(e) {
+    var b = e.target.closest('.une-point');
+    if (b) choixVisiteurUne(0, parseInt(b.getAttribute('data-i'), 10));
+  });
+  if (pause) pause.addEventListener('click', function() {
+    uneDefil.arret = !uneDefil.arret;
+    renderUneNav();
+    if (uneDefil.arret) arreterMinuteurUne(); else changerUne(1);
+  });
+  // Pause sous la souris et pendant l'usage du clavier dans le chapitre
+  sec.addEventListener('pointerenter', function(e) { if (e.pointerType === 'mouse') { uneDefil.survol = true; arreterMinuteurUne(); } });
+  sec.addEventListener('pointerleave', function(e) { if (e.pointerType === 'mouse') { uneDefil.survol = false; planifierUneSuivante(); } });
+  sec.addEventListener('focusin', function() { uneDefil.focus = true; arreterMinuteurUne(); });
+  sec.addEventListener('focusout', function(e) { if (!sec.contains(e.relatedTarget)) { uneDefil.focus = false; planifierUneSuivante(); } });
+  document.addEventListener('visibilitychange', function() { if (document.hidden) arreterMinuteurUne(); else planifierUneSuivante(); });
+  // Glisser au doigt (ou à la souris) : la promo suit, puis passe à la suivante ou revient en place
+  var depart = null, glisse = false, dernierX = 0, dernierT = 0, vitesse = 0;
+  une.addEventListener('pointerdown', function(e) {
+    if (unePromos.length < 2 || uneDefil.glisse || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    depart = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    glisse = false; dernierX = e.clientX; dernierT = e.timeStamp; vitesse = 0;
+  });
+  une.addEventListener('pointermove', function(e) {
+    if (!depart || e.pointerId !== depart.id) return;
+    var dx = e.clientX - depart.x, dy = e.clientY - depart.y;
+    if (!glisse) {
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { depart = null; return; }   // défilement de la page
+      if (Math.abs(dx) < 10) return;
+      glisse = true;
+      try { une.setPointerCapture(e.pointerId); } catch (err) {}
+      arreterMinuteurUne();
+      une.style.transition = 'none';
+      une.classList.add('glisse');
+    }
+    if (e.timeStamp > dernierT) vitesse = (e.clientX - dernierX) / (e.timeStamp - dernierT);
+    dernierX = e.clientX; dernierT = e.timeStamp;
+    une.style.transform = 'translateX(' + (dx * 0.9) + 'px)';
+    une.style.opacity = String(1 - Math.min(Math.abs(dx) / 520, 0.45));
+  });
+  function finGlisse(e) {
+    if (!depart || (e && e.pointerId !== depart.id)) return;
+    var dx = (e ? e.clientX : dernierX) - depart.x;
+    depart = null;
+    if (!glisse) return;
+    une.classList.remove('glisse');
+    // Le toucher qui a servi à glisser ne déclenche pas le bouton sous le doigt (s'il y a un clic juste après)
+    var bloquer = function(ev) { ev.stopPropagation(); ev.preventDefault(); };
+    une.addEventListener('click', bloquer, true);
+    setTimeout(function() { une.removeEventListener('click', bloquer, true); glisse = false; }, 350);
+    if (Math.abs(dx) > 60 || Math.abs(vitesse) > 0.45) choixVisiteurUne(dx < 0 ? 1 : -1);
+    else remettreUneEnPlace();
+  }
+  une.addEventListener('pointerup', finGlisse);
+  une.addEventListener('pointercancel', function(e) { if (depart && e.pointerId === depart.id) { depart = null; une.classList.remove('glisse'); remettreUneEnPlace(); } });
+  renderUneNav();
 }
 
 // Chapitre « Nos rayons » : les rayons qui ont des produits, dans l'ordre de l'admin ; chacun mène à sa page
@@ -965,7 +1149,7 @@ function slugAdresse() {
   if (!m) return '';
   try { return decodeURIComponent(m[1]).toLowerCase(); } catch (e) { return ''; }
 }
-function afficherVue(versHaut, ancre) {
+function afficherVue(versHaut) {
   var page = document.getElementById('page-rayon');
   if (!page) return;
   var slug = slugAdresse();
@@ -976,8 +1160,6 @@ function afficherVue(versHaut, ancre) {
     if (versHaut) window.scrollTo(0, 0);
   } else {
     if (titreSite) document.title = titreSite;
-    var cible = ancre && ancre.length > 1 ? document.getElementById(ancre.slice(1)) : null;
-    if (cible) cible.scrollIntoView();
   }
 }
 function renderPageRayon() {
@@ -1003,9 +1185,10 @@ function renderPageRayon() {
     return;
   }
   var nom = pharmaRayonDepuisSlug(DATA, slug);
+  if (nom && !pharmaRayonVisible(DATA, nom)) nom = null;   // rayon masqué depuis l'admin
   if (!nom) {
     titre.textContent = 'Rayon introuvable';
-    sous.textContent = 'Ce rayon n\'existe plus ou a changé de nom. Choisissez un autre rayon ci-dessous.';
+    sous.textContent = 'Ce rayon n\'est plus proposé ou a changé de nom. Choisissez un autre rayon ci-dessous.';
     photo.hidden = true;
     grille.innerHTML = '';
     listeAutres(null);
@@ -1027,6 +1210,43 @@ function renderPageRayon() {
   document.title = nom + (nomPharma ? ' — ' + nomPharma : '');
 }
 // Liens vers un rayon, et liens de l'accueil (#catalogue…) depuis la page d'un rayon : sans recharger la page
+// ── RACCOURCIS VERS UNE SECTION : en fondu ──
+// Le défilement automatique traversait toute la page trop vite. À la place : la page s'efface (fondu),
+// saute directement à la section, puis réapparaît en fondu. L'en-tête reste en place pendant ce temps.
+// avantSaut (facultatif) s'exécute page effacée : changer de vue (page d'un rayon -> accueil) par exemple.
+var voileNav = null, minuteurVoile = 0;
+// Saut immédiat malgré le défilement doux de la page (html{scroll-behavior:smooth}). La lecture du style
+// calculé oblige le navigateur à prendre en compte le changement avant de défiler.
+function sansDefilementDoux(fn) {
+  var racine = document.documentElement, avant = racine.style.scrollBehavior;
+  racine.style.scrollBehavior = 'auto';
+  void getComputedStyle(racine).scrollBehavior;
+  try { fn(); } finally { racine.style.scrollBehavior = avant; }
+}
+function allerA(cible, avantSaut) {
+  function trouver() { return typeof cible === 'string' ? document.getElementById(cible.replace(/^#/, '')) : cible; }
+  function sauter() {
+    if (avantSaut) avantSaut();
+    var el = trouver();
+    if (!el) return;
+    sansDefilementDoux(function() { el.scrollIntoView({ block: 'start' }); });
+  }
+  if (prefersReducedMotion()) { sauter(); return; }
+  if (!voileNav) {
+    voileNav = document.createElement('div');
+    voileNav.className = 'voile-nav';
+    voileNav.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(voileNav);
+  }
+  clearTimeout(minuteurVoile);
+  voileNav.classList.add('visible');
+  minuteurVoile = setTimeout(function() {
+    sauter();
+    // Une image pour que la page se place, puis elle réapparaît
+    requestAnimationFrame(function() { requestAnimationFrame(function() { voileNav.classList.remove('visible'); }); });
+  }, 240);
+}
+
 function initNavigationRayons() {
   document.addEventListener('click', function(e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -1043,13 +1263,54 @@ function initNavigationRayons() {
     if (document.body.classList.contains('vue-rayon') && /^(site\.html)?#[\w-]+$/.test(href)) {
       e.preventDefault();
       var ancre = href.replace(/^site\.html/, '');
-      history.pushState({}, '', location.pathname + ancre);
-      afficherVue(false, ancre);
       if (typeof closeMobileMenu === 'function') closeMobileMenu();
+      allerA(ancre, function() {
+        history.pushState({}, '', location.pathname + ancre);
+        afficherVue(false);
+      });
+      return;
+    }
+    // Lien vers une section de l'accueil (menu, menu du téléphone, pied de page, boutons) : en fondu
+    if (/^#[\w-]+$/.test(href)) {
+      var cible = document.getElementById(href.slice(1));
+      if (!cible || cible.hidden || !cible.getClientRects().length) return;
+      e.preventDefault();
+      if (typeof closeMobileMenu === 'function') closeMobileMenu();
+      try { history.replaceState(history.state, '', href); } catch (err) {}
+      allerA(cible);
     }
   });
   window.addEventListener('popstate', function() { afficherVue(false); });
+  retrouverPositionSite();
   afficherVue(false);
+}
+
+// ── RETOUR DEPUIS L'ADMINISTRATION OU L'ESPACE CLIENT ──
+// En quittant le site pour l'admin ou l'espace client (même onglet), la page (accueil ou rayon) et la position
+// sont notées ; en revenant dans les 30 minutes, on les retrouve. sessionStorage : propre à l'onglet.
+var CLE_POSITION_SITE = 'pharma-site-position';
+var positionARetrouver = null;
+window.addEventListener('pagehide', function() {
+  try { sessionStorage.setItem(CLE_POSITION_SITE, JSON.stringify({ vue: location.search, y: Math.round(window.scrollY || 0), t: Date.now() })); } catch (e) {}
+});
+function retrouverPositionSite() {
+  var ref = document.referrer || '', dossier = location.origin + location.pathname.replace(/[^\/]*$/, '');
+  if (ref.indexOf(dossier) !== 0 || !/^(admin|compte)\.html(?:[?#]|$)/.test(ref.slice(dossier.length))) return;
+  if (location.hash || location.search) return;   // lien précis (section, rayon) : on le respecte
+  var n = null;
+  try { n = JSON.parse(sessionStorage.getItem(CLE_POSITION_SITE) || 'null'); } catch (e) {}
+  if (!n || !(Date.now() - n.t < 30 * 60 * 1000)) return;
+  if (/^\?rayon=[^&#]+$/.test(n.vue || '')) history.replaceState(null, '', location.pathname + n.vue);
+  positionARetrouver = Math.max(0, parseInt(n.y, 10) || 0);
+  replacerPosition();
+  window.addEventListener('load', replacerPosition);
+  setTimeout(function() { positionARetrouver = null; }, 6000);   // plus tard, le visiteur a déjà bougé
+}
+// Appelée aussi à l'arrivée du catalogue de la base (la page s'allonge)
+function replacerPosition() {
+  if (positionARetrouver === null) return;
+  var y = positionARetrouver;
+  requestAnimationFrame(function() { sansDefilementDoux(function() { window.scrollTo(0, y); }); });
 }
 
 // Chapitre « Fidélité » : palier et réduction de l'admin, jauge qui se remplit à l'arrivée
@@ -1154,6 +1415,7 @@ function initRecit() {
     if (p) addToCart(p.id, p.nom, nombre(p.prixPromo), p.icon, p.cat);
   });
   initRaccourci();
+  initDefilementUne();
   setInterval(renderAujourdhui, 60000);
   if (!recitAnime) return;
   // Promo : le chiffre défile quand il est bien visible, et recommence après être sorti de l'écran
@@ -1209,7 +1471,7 @@ function initRaccourci() {
   new IntersectionObserver(function(e) { catVu = e[0].isIntersecting; maj(); }, { rootMargin: '-20% 0px -20% 0px' }).observe(cat);
   lien.addEventListener('click', function(ev) {
     ev.preventDefault();
-    cat.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    allerA(cat);
   });
   var cookies = document.getElementById('cookie-bar');
   if (cookies && window.MutationObserver) new MutationObserver(maj).observe(cookies, { attributes: true, attributeFilter: ['class'] });
@@ -1303,8 +1565,9 @@ function produitsCatalogueDuRayon(nom) {
   }).filter(Boolean);
 }
 // Rayons qui ont au moins un produit, dans l'ordre de l'admin
+// Rayons proposés sur le site : ceux qui ont des produits et que l'admin n'a pas masqués
 function rayonsAvecProduits() {
-  return (DATA.categories || []).filter(function(c) { return produitsCatalogueDuRayon(c).length > 0; });
+  return (DATA.categories || []).filter(function(c) { return pharmaRayonVisible(DATA, c) && produitsCatalogueDuRayon(c).length > 0; });
 }
 
 function renderCatalogue() {
@@ -1547,8 +1810,7 @@ function continuerEnInvite() {
     if (checkout) checkout.classList.add('open');
     pharmaToast('Mode invité — aucun compte nécessaire');
   } else {
-    var cat = document.getElementById('catalogue');
-    if (cat) cat.scrollIntoView({ behavior: 'smooth' });
+    allerA('catalogue');
     pharmaToast('Mode invité activé — ajoutez vos produits au panier');
   }
 }
@@ -2086,6 +2348,7 @@ function rafraichirAffichageCloud() {
   renderFaq();
   if (!flipCardsLancees) { flipCardsLancees = true; initFlipCards(); }
   nettoyerPanierCloud();
+  replacerPosition();
 }
 
 // Le panier gardé d'une visite précédente est remis à jour avec le catalogue de la base :

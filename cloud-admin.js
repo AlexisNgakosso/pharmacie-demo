@@ -128,7 +128,7 @@ var PharmaAdminCloud = (function () {
         var pid = prod ? idsBase.get(prod) : (p.produitId == null ? null : p.produitId);
         return { produit: texte(p.produit), produit_id: pid, qte: entier(p.qte) || 1, prix_normal: arrondi(p.prixNormal),
                  prix_promo: arrondi(p.prixPromo), pct: entier(p.pct), debut: texte(p.debut).slice(0, 10) || null,
-                 fin: texte(p.fin).slice(0, 10) || null, statut: texte(p.statut) || 'Active' };
+                 fin: texte(p.fin).slice(0, 10) || null, statut: texte(p.statut) || 'Active', mise_en_avant: p.miseEnAvant === true };
       } },
     { cle: 'conseils', table: 'conseils', id: 'id', versBase: function (c) {
         return { icone: texte(c.icone), titre: texte(c.titre), texte: texte(c.texte), couleur: texte(c.couleur) || '#1B6B45', actif: c.actif !== false };
@@ -232,6 +232,7 @@ var PharmaAdminCloud = (function () {
       etatRayons.table = r[15] !== null;
       etatRayons.position = !tableau(r[2]).length || tableau(r[2])[0].position !== undefined;
       d.photosRayons = conv.photosRayons(r[2]);
+      d.rayonsMasques = conv.rayonsMasques(r[2]);
       d.produits = tableau(r[3]).map(conv.produit);
       d.promos = tableau(r[4]).map(conv.promo);
       d.conseils = tableau(r[5]).map(conv.conseil);
@@ -279,7 +280,7 @@ var PharmaAdminCloud = (function () {
   var profilsConnus = [];
   function prendreInstantane(d) {
     instantane = { tables: {}, categories: d.categories.slice(), ordre: d.categories.slice(), contenu: clone(objet(d.contenuRayons)),
-                   photosRayons: clone(objet(d.photosRayons)),
+                   photosRayons: clone(objet(d.photosRayons)), masques: (d.rayonsMasques || []).slice(),
                    public: clone(reglagesPublicsVersBase(d)), prive: clone(reglagesPrivesVersBase(d)), employes: {} };
     TABLES.forEach(function (def) {
       var m = new Map();
@@ -326,6 +327,7 @@ var PharmaAdminCloud = (function () {
   // Base installée avant le 17 octobre : la colonne « photo » n'existe pas encore
   // (PGRST204 : colonne inconnue de l'API ; 42703 : colonne inconnue de la base)
   var MSG_MAJ_PHOTOS = 'la photo n\'a pas été enregistrée : exécutez le fichier 04-photos.sql dans Supabase (SQL Editor)';
+  var MSG_MAJ_AFFICHAGE = 'non enregistré : exécutez le fichier 06-rayons-promos.sql dans Supabase (SQL Editor)';
   function erreurColonnePhoto(avecPhoto) {
     return function (err) {
       if (avecPhoto && err && (err.code === 'PGRST204' || err.code === '42703')) throw new Error(MSG_MAJ_PHOTOS);
@@ -384,6 +386,21 @@ var PharmaAdminCloud = (function () {
         }, erreurColonnePhoto(true));
       });
     });
+    // 1 quater. Rayons affichés ou masqués sur le site (bouton de la page Rayons)
+    var avantMasques = instantane.masques;
+    d.categories.forEach(function (nom) {
+      var masque = !pharmaRayonVisible(d, nom), avant = avantMasques.indexOf(nom) !== -1;
+      if (masque === avant || instantane.categories.indexOf(nom) === -1 && !masque) return;
+      etape(function () {
+        return executer(sb.from('categories').update({ visible: !masque }).eq('nom', nom).select()).then(function (res) {
+          verifierLigne(res, 'Affichage du rayon ' + nom);
+          if (masque) avantMasques.push(nom); else avantMasques.splice(avantMasques.indexOf(nom), 1);
+        }, function (err) {
+          if (err && (err.code === 'PGRST204' || err.code === '42703')) throw new Error('Affichage du rayon ' + nom + ' ' + MSG_MAJ_AFFICHAGE);
+          throw err;
+        });
+      });
+    });
     // 2. Tables : ajouts, modifications, suppressions
     TABLES.forEach(function (def) {
       var snap = instantane.tables[def.cle];
@@ -395,6 +412,7 @@ var PharmaAdminCloud = (function () {
           // Produit sans photo : la colonne n'est pas envoyée (base pas encore mise à jour : l'ajout fonctionne)
           var envoi = ligne;
           if (def.cle === 'produits' && !ligne.photo) { envoi = clone(ligne); delete envoi.photo; }
+          if (def.cle === 'promos' && !ligne.mise_en_avant) { envoi = clone(ligne); delete envoi.mise_en_avant; }
           etape(function () {
             return executer(sb.from(def.table).insert(envoi).select()).then(function (res) {
               var cree = verifierLigne(res, 'Ajout');
@@ -409,7 +427,10 @@ var PharmaAdminCloud = (function () {
                 });
               }
               snap.set(nid, ligne);
-            }, erreurColonnePhoto(def.cle === 'produits' && !!ligne.photo));
+            }, function (err) {
+              if (def.cle === 'promos' && ligne.mise_en_avant && err && (err.code === 'PGRST204' || err.code === '42703')) throw new Error('Promotion « mise en avant » ' + MSG_MAJ_AFFICHAGE);
+              return erreurColonnePhoto(def.cle === 'produits' && !!ligne.photo)(err);
+            });
           });
           return;
         }
@@ -424,7 +445,10 @@ var PharmaAdminCloud = (function () {
             return executer(sb.from(def.table).update(changes).eq(def.id, dbid).select()).then(function (res) {
               verifierLigne(res, 'Modification');
               snap.set(dbid, ligne);
-            }, erreurColonnePhoto(def.cle === 'produits' && changes.photo !== undefined));
+            }, function (err) {
+              if (def.cle === 'promos' && changes.mise_en_avant !== undefined && err && (err.code === 'PGRST204' || err.code === '42703')) throw new Error('Promotion « mise en avant » ' + MSG_MAJ_AFFICHAGE);
+              return erreurColonnePhoto(def.cle === 'produits' && changes.photo !== undefined)(err);
+            });
           });
         }
       });

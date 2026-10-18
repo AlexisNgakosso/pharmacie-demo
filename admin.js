@@ -104,6 +104,32 @@ var PAGE_META = {
   parametres:    { title:'Paramètres',             cta:null }
 };
 
+// Dernière page ouverte dans cet onglet : on la retrouve en revenant du site (même onglet, même session).
+// sessionStorage : oublié à la fermeture de l'onglet, rien n'est gardé d'une session à l'autre.
+var CLE_PAGE_ADMIN = 'pharma-admin-page';
+function memoriserPage(id) { try { sessionStorage.setItem(CLE_PAGE_ADMIN, id); } catch (e) {} }
+function pageMemorisee() {
+  var id = null;
+  try { id = sessionStorage.getItem(CLE_PAGE_ADMIN); } catch (e) {}
+  return (id && PAGE_META[id] && document.getElementById('page-' + id)) ? id : 'dashboard';
+}
+// Titre, bouton principal et menu de la page affichée
+function majEnTetePage(id) {
+  var meta = PAGE_META[id] || { title:id, cta:null };
+  document.getElementById('page-title').textContent = meta.title;
+  var cta = document.getElementById('topbar-cta');
+  var ctaLbl = document.getElementById('topbar-cta-label');
+  if (meta.cta) {
+    cta.style.display = '';
+    ctaLbl.textContent = meta.cta.label;
+    cta.setAttribute('onclick', meta.cta.fn);
+  } else { cta.style.display = 'none'; }
+  document.querySelectorAll('.nav-item').forEach(function(n) {
+    var oc = n.getAttribute('onclick') || '';
+    n.classList.toggle('active', oc.indexOf("'"+id+"'") !== -1);
+  });
+}
+
 function go(id) {
   // Vérif accès employé hors horaires
   if (currentUser.role !== 'Admin' && !checkAcces()) {
@@ -118,6 +144,7 @@ function go(id) {
     setTimeout(function() { old.classList.remove('active'); old.style.cssText = ''; }, 220);
   }
   currentPage = id;
+  memoriserPage(id);
   setTimeout(function() {
     var np = document.getElementById('page-' + id);
     if (np) {
@@ -131,19 +158,7 @@ function go(id) {
         setTimeout(function() { np.style.cssText = ''; }, 260);
       });
     }
-    var meta = PAGE_META[id] || { title:id, cta:null };
-    document.getElementById('page-title').textContent = meta.title;
-    var cta = document.getElementById('topbar-cta');
-    var ctaLbl = document.getElementById('topbar-cta-label');
-    if (meta.cta) {
-      cta.style.display = '';
-      ctaLbl.textContent = meta.cta.label;
-      cta.setAttribute('onclick', meta.cta.fn);
-    } else { cta.style.display = 'none'; }
-    document.querySelectorAll('.nav-item').forEach(function(n) {
-      var oc = n.getAttribute('onclick') || '';
-      n.classList.toggle('active', oc.indexOf("'"+id+"'") !== -1);
-    });
+    majEnTetePage(id);
     renderPage(id);
     if (isMobile() || isTablet()) closeSidebar();
   }, 230);
@@ -567,15 +582,20 @@ function renderRayonsAdmin() {
   var cats = DATA.categories || [];
   if (rayonOuvert && cats.indexOf(rayonOuvert) === -1) rayonOuvert = null;
   if (!cats.length) { ul.innerHTML = '<li class="rayons-aide">Aucun rayon pour l\'instant : créez-en un avec « Nouveau rayon ».</li>'; return; }
+  var focusVisible = document.activeElement && document.activeElement.getAttribute('data-action') === 'visible'
+    ? document.activeElement.closest('.rayon-ligne').getAttribute('data-index') : null;
   ul.innerHTML = cats.map(function(c, i) {
     var n = pharmaProduitsDuRayon(DATA, c).length;
     var ouvert = c === rayonOuvert, enCours = !!photoRayons.envoi[c];
-    return '<li class="rayon-ligne' + (ouvert ? ' ouvert' : '') + '" data-index="' + i + '">'
+    var visible = pharmaRayonVisible(DATA, c);
+    var etat = (n ? n + ' produit' + (n > 1 ? 's' : '') : 'Aucun produit') + (!visible ? ' · masqué sur le site' : (n ? '' : ' : pas encore sur le site'));
+    return '<li class="rayon-ligne' + (ouvert ? ' ouvert' : '') + (visible ? '' : ' masque') + '" data-index="' + i + '">'
       + '<div class="rayon-tete">'
       + '<button type="button" class="poignee" aria-label="' + escHtml('Déplacer le rayon ' + c + ' : glisser, ou flèches haut et bas') + '">' + SVG_POIGNEE + '</button>'
       + '<div class="photo-apercu' + (enCours ? ' charge' : '') + '" aria-hidden="true"></div>'
-      + '<button type="button" class="rayon-ouvrir" aria-expanded="' + ouvert + '"><strong>' + escHtml(c) + '</strong><span>' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'Aucun produit : masqué sur le site') + '</span></button>'
+      + '<button type="button" class="rayon-ouvrir" aria-expanded="' + ouvert + '"><strong>' + escHtml(c) + '</strong><span>' + etat + '</span></button>'
       + '<div class="rayon-actions">'
+      + '<label class="toggle-wrap toggle-acc rayon-visible" title="Afficher ce rayon sur le site"><input type="checkbox" class="toggle-input" data-action="visible"' + (visible ? ' checked' : '') + ' aria-label="' + escHtml('Afficher le rayon ' + c + ' sur le site') + '"><span class="toggle-track"></span><span class="toggle-txt">Sur le site</span></label>'
       + '<label class="btn btn-ghost photo-choisir" title="Photo du rayon"><input type="file" class="vh-input" accept="image/*" aria-label="' + escHtml('Photo du rayon ' + c) + '"' + (enCours ? ' disabled' : '') + '>' + SVG_PHOTO_PETIT + '<span>' + (enCours ? 'Envoi…' : 'Photo') + '</span></label>'
       + '<button type="button" class="btn btn-ghost" data-action="renommer" aria-label="' + escHtml('Renommer le rayon ' + c) + '">' + svgEdit() + '<span>Renommer</span></button>'
       + '<button type="button" class="btn btn-ghost" data-action="supprimer" style="color:var(--rouge)" aria-label="' + escHtml('Supprimer le rayon ' + c) + '">' + svgTrash() + '</button>'
@@ -596,8 +616,13 @@ function renderRayonsAdmin() {
     fichier.addEventListener('change', function() { if (fichier.files && fichier.files[0]) choisirPhotoRayon(c, fichier.files[0]); });
     li.querySelector('[data-action="renommer"]').addEventListener('click', function() { editerNomRayon(li, c); });
     li.querySelector('[data-action="supprimer"]').addEventListener('click', function() { supprimerRayon(c); });
+    li.querySelector('[data-action="visible"]').addEventListener('change', function() { basculerRayonVisible(c, this.checked); });
     if (c === rayonOuvert) brancherDetailRayon(li, c);
   });
+  if (focusVisible !== null) {
+    var bouton = ul.querySelector('.rayon-ligne[data-index="' + focusVisible + '"] [data-action="visible"]');
+    if (bouton) bouton.focus();
+  }
   rendreReordonnable(ul, '.rayon-ligne', function(de, vers) {
     var avaitFocus = !!(document.activeElement && document.activeElement.classList.contains('poignee'));
     var c = DATA.categories.splice(de, 1)[0];
@@ -724,6 +749,16 @@ function editerNomRayon(li, c) {
     renommerRayon(c, v.nom);
   });
 }
+// Bouton « Sur le site » d'un rayon : masqué, il disparaît du site (rayons, filtres, menu, sa page),
+// ses produits restent en vente dans « Tous » et dans leurs autres rayons
+function basculerRayonVisible(c, visible) {
+  if (!Array.isArray(DATA.rayonsMasques)) DATA.rayonsMasques = [];
+  DATA.rayonsMasques = DATA.rayonsMasques.filter(function(x) { return x !== c; });
+  if (!visible) DATA.rayonsMasques.push(c);
+  persist();
+  renderRayonsAdmin();
+  toast(visible ? 'Rayon ' + c + ' affiché sur le site' : 'Rayon ' + c + ' masqué sur le site : ses produits restent en vente');
+}
 function renommerRayon(ancien, nouveau) {
   if (ADMIN_CLOUD) {
     // Avec la base : renommé directement par la base, qui met à jour les produits en même temps
@@ -737,6 +772,7 @@ function renommerRayon(ancien, nouveau) {
   DATA.categories = DATA.categories.map(function(c) { return c === ancien ? nouveau : c; });
   DATA.produits.forEach(function(p) { if (p.cat === ancien) p.cat = nouveau; });
   (DATA.codesPromo || []).forEach(function(k) { if (k.scope === ancien) k.scope = nouveau; });
+  if (Array.isArray(DATA.rayonsMasques)) DATA.rayonsMasques = DATA.rayonsMasques.map(function(x) { return x === ancien ? nouveau : x; });
   ['photosRayons', 'contenuRayons'].forEach(function(cle) {
     var o = DATA[cle];
     if (o && Object.prototype.hasOwnProperty.call(o, ancien)) { o[nouveau] = o[ancien]; delete o[ancien]; }
@@ -757,6 +793,7 @@ function supprimerRayon(c) {
     DATA.categories = DATA.categories.filter(function(x) { return x !== c; });
     if (DATA.photosRayons) delete DATA.photosRayons[c];
     if (DATA.contenuRayons) delete DATA.contenuRayons[c];
+    if (Array.isArray(DATA.rayonsMasques)) DATA.rayonsMasques = DATA.rayonsMasques.filter(function(x) { return x !== c; });
     if (rayonOuvert === c) rayonOuvert = null;
     persist();
     renderRayonsAdmin();
@@ -899,7 +936,7 @@ function renderPromos(filtre) {
   if (list.length === 0) html = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--texte-3)">Aucune promotion</td></tr>';
   list.forEach(function(p) {
     var bc = p.statut==='Active'?'b-green':'b-grey';
-    html += '<tr><td><div class="td-main">'+escHtml(p.produit)+'</div></td>';
+    html += '<tr><td><div class="td-main">'+escHtml(p.produit)+'</div>'+(p.miseEnAvant ? '<div class="td-sub">Mise en avant sur l\'accueil</div>' : '')+'</td>';
     html += '<td>'+nombre(p.prixNormal).toFixed(2)+'€</td>';
     html += '<td><strong>'+nombre(p.prixPromo).toFixed(2)+'€</strong></td>';
     html += '<td><span class="badge b-vif">'+escHtml(p.pct)+'%</span></td>';
@@ -919,6 +956,8 @@ function editPromo(id) {
   setVal('promo-debut', p.debut || '');
   setVal('promo-fin', p.fin || '');
   setVal('promo-qte', p.qte || 1);
+  var avant = document.getElementById('promo-avant');
+  if (avant) avant.checked = p.miseEnAvant === true;
   document.getElementById('p-promo-id').value = id;
   calcP();
   openModal('m-promo');
@@ -947,6 +986,8 @@ function nouvellePromo(nomProduit) {
   setVal('promo-debut', '');
   setVal('promo-fin', '');
   setVal('promo-qte', 1);
+  var avant = document.getElementById('promo-avant');
+  if (avant) avant.checked = false;
   var pn = document.getElementById('pn'), pp = document.getElementById('pp');
   if (pn) pn.value = '';
   if (pp) pp.value = '';
@@ -966,20 +1007,22 @@ function savePromo() {
   var fin = getVal('promo-fin');
   if (debut && fin && fin < debut) { toast('La date de fin doit être après la date de début','error'); return; }
   var qte = parseInt(getVal('promo-qte')) || 1;
+  var caseAvant = document.getElementById('promo-avant');
+  var miseEnAvant = !!(caseAvant && caseAvant.checked);
   if (!(parseInt(getVal('promo-qte'), 10) >= 1)) { toast('Le nombre d\'unités par lot doit être d\'au moins 1','error'); return; }
   if (id) {
     var p = DATA.promos.find(function(x){ return x.id===id; });
     if (p) {
       p.produit = getVal('promo-produit') || p.produit;
       p.prixNormal=pn; p.prixPromo=pp; p.pct=pct;
-      p.debut=debut; p.fin=fin; p.qte=qte;
+      p.debut=debut; p.fin=fin; p.qte=qte; p.miseEnAvant=miseEnAvant;
     }
     toast('Promo modifiée');
   } else {
     var nid = DATA.promos.length ? Math.max.apply(null,DATA.promos.map(function(x){return x.id;}))+1 : 1;
     DATA.promos.push({
       id:nid, produit:getVal('promo-produit'), prixNormal:pn, prixPromo:pp, pct:pct,
-      debut:debut, fin:fin, qte:qte, statut:'Active'
+      debut:debut, fin:fin, qte:qte, statut:'Active', miseEnAvant:miseEnAvant
     });
     toast('Promotion publiée sur le site');
   }
@@ -2713,15 +2756,12 @@ window.addEventListener('DOMContentLoaded', function() {
       if (box) box.style.background = couleur;
     });
   });
-  // Init page dashboard
-  currentPage = 'dashboard';
-  var dp = document.getElementById('page-dashboard');
+  // Page de départ : la dernière ouverte dans cet onglet (retour depuis le site), sinon le tableau de bord
+  currentPage = pageMemorisee();
+  var dp = document.getElementById('page-' + currentPage);
   if (dp) dp.classList.add('active');
-  setTimeout(function() { renderDashboard(); }, 100);
-  document.querySelectorAll('.nav-item').forEach(function(n) {
-    var oc = n.getAttribute('onclick') || '';
-    n.classList.toggle('active', oc.indexOf("'dashboard'") !== -1);
-  });
+  majEnTetePage(currentPage);
+  setTimeout(function() { renderPage(currentPage); }, 100);
   // Base de données : écran de connexion, puis lecture des données
   if (ADMIN_CLOUD) PharmaAdminCloud.demarrer();
 });

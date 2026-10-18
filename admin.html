@@ -357,6 +357,16 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
 .rayon-ouvrir span{font-size:0.68rem;color:var(--texte-3)}
 .rayon-ouvrir:focus-visible{outline:2px solid var(--vert-vif);border-radius:6px}
 .rayon-actions{display:flex;gap:4px;flex:none;align-items:center}
+/* Bouton « Sur le site » : rayon affiché ou masqué sur le site */
+.toggle-acc{position:relative}
+.toggle-acc .toggle-input{display:block;position:absolute;left:0;top:50%;opacity:0;width:1px;height:1px;margin:0}
+.toggle-acc .toggle-input:focus-visible+.toggle-track{outline:2px solid var(--vert-vif);outline-offset:2px}
+.promo-avant{margin:14px 0 4px;align-items:flex-start;gap:10px}
+.promo-avant .toggle-track{margin-top:2px}
+.promo-avant strong{display:block;font-size:0.8rem}
+.promo-avant small{display:block;font-size:0.7rem;color:var(--texte-3);margin-top:1px}
+.rayon-visible{position:relative;display:inline-flex;align-items:center;gap:7px;padding:0 8px 0 2px;min-height:34px;cursor:pointer;font-size:0.72rem;font-weight:600;color:var(--texte-2)}
+.rayon-ligne.masque .rayon-ouvrir strong{opacity:0.5}
 .rayon-ligne .chevron{transition:transform .2s;color:var(--texte-3)}
 .rayon-ligne.ouvert .chevron{transform:rotate(180deg)}
 .rayon-detail{border-top:1px solid var(--bord);padding:12px 14px 14px}
@@ -379,7 +389,7 @@ code{font-family:monospace;background:var(--fond);padding:2px 6px;border-radius:
 .place-glisser{border:2px dashed var(--vert-vif);border-radius:12px;background:var(--vert-pale);margin-bottom:8px}
 .liste-produits-rayon .place-glisser{border-radius:8px;margin:2px 0}
 body.glisser-actif{user-select:none;-webkit-user-select:none;cursor:grabbing}
-@media(max-width:600px){.rayon-actions .btn span{display:none}.rayon-actions .btn{padding:0 9px}}
+@media(max-width:600px){.rayon-actions .btn span{display:none}.rayon-actions .btn{padding:0 9px}.rayon-visible .toggle-txt{display:none}}
 </style>
 </head>
 <body>
@@ -858,6 +868,7 @@ body.glisser-actif{user-select:none;-webkit-user-select:none;cursor:grabbing}
         <div class="form-group"><label>Début</label><input type="date" class="inp" id="promo-debut" value="2025-06-16"></div>
         <div class="form-group"><label>Fin</label><input type="date" class="inp" id="promo-fin" value="2025-06-30"></div>
       </div>
+      <label class="toggle-wrap toggle-acc promo-avant"><input type="checkbox" class="toggle-input" id="promo-avant"><span class="toggle-track"></span><span><strong>Mise en avant</strong><small>Défile dans « La promo du moment », en haut de l'accueil</small></span></label>
       <hr>
       <label style="display:block;margin-bottom:7px">Notifier les clients</label>
       <div class="flex-gap">
@@ -949,14 +960,14 @@ body.glisser-actif{user-select:none;-webkit-user-select:none;cursor:grabbing}
   </div>
 </div>
 
-<script src="supabase.js?v=20261017234437"></script>
-<script src="supabase-config.js?v=20261017234437"></script>
-<script src="data.js?v=20261017234437"></script>
-<script src="cloud.js?v=20261017234437"></script>
-<script src="emails.js?v=20261017234437"></script>
-<script src="cloud-admin.js?v=20261017234437"></script>
-<script src="admin.js?v=20261017234437"></script>
-<script src="guide-admin.js?v=20261017234437"></script>
-<script src="demo-nav.js?v=20261017234437"></script>
+<script src="supabase.js?v=20261018100548"></script>
+<script src="supabase-config.js?v=20261018100548"></script>
+<script src="data.js?v=20261018100548"></script>
+<script src="cloud.js?v=20261018100548"></script>
+<script src="emails.js?v=20261018100548"></script>
+<script src="cloud-admin.js?v=20261018100548"></script>
+<script src="admin.js?v=20261018100548"></script>
+<script src="guide-admin.js?v=20261018100548"></script>
+<script src="demo-nav.js?v=20261018100548"></script>
 </body>
 </html>
