@@ -27,13 +27,27 @@ function _pharmaDate(joursDecalage) {
   return pharmaDateLocale(d);
 }
 
+// Photos des rayons proposées par défaut (dossier images/ du site). Elles se remplacent ou se
+// retirent dans l'admin (page Rayons), comme une photo ajoutée à la main.
+var PHARMA_PHOTOS_RAYONS_DEFAUT = {
+  'Solaire': 'images/rayon-solaire.jpg', 'Vitamines': 'images/rayon-vitamines.jpg', 'Hygiène': 'images/rayon-hygiene.jpg',
+  'Beauté': 'images/rayon-beaute.jpg', 'Bébé': 'images/rayon-bebe.jpg', 'Minceur': 'images/rayon-minceur.jpg',
+  'Aromathérapie': 'images/rayon-aromatherapie.jpg'
+};
+// Un produit de démonstration pour chacun des rayons qui n'en avaient pas (sinon le rayon n'apparaît pas sur le site)
+var PHARMA_PRODUITS_DEMO_RAYONS = [
+  { id:4, nom:'Sérum hydratant visage 30ml', ref:'BEA-001', cat:'Beauté', prix:18.90, stock:25, seuil:5, desc:'Sérum léger pour peaux déshydratées' },
+  { id:5, nom:'Liniment oléo-calcaire 500ml', ref:'BEB-001', cat:'Bébé', prix:7.50, stock:30, seuil:8, desc:'Nettoie et protège la peau de bébé au change' },
+  { id:6, nom:'Infusion citron-menthe 20 sachets', ref:'MIN-001', cat:'Minceur', prix:6.90, stock:18, seuil:5, desc:'Infusion de plantes, à boire chaud ou froid' },
+  { id:7, nom:'Huile essentielle Lavande vraie 10ml', ref:'ARO-001', cat:'Aromathérapie', prix:5.90, stock:22, seuil:5, desc:'Huile essentielle 100 % pure et naturelle' }
+];
 var PHARMA_SEED_DATA = {
   categories: ['Solaire', 'Vitamines', 'Hygiène', 'Beauté', 'Bébé', 'Minceur', 'Aromathérapie'],
   produits: [
     { id:1, nom:'Crème Solaire SPF50 100ml', ref:'SOL-001', cat:'Solaire', prix:8.40, stock:45, seuil:10, desc:'Protection solaire haute performance' },
     { id:2, nom:'Vitamine C 1000mg 60cp', ref:'VIT-012', cat:'Vitamines', prix:15.00, stock:7, seuil:10, desc:'Complément vitaminé' },
     { id:3, nom:'Gel Douche Surgras 400ml', ref:'HYG-034', cat:'Hygiène', prix:6.20, stock:0, seuil:10, desc:'Gel doux pour peaux sensibles' }
-  ],
+  ].concat(PHARMA_PRODUITS_DEMO_RAYONS),
   promos: [
     { id:1, produit:'Lot Crème Solaire SPF50 x3', prixNormal:25.20, prixPromo:18.90, pct:-25, debut:_pharmaDate(-15), fin:_pharmaDate(30), statut:'Active' }
   ],
@@ -86,7 +100,9 @@ var PHARMA_SEED_DATA = {
   },
   // Photos des rayons de la page d'accueil ({ 'Solaire': adresse de la photo }), ajoutées dans l'admin.
   // Les photos des produits sont dans le champ « photo » de chaque produit.
-  photosRayons: {},
+  photosRayons: JSON.parse(JSON.stringify(PHARMA_PHOTOS_RAYONS_DEFAUT)),
+  // Repère : les photos par défaut ci-dessus ont déjà été proposées (une seule fois, voir migrer)
+  photosRayonsDefaut: 1,
   // Contenu des rayons, dans l'ordre choisi dans l'admin ({ 'Bébé': [4, 1] }). Un produit figure toujours
   // dans son rayon principal (champ « cat ») ; cette liste ajoute d'autres rayons et règle l'ordre d'affichage.
   contenuRayons: {},
@@ -193,7 +209,13 @@ var PharmaStore = {
     try { raw = localStorage.getItem(PHARMA_STORAGE_KEY); } catch (e) {}
     if (raw) {
       try {
-        return this.migrer(JSON.parse(raw));
+        var lu = JSON.parse(raw);
+        var dejaComplete = !!(lu && lu.photosRayonsDefaut === 1);
+        var data = this.migrer(lu);
+        // Ajout unique (photos et produits de démonstration) : enregistré tout de suite, pour qu'une photo
+        // retirée ensuite dans l'admin ne revienne pas au prochain chargement
+        if (!dejaComplete) this.save(data);
+        return data;
       } catch (e) {
         console.warn('pharma-data corrompu, réinitialisation avec les données de démo.', e);
       }
@@ -214,6 +236,25 @@ var PharmaStore = {
     var copie = function(v) {
       return (v && typeof v === 'object') ? JSON.parse(JSON.stringify(v)) : v;
     };
+    // Une seule fois : photos de rayons par défaut et produits de démonstration des rayons vides.
+    // Un rayon supprimé, une photo déjà choisie ou un produit déjà présent ne sont pas touchés ;
+    // une photo retirée ensuite dans l'admin ne revient pas (repère photosRayonsDefaut).
+    if (data.photosRayonsDefaut !== 1) {
+      var cats = Array.isArray(data.categories) ? data.categories : [];
+      if (!data.photosRayons || typeof data.photosRayons !== 'object' || Array.isArray(data.photosRayons)) data.photosRayons = {};
+      Object.keys(PHARMA_PHOTOS_RAYONS_DEFAUT).forEach(function(cat) {
+        if (cats.indexOf(cat) !== -1 && !data.photosRayons[cat]) data.photosRayons[cat] = PHARMA_PHOTOS_RAYONS_DEFAUT[cat];
+      });
+      if (Array.isArray(data.produits)) {
+        var maxId = data.produits.reduce(function(m, p) { return Math.max(m, (p && parseInt(p.id, 10)) || 0); }, 0);
+        PHARMA_PRODUITS_DEMO_RAYONS.forEach(function(p) {
+          var dejaRef = data.produits.some(function(x) { return x && x.ref === p.ref; });
+          var rayonVide = !data.produits.some(function(x) { return x && x.cat === p.cat; });
+          if (!dejaRef && rayonVide && cats.indexOf(p.cat) !== -1) { var n = copie(p); n.id = ++maxId; data.produits.push(n); }
+        });
+      }
+      data.photosRayonsDefaut = 1;
+    }
     Object.keys(PHARMA_SEED_DATA).forEach(function(cle) {
       var attendu = PHARMA_SEED_DATA[cle];
       var actuel = data[cle];
@@ -298,18 +339,22 @@ function pharmaEmailValide(e) {
 }
 
 // ── PHOTOS DES PRODUITS ET DES RAYONS ──────────────────────
-// Une photo n'est affichée que si son adresse a l'une de ces deux formes :
+// Une photo n'est affichée que si son adresse a l'une de ces trois formes :
 //  * une image du bucket « photos » d'un projet Supabase (mode base de données) ;
-//  * une image JPEG, PNG ou WebP gardée dans le navigateur (mode démonstration).
+//  * une image JPEG, PNG ou WebP gardée dans le navigateur (mode démonstration) ;
+//  * un fichier du dossier images/ du site (photos des rayons proposées par défaut).
 // Toute autre valeur (adresse d'un autre site, javascript:, guillemets) est ignorée :
 // une adresse modifiée ne peut ni injecter de code ni charger une image d'ailleurs.
 var PHARMA_PHOTO_URL_RE = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/photos\/[A-Za-z0-9_-]+([.\/][A-Za-z0-9_-]+)*$/;
 var PHARMA_PHOTO_DATA_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+={0,2}$/;
 var PHARMA_PHOTO_DATA_MAX = 700000;   // environ 500 Ko d'image
+// Troisième forme : un fichier du dossier images/ livré avec le site (photos des rayons par défaut)
+var PHARMA_PHOTO_LOCALE_RE = /^images\/[a-z0-9-]{1,60}\.(jpg|jpeg|png|webp)$/;
 function pharmaPhotoValide(v) {
   var s = (typeof v === 'string') ? v : '';
   if (s.length <= 400 && PHARMA_PHOTO_URL_RE.test(s)) return s;
   if (s.length <= PHARMA_PHOTO_DATA_MAX && PHARMA_PHOTO_DATA_RE.test(s)) return s;
+  if (PHARMA_PHOTO_LOCALE_RE.test(s)) return s;
   return '';
 }
 // Photo d'un rayon (catégorie), ou '' s'il n'en a pas

@@ -1125,7 +1125,8 @@ function renderRayons() {
   liste.innerHTML = cats.map(function(c) {
     var n = produitsCatalogueDuRayon(c).length;
     var photo = pharmaPhotoRayon(DATA, c);
-    return '<li><a class="rayon' + (photo ? ' a-photo' : '') + '" href="' + escHtml(lienRayon(c)) + '" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
+    // --n : nombre de lettres ; sur téléphone, un nom long (« aromathérapie ») réduit sa taille pour laisser la place à la photo
+    return '<li><a class="rayon' + (photo ? ' a-photo' : '') + '" style="--n:' + Math.max(1, String(c).length) + '" href="' + escHtml(lienRayon(c)) + '" data-cat="' + escHtml(c) + '" aria-label="' + escHtml('Rayon ' + c + ', ' + n + ' produit' + (n > 1 ? 's' : '')) + '">'
       + '<span class="rayon-mot">' + escHtml(c) + '</span><span class="rayon-nb" aria-hidden="true">' + n + '</span>'
       + (photo ? '<span class="rayon-photo" aria-hidden="true"><img src="' + escHtml(photo) + '" alt="" loading="lazy" decoding="async" data-photo></span>' : '')
       + '</a></li>';

@@ -538,6 +538,12 @@ html[data-theme="dark"]{--nuit:#141B16;--sable:#221E17;--or-plein:#D9A441}
 .auj-special{display:inline-block;margin-top:20px;padding:10px 16px;border:1px solid rgba(241,247,243,0.28);border-radius:12px;font-weight:700}
 .auj-infos{display:flex;flex-wrap:wrap;gap:12px 30px;margin-top:38px;font-weight:600;color:var(--nuit-doux)}
 .auj-infos a{color:var(--nuit-texte);text-decoration:underline;text-underline-offset:5px}
+/* Photos d'ambiance (« Comment ça marche » et « Aujourd'hui »), fichiers du dossier images/ */
+.chap-visuel{margin:clamp(40px,6vw,64px) 0 0;border-radius:22px;overflow:hidden;aspect-ratio:16/7;background:var(--tuile)}
+.chap-nuit .chap-visuel{background:rgba(255,255,255,0.06)}
+.chap-visuel img{display:block;width:100%;height:100%;object-fit:cover}
+.chap-visuel-comptoir img{object-position:68% 50%}
+.chap-visuel-soir img{object-position:45% 50%}
 /* Raccourci vers le catalogue */
 /* En verre liquide ; il s'efface en haut de page, sur le catalogue, au pied de page et pendant un message */
 .raccourci{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:90;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;font-weight:700;font-size:0.86rem;text-decoration:none;transform:translateY(160%) scale(0.9);opacity:0;pointer-events:none;transition:transform 0.5s cubic-bezier(0.34,1.4,0.64,1),opacity 0.3s}
@@ -552,10 +558,11 @@ body.avec-message .raccourci.visible{transform:translateY(160%) scale(0.9);opaci
   .etape{min-height:0;padding:30px 0}
   .etape-mobile{display:block;font-family:'Fraunces',serif;font-size:4.6rem;line-height:0.9;color:var(--texte);font-weight:600;margin-bottom:10px}
   .une .chap-geant{font-size:clamp(6.5rem,36vw,11rem)}
-  .rayon{-webkit-text-stroke-width:1px;font-size:clamp(3rem,15vw,5.5rem)}
+  .rayon{-webkit-text-stroke-width:1px;font-size:min(clamp(3rem,15vw,5.5rem),calc((100vw - 130px) / (var(--n,8) * 0.5)))}
   .une-photo{width:130px;border-radius:18px;margin-bottom:16px}
   .fid-geant{white-space:normal;font-size:clamp(3.2rem,15vw,6rem)}
   .fid-jauge{gap:7px}
+  .chap-visuel{aspect-ratio:4/3;border-radius:16px}
 }
 @media(prefers-reduced-motion:reduce){
   .etape-chiffre,.fid-seg::after,.raccourci,.rayon,.rayon-photo{transition:none}
@@ -893,6 +900,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
         <li class="etape" data-etape="2"><span class="etape-mobile" aria-hidden="true">3</span><h3>Vous retirez</h3><p>Présentez votre code de retrait <span data-pharma="a-la-nom">à la Pharmacie Démo</span> et réglez sur place.</p></li>
       </ol>
     </div>
+    <figure class="chap-visuel chap-visuel-comptoir"><img src="images/ambiance-comptoir-1376.jpg" srcset="images/ambiance-comptoir-800.jpg 800w, images/ambiance-comptoir-1376.jpg 1376w" sizes="(max-width: 1200px) 100vw, 1200px" width="1376" height="768" loading="lazy" decoding="async" alt="Un sac de commande fermé attend sur le comptoir de la pharmacie"></figure>
   </div>
 </section>
 
@@ -956,6 +964,7 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
       <a id="auj-tel" href="#"></a>
       <a id="auj-itineraire" href="#" target="_blank" rel="noopener">Itinéraire</a>
     </div>
+    <figure class="chap-visuel chap-visuel-soir"><img src="images/ambiance-pharmacie-soir-1376.jpg" srcset="images/ambiance-pharmacie-soir-800.jpg 800w, images/ambiance-pharmacie-soir-1376.jpg 1376w" sizes="(max-width: 1200px) 100vw, 1200px" width="1376" height="768" loading="lazy" decoding="async" alt="Une pharmacie de quartier parisienne le soir, vitrine éclairée et croix verte allumée"></figure>
   </div>
 </section>
 
@@ -1107,12 +1116,12 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
   </div>
 </div>
 
-<script src="supabase.js?v=20261019002008"></script>
-<script src="supabase-config.js?v=20261019002008"></script>
-<script src="data.js?v=20261019002008"></script>
-<script src="cloud.js?v=20261019002008"></script>
-<script src="emails.js?v=20261019002008"></script>
-<script src="site.js?v=20261019002008"></script>
+<script src="supabase.js?v=20261019085025"></script>
+<script src="supabase-config.js?v=20261019085025"></script>
+<script src="data.js?v=20261019085025"></script>
+<script src="cloud.js?v=20261019085025"></script>
+<script src="emails.js?v=20261019085025"></script>
+<script src="site.js?v=20261019085025"></script>
 
 <!-- MODAL PAGES LÉGALES -->
 <div class="modal-ov" id="legal-modal">
@@ -1135,6 +1144,6 @@ body.vue-rayon > section:not(#page-rayon),body.vue-rayon .raccourci{display:none
   </div>
 </div>
 
-<script src="demo-nav.js?v=20261019002008"></script>
+<script src="demo-nav.js?v=20261019085025"></script>
 </body>
 </html>

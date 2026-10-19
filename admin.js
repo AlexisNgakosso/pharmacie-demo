@@ -854,21 +854,24 @@ function glisser(e, liste, el, selecteur, surDeplacement, poignee) {
     defilement = requestAnimationFrame(auBord);
   }
   defilement = requestAnimationFrame(auBord);
-  function bouge(ev) { placer(ev.clientY); }
-  function fin() {
+  // Écoute sur tout le document : déplacer la ligne dans la liste fait perdre la « capture » du pointeur
+  // à la poignée ; sans cela, un relâchement hors de la poignée laissait le glisser bloqué et l'ordre non enregistré.
+  function bouge(ev) { if (ev.pointerId === e.pointerId) placer(ev.clientY); }
+  function fin(ev) {
+    if (ev && ev.pointerId !== undefined && ev.pointerId !== e.pointerId) return;
     cancelAnimationFrame(defilement);
-    poignee.removeEventListener('pointermove', bouge);
-    poignee.removeEventListener('pointerup', fin);
-    poignee.removeEventListener('pointercancel', fin);
+    document.removeEventListener('pointermove', bouge);
+    document.removeEventListener('pointerup', fin);
+    document.removeEventListener('pointercancel', fin);
     el.classList.remove('en-glisser');
     el.style.transform = '';
     document.body.classList.remove('glisser-actif');
     var arrivee = freres().indexOf(el);
     if (arrivee !== depart && arrivee !== -1) surDeplacement(depart, arrivee);
   }
-  poignee.addEventListener('pointermove', bouge);
-  poignee.addEventListener('pointerup', fin);
-  poignee.addEventListener('pointercancel', fin);
+  document.addEventListener('pointermove', bouge);
+  document.addEventListener('pointerup', fin);
+  document.addEventListener('pointercancel', fin);
 }
 
 // ── CONSEILS PERSONNALISÉS ───────────────────────────────────
