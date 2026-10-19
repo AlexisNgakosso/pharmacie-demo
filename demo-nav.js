@@ -4,6 +4,8 @@
   var CLE = 'pharma-demo-menu';
   var pages = [['site.html', 'Site'], ['admin.html', 'Admin'], ['compte.html', 'Compte']];
   var ici = (location.pathname.split('/').pop() || '').toLowerCase();
+  // Hébergement qui retire « .html » des adresses (Cloudflare Pages : /site au lieu de /site.html)
+  if (ici && ici.indexOf('.') === -1) ici += '.html';
   var petit = window.innerWidth < 480; // téléphone : barre plus compacte
 
   function lireMasque() { try { return localStorage.getItem(CLE) === 'masque'; } catch (e) { return false; } }

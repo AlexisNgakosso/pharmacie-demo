@@ -1296,7 +1296,8 @@ window.addEventListener('pagehide', function() {
 });
 function retrouverPositionSite() {
   var ref = document.referrer || '', dossier = location.origin + location.pathname.replace(/[^\/]*$/, '');
-  if (ref.indexOf(dossier) !== 0 || !/^(admin|compte)\.html(?:[?#]|$)/.test(ref.slice(dossier.length))) return;
+  // « .html » facultatif : certains hébergeurs (Cloudflare Pages) l'enlèvent des adresses
+  if (ref.indexOf(dossier) !== 0 || !/^(admin|compte)(?:\.html)?(?:[?#]|$)/.test(ref.slice(dossier.length))) return;
   if (location.hash || location.search) return;   // lien précis (section, rayon) : on le respecte
   var n = null;
   try { n = JSON.parse(sessionStorage.getItem(CLE_POSITION_SITE) || 'null'); } catch (e) {}
