@@ -107,6 +107,10 @@ export async function onRequest(context) {
     await new Promise(r => setTimeout(r, 900));   // freine les essais en rafale
     return pageConnexion('Mot de passe incorrect.', 401, retour);
   }
+  // Le dossier functions/ (ce fichier) n'est jamais servi comme une page
+  if (url.pathname.startsWith('/functions/') || url.pathname === '/functions') {
+    return new Response('Introuvable', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  }
   if (url.pathname === '/__sortie') {
     return new Response(null, { status: 303, headers: { 'Location': '/', 'Set-Cookie': `${COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`, 'Cache-Control': 'no-store' } });
   }
